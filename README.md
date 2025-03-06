@@ -79,4 +79,4 @@ Modify `envlist` to match the Python versions you want to support.
 
 ## License
 
-This project was created by Peter Grønbæk Andersen and is licensed under GNU GPL v3.
+This project was created by Peter Grønbæk Andersen and is licensed under [GNU GPL v3](/LICENSE).
