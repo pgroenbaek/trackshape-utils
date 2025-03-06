@@ -613,3 +613,87 @@ def get_prim_state_names(sfile_lines):
             prim_state_names.append(parts[1])
 
     return prim_state_names
+
+
+def insert_vertex_between(vertices, indexed_trilist, v1, v2):
+    """
+    Inserts a new vertex between two existing vertices and updates the triangle list accordingly.
+    
+    Parameters:
+    vertices (list of tuples): List of existing vertices (x, y, z).
+    indexed_trilist (list of tuples): List of triangles, each defined by three vertex indices.
+    v1 (int): Index of the first vertex.
+    v2 (int): Index of the second vertex.
+    
+    Returns:
+    tuple: Updated vertices list and indexed_trilist.
+    """
+    
+    # Compute the midpoint
+    x1, y1, z1 = vertices[v1]
+    x2, y2, z2 = vertices[v2]
+    new_vertex = ((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2)
+    
+    # Append the new vertex to the vertices list
+    new_vertex_index = len(vertices)
+    vertices.append(new_vertex)
+    
+    # Update triangle list by replacing (v1, v2) edges with new vertex
+    new_trilist = []
+    for tri in indexed_trilist:
+        if v1 in tri and v2 in tri:
+            # Replace the edge with two new triangles
+            v3 = [v for v in tri if v not in (v1, v2)][0]
+            new_trilist.append((v1, new_vertex_index, v3))
+            new_trilist.append((new_vertex_index, v2, v3))
+        else:
+            new_trilist.append(tri)
+    
+    return vertices, new_trilist
+
+
+def remove_vertex(vertices, indexed_trilist, vertex_index):
+    """
+    Removes a vertex from the 3D model without reconnecting affected triangles.
+    
+    Parameters:
+    vertices (list of tuples): List of existing vertices (x, y, z).
+    indexed_trilist (list of tuples): List of triangles, each defined by three vertex indices.
+    vertex_index (int): Index of the vertex to remove.
+    
+    Returns:
+    tuple: Updated vertices list and indexed_trilist.
+    """
+    
+    indexed_trilist = [tri for tri in indexed_trilist if vertex_index not in tri]
+    return vertices, indexed_trilist
+
+
+def remove_vertex_and_reconnect_geometry(vertices, indexed_trilist, vertex_index):
+    """
+    Removes a vertex from the 3D model and reconnects affected triangles.
+    
+    Parameters:
+    vertices (list of tuples): List of existing vertices (x, y, z).
+    indexed_trilist (list of tuples): List of triangles, each defined by three vertex indices.
+    vertex_index (int): Index of the vertex to remove.
+    
+    Returns:
+    tuple: Updated vertices list and indexed_trilist.
+    """
+    
+    affected_triangles = [tri for tri in indexed_trilist if vertex_index in tri]
+    indexed_trilist = [tri for tri in indexed_trilist if vertex_index not in tri]
+    
+    connected_vertices = set()
+    for tri in affected_triangles:
+        connected_vertices.update(tri)
+    connected_vertices.discard(vertex_index)
+    connected_vertices = list(connected_vertices)
+    
+    if len(connected_vertices) >= 2:
+        for i in range(len(connected_vertices)):
+            for j in range(i + 1, len(connected_vertices)):
+                indexed_trilist.append((connected_vertices[i], connected_vertices[j]))
+    
+    return vertices, indexed_trilist

@@ -28,18 +28,10 @@ pip install .
 Import and use the package in your Python code:
 
 ```python
-import my_package.my_module
+import trackshapeutils as tsu
 
-result = my_package.my_module.some_function()
+result = tsu.some_function()
 print(result)
-```
-
-Or import specific functions:
-
-```python
-from my_package.my_module import some_function
-
-print(some_function())
 ```
 
 
