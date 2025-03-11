@@ -676,8 +676,8 @@ def load_shape(filename: str, directory: str, encoding: str = None) -> Shapefile
 
 
 def generate_empty_centerpoints() -> Trackcenter:
-    empty_centerpoints = np.empty((0, 3))
-    return Trackcenter(empty_centerpoints)
+    centerpoints = np.empty((0, 3))
+    return Trackcenter(centerpoints)
 
 
 def generate_straight_centerpoints(length: float, num_points: int = 1000, start_point: Point = Point(0, 0, 0)) -> Trackcenter:
