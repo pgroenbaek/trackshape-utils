@@ -1,36 +1,3 @@
-"""
-Track Shape Utils
-
-This module provides various utility functions for working with track shape files, 
-including file handling, shape processing, and geometric calculations for track 
-center points and curves. It includes functions for:
-
-- File operations (reading, writing, ensuring directory existence)
-- Shape file processing (finding track shape files, compression, and decompression)
-- String and text manipulation (case-insensitive replacement)
-- Geometric calculations for track center points (straight and curved track segments)
-- Closest point searches and signed distance calculations
-- Linking points to UV values and prim_state names
-- Modification of UV values
-
-This module is intended for use with existing track shapes to adjust them. Points in the
-shape geometry can be repositioned, for example relative to the track center or along the track
-for both curved and straight track shapes. This code cannot add/remove shape geometry, but you can
-hide things underneath the trackbed. It will also not edit how vertices are connected.
-"""
-
-__version__ = '0.2.0'
-__all__ = [
-    'find_directory_files', 'load_file', 'load_shape',
-    'generate_empty_centerpoints', 'generate_straight_centerpoints', 'generate_curve_centerpoints',
-    'autodetect_centerpoints', 'find_closest_centerpoint', 'signed_distance_from_centerpoint',
-    'distance_along_curved_track', 'distance_along_straight_track', 'get_curve_point_from_angle',
-    'get_new_position_from_angle', 'get_new_position_from_trackcenter',
-    'File', 'Shapefile', 'PrimState', 'Point', 'UVPoint', 'Normal', 'Vertex', 'Trackcenter'
-]
-
-__author__ = 'Peter Grønbæk Andersen <peter@grnbk.io>'
-
 
 import os
 import fnmatch
