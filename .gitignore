@@ -1,3 +1,16 @@
+### FFEDITC utility files ###
+appids.tok
+coreids.tok
+ffedit.cfg
+ffeditc_unicode.exe
+forms.hdr
+loadstr.hdr
+newshape.bnf
+sidn.txt
+worldfile.bnf
+TEMPDP.S
+TEMPDPX.S
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
