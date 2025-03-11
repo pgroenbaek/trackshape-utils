@@ -17,6 +17,25 @@ This module is intended for use with existing track shapes to adjust them. Point
 shape geometry can be repositioned, for example relative to the track center or along the track
 for both curved and straight track shapes. This code cannot add/remove shape geometry, but you can
 hide things underneath the trackbed. It will also not edit how vertices are connected.
+
+---
+
+This file is part of Track Shape Utils.
+
+Copyright (C) 2025 Peter Grønbæk Andersen <peter@grnbk.io>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
 __version__ = '0.2.0'
