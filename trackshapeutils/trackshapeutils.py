@@ -797,13 +797,13 @@ class Shapefile(File):
             raise AttributeError("Cannot insert a new vertex between vertices in two different prim states.")
 
         # TODO Steps:
+        # Insert new point referenced from new vertex
+        # Insert new uv_point referenced from new vertex
+        # Insert new normal referenced from new vertex
         # Insert new vertex
-        # Insert new point in vertex
-        # Insert new uv_point in vertex
-        # Insert new normal in vertex
         # Remove old triangle from vertex_idxs in trilist
         # Insert new triangles in trilist vertex_idxs
-        # Remove normal for old triangle from normal_idxs in trilist based on old old index in vertex_idxs
+        # Remove normal for old triangle from normal_idxs in trilist based on old index in vertex_idxs
         # Insert new normals for newly created triangles in trilist normal_idxs based on new triangle indices in vertex_idxs
         # Remove flag for old triangle from flags in trilist based on old triangle index in vertex_idxs
         # Insert new flags for newly created triangles in trilist flags based on new triangle indices in vertex_idxs
