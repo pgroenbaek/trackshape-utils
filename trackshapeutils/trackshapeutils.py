@@ -123,13 +123,17 @@ class Vertex:
 
 
 class IndexedTrilist:
-    def __init__(self, lod_dlevel: int, subobject_idx: int, prim_state_idx: int):
+    def __init__(self, vertex_idxs: List[int], normal_idxs: List[int], flags: List[str], lod_dlevel: int, subobject_idx: int, prim_state_idx: int):
+        self.vertex_idxs = vertex_idxs
+        self.normal_idxs = normal_idxs
+        self.flags = flags
         self._lod_dlevel = lod_dlevel
         self._subobject_idx = subobject_idx
         self._prim_state_idx = prim_state_idx
     
     def __repr__(self):
-        return f"""IndexedTrilist(lod_dlevel={self._lod_dlevel}, subobject_idx={self._subobject_idx}, prim_state_idx={self._prim_state_idx})"""
+        return f"""IndexedTrilist(lod_dlevel={self._lod_dlevel}, subobject_idx={self._subobject_idx}, prim_state_idx={self._prim_state_idx},
+            vertex_idxs={self.vertex_idxs}, normal_idxs={self.normal_idxs}, flags={self.flags})"""
 
 
 class File:
@@ -161,9 +165,9 @@ class File:
             return f.read().split('\n')
     
     def _save(self, encoding: str = None) -> None:
-        if encoding is None:
+        if encoding is not None:
             self.encoding = encoding
-        with open(self.filepath, 'w', encoding=encoding) as f:
+        with open(self.filepath, 'w', encoding=self.encoding) as f:
             text = '\n'.join(self.lines)
             f.write(text)
 
@@ -171,7 +175,7 @@ class File:
         if new_filename is None and new_directory is None:
             raise AttributeError("Either supply a new filename, a new directory or both.")
         if new_filename == self.filename and new_directory == self.directory:
-            raise AttributeError("Cannot copy a file to itself. Please specify either a new filename and/or a new directory.")
+            raise AttributeError("Cannot copy the file to itself. Please specify either a new filename and/or a new directory.")
 
         copied_file = copy.deepcopy(self)
         copied_file.filename = new_filename
@@ -1142,6 +1146,7 @@ def distance_along_straight_track(point_along_track: Point, trackcenter: Trackce
 
 def get_curve_point_from_angle(radius: float, curve_angle: float) -> Point:
     theta = np.radians(abs(angle_degrees))
+
     z = radius * np.sin(theta)
     x = radius * (1 - np.cos(theta))
     y = 0
