@@ -123,16 +123,17 @@ class Vertex:
 
 
 class IndexedTrilist:
-    def __init__(self, vertex_idxs: List[int], normal_idxs: List[int], flags: List[str], lod_dlevel: int, subobject_idx: int, prim_state_idx: int):
+    def __init__(self, trilist_idx: int, vertex_idxs: List[int], normal_idxs: List[int], flags: List[str], lod_dlevel: int, subobject_idx: int, prim_state_idx: int):
         self.vertex_idxs = vertex_idxs
         self.normal_idxs = normal_idxs
         self.flags = flags
+        self._trilist_idx = trilist_idx
         self._lod_dlevel = lod_dlevel
         self._subobject_idx = subobject_idx
         self._prim_state_idx = prim_state_idx
     
     def __repr__(self):
-        return f"""IndexedTrilist(lod_dlevel={self._lod_dlevel}, subobject_idx={self._subobject_idx}, prim_state_idx={self._prim_state_idx},
+        return f"""IndexedTrilist(trilist_idx={self._trilist_idx}, lod_dlevel={self._lod_dlevel}, subobject_idx={self._subobject_idx}, prim_state_idx={self._prim_state_idx},
             vertex_idxs={self.vertex_idxs}, normal_idxs={self.normal_idxs}, flags={self.flags})"""
 
 
@@ -474,8 +475,87 @@ class Shapefile(File):
 
         return subobject_idxs
     
-    def get_indexed_trilists_in_subobject(self, lod_dlevel: int, subobject_idx: int) -> Dict[int, IndexedTrilist]:
-        raise NotImplementedError()
+    def get_indexed_trilists_in_subobject(self, lod_dlevel: int, subobject_idx: int) -> Dict[int, List[IndexedTrilist]]:
+        indexed_trilists = {}
+        current_dlevel = -1
+        current_subobject_idx = -1
+        current_trilist_idx = 0
+        current_prim_state_idx = 0
+        processing_trilist = False
+        collecting_vertex_idxs = False
+        vertex_idxs_in_trilist = []
+        collecting_normal_idxs = False
+        normal_idxs_in_trilist = []
+        collecting_flags = False
+        flags_in_trilist = []
+
+        for line_idx, line in enumerate(self.lines):
+            if "dlevel_selection (" in line.lower():
+                parts = line.split(' ')
+                current_dlevel = int(parts[2])
+
+            if current_dlevel == lod_dlevel:
+                if "sub_object (" in line.lower():
+                    current_subobject_idx += 1
+                
+                if current_subobject_idx == subobject_idx:
+                    if 'prim_state_idx (' in line.lower():
+                        parts = line.split(' ')
+                        current_prim_state_idx = int(parts[2])
+
+                    if 'indexed_trilist (' in line.lower():
+                        processing_trilist = True
+
+                    if 'vertex_idxs (' in line.lower() or collecting_vertex_idxs:
+                        parts = line.replace('vertex_idxs', '').replace('(', '').replace(')', '').split()
+                        if parts:
+                            if not collecting_vertex_idxs:
+                                parts = parts[1:]
+                            vertex_idxs = list(map(int, parts))
+                            vertex_idxs_in_trilist.extend(vertex_idxs)
+                        collecting_vertex_idxs = not line.endswith(')')
+
+                    if 'normal_idxs (' in line.lower() or collecting_normal_idxs:
+                        parts = line.replace('normal_idxs', '').replace('(', '').replace(')', '').split()
+                        if parts:
+                            if not collecting_normal_idxs:
+                                parts = parts[1:]
+                            normal_idxs = list(map(int, parts))
+                            normal_idxs_in_trilist.extend(normal_idxs)
+                        collecting_normal_idxs = not line.endswith(')')
+
+                    if 'flags (' in line.lower() or collecting_flags:
+                        parts = line.replace('flags', '').replace('(', '').replace(')', '').split()
+                        if parts:
+                            if not collecting_flags:
+                                parts = parts[1:]
+                            flags = list(map(str, parts))
+                            flags_in_trilist.extend(flags)
+                        collecting_flags = not line.endswith(')')
+
+                    if processing_trilist and ')' in line.lower():
+                        processing_trilist = False
+
+                        indexed_trilist = IndexedTrilist(
+                            trilist_idx=current_trilist_idx,
+                            vertex_idxs=vertex_idxs_in_trilist,
+                            normal_idxs=normal_idxs_in_trilist,
+                            flags=flags_in_trilist,
+                            lod_dlevel=current_dlevel,
+                            subobject_idx=current_subobject_idx,
+                            prim_state_idx=current_prim_state_idx
+                        )
+                        if current_prim_state_idx in indexed_trilists:
+                            indexed_trilists[current_prim_state_idx].append(indexed_trilist)
+                        else:
+                            indexed_trilists[current_prim_state_idx] = [indexed_trilist]
+                        
+                        current_trilist_idx += 1
+                        vertex_idxs_in_trilist = []
+                        normal_idxs_in_trilist = []
+                        flags_in_trilist = []
+
+        return indexed_trilists
     
     def get_vertices_in_subobject(self, lod_dlevel: int, subobject_idx: int) -> List[Vertex]:
         vertices = {}

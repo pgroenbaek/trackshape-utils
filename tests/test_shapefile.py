@@ -174,6 +174,14 @@ def test_get_subobject_idxs_in_lod_dlevel(global_storage):
     subject_idxs = shape.get_subobject_idxs_in_lod_dlevel(lod_dlevel)
     assert len(subject_idxs) == 5
 
+def test_get_indexed_trilists_in_subobject(global_storage):
+    shape = global_storage["shape"]
+    lod_dlevel = 200
+    subobject_idx = 0
+    indexed_trilists = shape.get_indexed_trilists_in_subobject(lod_dlevel, subobject_idx)
+    assert len(indexed_trilists) == 21
+    assert len(indexed_trilists[0]) == 2
+
 def test_get_vertices_in_subobject(global_storage):
     shape = global_storage["shape"]
     lod_dlevel = 200
