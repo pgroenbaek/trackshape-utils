@@ -368,7 +368,7 @@ class Shapefile(File):
 
         return False
     
-    def add_point(self, point: Point) -> int:
+    def add_point(self, point: Point) -> Optional[int]:
         processing_points = False
 
         for line_idx, line in enumerate(self.lines):
