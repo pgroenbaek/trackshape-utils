@@ -228,7 +228,6 @@ class Shapefile(File):
 
             if not self.is_compressed():
                 copied_shapefile._lines = copied_file._lines
-            
             return copied_shapefile
         
         return copied_file
@@ -981,11 +980,13 @@ class Trackcenter:
 
 def find_directory_files(directory: str, match_files: List[str], ignore_files: List[str]) -> List[str]:
     files = []
+
     for file_name in os.listdir(directory):
         if any([fnmatch.fnmatch(file_name, x) for x in match_files]):
             if any([fnmatch.fnmatch(file_name, x) for x in ignore_files]):
                 continue
             files.append(file_name)
+
     return files
 
 

@@ -42,7 +42,7 @@ __all__ = [
     'autodetect_centerpoints', 'find_closest_centerpoint', 'signed_distance_from_centerpoint',
     'distance_along_curved_track', 'distance_along_straight_track', 'get_curve_point_from_angle',
     'get_new_position_from_angle', 'get_new_position_from_trackcenter',
-    'File', 'Shapefile', 'PrimState', 'Point', 'UVPoint', 'Normal', 'Vertex', 'Trackcenter'
+    'PrimState', 'Point', 'UVPoint', 'Normal', 'Vertex', 'IndexedTrilist', 'File', 'Shapefile', 'Trackcenter'
 ]
 
 __author__ = 'Peter Grønbæk Andersen <peter@grnbk.io>'
