@@ -18,9 +18,6 @@ shape geometry can be repositioned, for example relative to the track center or 
 for both curved and straight track shapes. This code cannot add/remove shape geometry, but you can
 hide things underneath the trackbed. It will also not edit how vertices are connected.
 
----
-
-This file is part of Track Shape Utils.
 
 Copyright (C) 2025 Peter Grønbæk Andersen <peter@grnbk.io>
 
