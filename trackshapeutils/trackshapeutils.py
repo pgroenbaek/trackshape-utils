@@ -207,15 +207,15 @@ class Shapefile(File):
     def copy(self, new_filename: str, new_directory: str = None) -> "Shapefile":
         copied_file = super().copy(new_filename, new_directory)
 
-        # if isinstance(copied_file, File):
-        #     copied_shapefile = Shapefile(
-        #         copied_file.filename,
-        #         copied_file.directory,
-        #         encoding=copied_file.encoding
-        #     )
-        #     if not self.is_compressed():
-        #         copied_shapefile._lines = copied_file._lines
-        #     return copied_shapefile
+        if isinstance(copied_file, File):
+            copied_shapefile = Shapefile(
+                copied_file.filename,
+                copied_file.directory,
+                encoding=copied_file.encoding
+            )
+            if not self.is_compressed():
+                copied_shapefile._lines = copied_file._lines
+            return copied_shapefile
         return copied_file
 
     def is_compressed(self) -> bool:
@@ -696,9 +696,11 @@ class Shapefile(File):
         point_idx = vertex._point_idx
         uv_point_idx = vertex._uv_point_idx
         normal_idx = vertex._normal_idx
+
         has_updated_point = self.set_point_value(point_idx, vertex.point)
         has_updated_uv_point = self.set_uv_point_value(uv_point_idx, vertex.uv_point)
         has_updated_normal = self.set_normal_value(normal_idx, vertex.normal)
+
         update_successful = all([has_updated_point, has_updated_uv_point, has_updated_normal])
         return update_successful
     
@@ -968,14 +970,14 @@ def find_directory_files(directory: str, match_files: List[str], ignore_files: L
 
 def load_file(filename: str, directory: str, encoding: str = None) -> File:
     if filename.endswith(".s"):
-        raise AttributeError("You are trying to load a shapefile. Please use the method 'load_shape(filename: str, directory: str) instead.'")
+        raise AttributeError("Please use the method 'load_shape(filename: str, directory: str) when loading a shapefile.'")
     
     return File(filename, directory, encoding=encoding)
 
 
 def load_shape(filename: str, directory: str, encoding: str = None) -> Shapefile:
     if not filename.endswith(".s"):
-        raise AttributeError("You are trying to load a file that is not a shapefile. Please use the method 'load_file(filename: str, directory: str) instead.'")
+        raise AttributeError("Please use the method 'load_file(filename: str, directory: str) when loading a file that is not a shapefile.'")
     
     return Shapefile(filename, directory, encoding=encoding)
 
