@@ -33,6 +33,14 @@ def test_find_directory_files():
     assert not any([line.endswith(".sd") for line in files])
     assert all([line.endswith(".s") for line in files])
 
+def test_load_file():
+    file = tsu.load_file("DK10f_A1tPnt5dLft.sd", "./tests/data")
+
+def test_load_shape():
+    filename = "DK10f_A1tPnt5dLft.s"
+    shape = tsu.load_shape(filename, "./tests/data")
+    assert shape.filename == filename
+
 def test_generate_empty_centerpoints():
     trackcenter = tsu.generate_empty_centerpoints()
     assert trackcenter.centerpoints.size == 0

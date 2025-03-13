@@ -27,9 +27,6 @@ def global_storage():
         "file_copied": tsu.load_file("DK10f_A1tPnt5dLft_copied.sd", "./tests/data")
     }
 
-def test_load_file():
-    file = tsu.load_file("DK10f_A1tPnt5dLft.sd", "./tests/data")
-
 def test_copy_file(global_storage):
     file = global_storage["file"]
     copied_file = file.copy(new_filename="DK10f_A1tPnt5dLft_copied.sd")
