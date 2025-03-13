@@ -1250,11 +1250,11 @@ def distance_along_straight_track(point_along_track: Point, trackcenter: Trackce
     return cumulative_distance[index]
 
 
-def get_curve_point_from_angle(radius: float, curve_angle: float) -> Point:
-    theta = np.radians(abs(angle_degrees))
+def get_curve_point_from_angle(curve_radius: float, curve_angle: float) -> Point:
+    theta = np.radians(abs(curve_angle))
 
-    z = radius * np.sin(theta)
-    x = radius * (1 - np.cos(theta))
+    z = curve_radius * np.sin(theta)
+    x = curve_radius * (1 - np.cos(theta))
     y = 0
 
     if curve_angle < 0:
