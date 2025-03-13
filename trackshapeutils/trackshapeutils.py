@@ -559,13 +559,9 @@ class Shapefile(File):
     
     def get_vertices_in_subobject(self, lod_dlevel: int, subobject_idx: int) -> List[Vertex]:
         vertices = {}
-        vertex_idxs_in_subobject = []
         current_dlevel = -1
         current_subobject_idx = -1
         current_vertex_idx = 0
-        current_prim_state_idx = 0
-        processing_trilist = False
-        collecting_vertex_idxs = False
 
         for line_idx, line in enumerate(self.lines):
             if "dlevel_selection (" in line.lower():
@@ -582,216 +578,78 @@ class Shapefile(File):
                         parts = ' '.join(self.lines[line_idx : line_idx + 2]).split(' ')
                         vertices[current_vertex_idx] = Vertex(
                             vertex_idx=current_vertex_idx,
-                            point=None, # Fill after indexed_trilist has been processed.
-                            uv_point=None, # Fill after indexed_trilist has been processed.
-                            normal=None, # Fill after indexed_trilist has been processed.
+                            point=None, # Fill after vertices list has been processed.
+                            uv_point=None, # Fill after vertices list has been processed.
+                            normal=None, # Fill after vertices list has been processed.
                             point_idx=int(parts[3]),
                             uv_point_idx=int(parts[10]),
                             normal_idx=int(parts[4]),
                             lod_dlevel=current_dlevel,
-                            prim_state=None, # Fill after indexed_trilist has been processed.
-                            prim_state_idx=-1, # Fill during processing of indexed_trilist.
+                            prim_state=None, # Fill after vertices list has been processed.
+                            prim_state_idx=-1, # Fill after vertices list has been processed.
                             subobject_idx=current_subobject_idx
                         )
                         current_vertex_idx += 1
-
-                    if 'prim_state_idx' in line.lower():
-                        parts = line.split(' ')
-                        current_prim_state_idx = int(parts[2])
-
-                    if 'indexed_trilist' in line.lower():
-                        processing_trilist = True
-
-                    if 'vertex_idxs' in line.lower() or collecting_vertex_idxs:
-                        parts = line.replace('vertex_idxs', '').replace('(', '').replace(')', '').split()
-                        if parts:
-                            if not collecting_vertex_idxs:
-                                parts = parts[1:]
-                            vertex_idxs = list(map(int, parts))
-                            for vertex_idx in vertex_idxs:
-                                vertices[vertex_idx]._prim_state_idx = current_prim_state_idx
-                            vertex_idxs_in_subobject.extend(vertex_idxs)
-                            vertex_idxs_in_subobject = list(set(vertex_idxs_in_subobject))
-                        collecting_vertex_idxs = not line.endswith(')')
-
-                    if processing_trilist and ')' in line.lower():
-                        processing_trilist = False
 
         points = self.get_points()
         uvpoints = self.get_uvpoints()
         normals = self.get_normals()
         prim_states = self.get_prim_states()
+        indexed_trilists = self.get_indexed_trilists_in_subobject(lod_dlevel, subobject_idx)
 
         vertices_in_subobject = []
-        for vertex_idx in vertex_idxs_in_subobject:
-            vertex = vertices[vertex_idx]
+        for vertex_idx, vertex in vertices.items():
             vertex.point = points[vertex._point_idx]
             vertex.uv_point = uvpoints[vertex._uv_point_idx]
             vertex.normal = normals[vertex._normal_idx]
-            vertex._prim_state = prim_states[vertex._prim_state_idx]
+            for prim_state_idx in indexed_trilists:
+                for indexed_trilist in indexed_trilists[prim_state_idx]:
+                    if vertex_idx in indexed_trilist.vertex_idxs:
+                        vertex._prim_state_idx = prim_state_idx
+                        vertex._prim_state = prim_states[prim_state_idx]
             vertices_in_subobject.append(vertex)
 
         return vertices_in_subobject
 
     def get_vertices_by_prim_state(self, lod_dlevel: int, prim_state: PrimState) -> List[Vertex]:
-        vertices = {}
-        vertex_idxs_by_prim_state = []
-        current_dlevel = -1
-        current_subobject_idx = -1
-        current_vertex_idx = 0
-        current_prim_state_idx = 0
-        processing_trilist = False
-        collecting_vertex_idxs = False
-
-        for line_idx, line in enumerate(self.lines):
-            if "dlevel_selection (" in line.lower():
-                parts = line.split(' ')
-                current_dlevel = int(parts[2])
-
-            if current_dlevel == lod_dlevel:
-                if "sub_object (" in line.lower():
-                    current_subobject_idx += 1
-                    current_vertex_idx = 0
-            
-                if "vertex (" in line.lower():
-                    parts = ' '.join(self.lines[line_idx : line_idx + 2]).split(' ')
-                    vertices[current_vertex_idx] = Vertex(
-                        vertex_idx=current_vertex_idx,
-                        point=None, # Fill after indexed_trilist has been processed.
-                        uv_point=None, # Fill after indexed_trilist has been processed.
-                        normal=None, # Fill after indexed_trilist has been processed.
-                        point_idx=int(parts[3]),
-                        uv_point_idx=int(parts[10]),
-                        normal_idx=int(parts[4]),
-                        lod_dlevel=current_dlevel,
-                        prim_state=None, # Fill after indexed_trilist has been processed.
-                        prim_state_idx=-1, # Fill during processing of indexed_trilist.
-                        subobject_idx=current_subobject_idx
-                    )
-                    current_vertex_idx += 1
-
-                if 'prim_state_idx' in line.lower():
-                    parts = line.split(' ')
-                    current_prim_state_idx = int(parts[2])
-
-                if current_prim_state_idx == prim_state.idx:
-                    if 'indexed_trilist' in line.lower():
-                        processing_trilist = True
-
-                    if 'vertex_idxs' in line.lower() or collecting_vertex_idxs:
-                        parts = line.replace('vertex_idxs', '').replace('(', '').replace(')', '').split()
-                        if parts:
-                            if not collecting_vertex_idxs:
-                                parts = parts[1:]
-                            vertex_idxs = list(map(int, parts))
-                            for vertex_idx in vertex_idxs:
-                                vertices[vertex_idx]._prim_state_idx = current_prim_state_idx
-                            vertex_idxs_by_prim_state.extend(vertex_idxs)
-                            vertex_idxs_by_prim_state = list(set(vertex_idxs_by_prim_state))
-                        collecting_vertex_idxs = not line.endswith(')')
-
-                    if processing_trilist and ')' in line.lower():
-                        processing_trilist = False
-
         points = self.get_points()
         uvpoints = self.get_uvpoints()
         normals = self.get_normals()
         prim_states = self.get_prim_states()
+        subobject_idxs = self.get_subobject_idxs_in_lod_dlevel(lod_dlevel)
 
         vertices_by_prim_state = []
-        for vertex_idx in vertex_idxs_by_prim_state:
-            vertex = vertices[vertex_idx]
-            vertex.point = points[vertex._point_idx]
-            vertex.uv_point = uvpoints[vertex._uv_point_idx]
-            vertex.normal = normals[vertex._normal_idx]
-            vertex._prim_state = prim_states[vertex._prim_state_idx]
-            vertices_by_prim_state.append(vertex)
+        for subobject_idx in subobject_idxs:
+            vertices = self.get_vertices_in_subobject(lod_dlevel, subobject_idx)
+            for vertex in vertices:
+                if vertex._prim_state_idx == prim_state.idx:
+                    vertices_by_prim_state.append(vertex)
 
         return vertices_by_prim_state
 
     def get_connected_vertices(self, vertex: Vertex) -> List[Vertex]:
-        vertices = {}
-        connected_vertex_idxs = []
         find_vertex_idx = vertex._vertex_idx
         find_vertex_dlevel = vertex._lod_dlevel
         find_vertex_subobject_idx = vertex._subobject_idx
         find_vertex_prim_state_idx = vertex._prim_state_idx
-        current_dlevel = -1
-        current_subobject_idx = -1
-        current_vertex_idx = 0
-        current_prim_state_idx = 0
-        processing_trilist = False
-        reading_triangles = False
-        triangles = []
-
-        for line_idx, line in enumerate(self.lines):
-            if "dlevel_selection (" in line.lower():
-                parts = line.split(' ')
-                current_dlevel = int(parts[2])
-
-            if current_dlevel == find_vertex_dlevel:
-                if "sub_object (" in line.lower():
-                    current_subobject_idx += 1
-                    current_vertex_idx = 0
-            
-                if current_subobject_idx == find_vertex_subobject_idx:
-                    if "vertex (" in line.lower():
-                        parts = ' '.join(self.lines[line_idx : line_idx + 2]).split(' ')
-                        vertices[current_vertex_idx] = Vertex(
-                            vertex_idx=current_vertex_idx,
-                            point=None, # Fill after indexed_trilist has been processed.
-                            uv_point=None, # Fill after indexed_trilist has been processed.
-                            normal=None, # Fill after indexed_trilist has been processed.
-                            point_idx=int(parts[3]),
-                            uv_point_idx=int(parts[10]),
-                            normal_idx=int(parts[4]),
-                            lod_dlevel=current_dlevel,
-                            prim_state=None, # Fill after indexed_trilist has been processed.
-                            prim_state_idx=-1, # Fill during processing of indexed_trilist.
-                            subobject_idx=current_subobject_idx
-                        )
-                        current_vertex_idx += 1
-
-                    if 'prim_state_idx' in line.lower():
-                        parts = line.split(' ')
-                        current_prim_state_idx = int(parts[2])
-
-                    if current_prim_state_idx == find_vertex_prim_state_idx:
-                        if 'indexed_trilist' in line.lower():
-                            processing_trilist = True
-
-                        if 'vertex_idxs' in line.lower() or reading_triangles:
-                            parts = line.replace('vertex_idxs', '').replace('(', '').replace(')', '').split()
-                            if parts:
-                                if not reading_triangles:
-                                    parts = parts[1:]
-                                triangles.extend(map(int, parts))
-                            reading_triangles = not line.endswith(')')
-                            if not reading_triangles:
-                                for tri in [tuple(triangles[i : i + 3]) for i in range(0, len(triangles), 3)]:
-                                    if find_vertex_idx in tri:
-                                        for vertex_idx in tri:
-                                            if vertex_idx != find_vertex_idx:
-                                                vertices[vertex_idx]._prim_state_idx = current_prim_state_idx
-                                                connected_vertex_idxs.append(vertex_idx)
-                                                connected_vertex_idxs = list(set(connected_vertex_idxs))
-
-                        if processing_trilist and ')' in line.lower():
-                            processing_trilist = False
-
-        points = self.get_points()
-        uvpoints = self.get_uvpoints()
-        normals = self.get_normals()
-        prim_states = self.get_prim_states()
 
         connected_vertices = []
-        for vertex_idx in connected_vertex_idxs:
-            vertex = vertices[vertex_idx]
-            vertex.point = points[vertex._point_idx]
-            vertex.uv_point = uvpoints[vertex._uv_point_idx]
-            vertex.normal = normals[vertex._normal_idx]
-            vertex._prim_state = prim_states[vertex._prim_state_idx]
-            connected_vertices.append(vertex)
+        connected_vertex_idxs = []
+        vertices = self.get_vertices_in_subobject(find_vertex_dlevel, find_vertex_subobject_idx)
+        indexed_trilists = self.get_indexed_trilists_in_subobject(find_vertex_dlevel, find_vertex_subobject_idx)
+        if find_vertex_prim_state_idx in indexed_trilists:
+            indexed_trilists_for_prim_state = indexed_trilists[find_vertex_prim_state_idx]
+            for indexed_trilist in indexed_trilists_for_prim_state:
+                triangles = indexed_trilist.vertex_idxs
+                for tri in [tuple(triangles[i : i + 3]) for i in range(0, len(triangles), 3)]:
+                    if find_vertex_idx in tri:
+                        for vertex_idx in tri:
+                            if vertex_idx != find_vertex_idx:
+                                connected_vertex_idxs.append(vertex_idx)
+                                connected_vertex_idxs = list(set(connected_vertex_idxs))
+
+            for vertex_idx in connected_vertex_idxs:
+                connected_vertices.append(vertices)
 
         return connected_vertices
     

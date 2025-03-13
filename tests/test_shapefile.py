@@ -194,7 +194,7 @@ def test_get_vertices_by_prim_state(global_storage):
     lod_dlevel = 200
     prim_state = shape.get_prim_state_by_idx(0)
     vertices = shape.get_vertices_by_prim_state(lod_dlevel, prim_state)
-    assert len(vertices) == 3235
+    assert len(vertices) == 3227
 
 def test_get_connected_vertices(global_storage):
     shape = global_storage["shape"]
