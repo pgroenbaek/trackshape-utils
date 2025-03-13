@@ -22,10 +22,12 @@ import trackshapeutils as tsu
 
 @pytest.fixture(scope="module")
 def global_storage():
-    return {
+    data = {
         "file": tsu.load_file("DK10f_A1tPnt5dLft.sd", "./tests/data"),
         "file_copied": tsu.load_file("DK10f_A1tPnt5dLft_copied.sd", "./tests/data")
     }
+    data["file_changed"] = data["file"].copy(new_filename="DK10f_A1tPnt5dLft_changed.sd")
+    return data
 
 def test_copy_file(global_storage):
     file = global_storage["file"]
@@ -33,12 +35,12 @@ def test_copy_file(global_storage):
     assert copied_file.filename == "DK10f_A1tPnt5dLft_copied.sd"
 
 def test_replace(global_storage):
-    file = global_storage["file_copied"]
+    file = global_storage["file_changed"]
     file.replace("DK10f_A1tPnt5dLft.s", "DK10f_A1tPnt5dLft_copied.s")
     assert any(["DK10f_A1tPnt5dLft_copied.s" in line for line in file.lines])
 
 def test_replace_ignorecase(global_storage):
-    file = global_storage["file_copied"]
+    file = global_storage["file_changed"]
     file.replace_ignorecase("DK10F_A1TPNT5dLFT.s", "DK10f_A1tPnt5dLft_copied.s")
     assert any(["DK10f_A1tPnt5dLft_copied.s" in line for line in file.lines])
 

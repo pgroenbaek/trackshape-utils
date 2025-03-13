@@ -122,6 +122,16 @@ class Vertex:
             lod_dlevel={self._normal_idx}, prim_state={self._prim_state}, subobject_idx={self._subobject_idx})"""
 
 
+class IndexedTrilist:
+    def __init__(self, lod_dlevel: int, subobject_idx: int, prim_state_idx: int):
+        self._lod_dlevel = lod_dlevel
+        self._subobject_idx = subobject_idx
+        self._prim_state_idx = prim_state_idx
+    
+    def __repr__(self):
+        return f"""IndexedTrilist(lod_dlevel={self._lod_dlevel}, subobject_idx={self._subobject_idx}, prim_state_idx={self._prim_state_idx})"""
+
+
 class File:
     def __init__(self, filename: str, directory: str, encoding: str = None, shouldRead: bool = True):
         self.filename = filename
@@ -145,12 +155,14 @@ class File:
                 pass
 
     def _read(self) -> List[str]:
-        with open(self.filepath, 'r', encoding=_detect_encoding(self.filepath)) as f:
+        if self.encoding is None:
+            self.encoding = _detect_encoding(self.filepath)
+        with open(self.filepath, 'r', encoding=self.encoding) as f:
             return f.read().split('\n')
     
     def _save(self, encoding: str = None) -> None:
         if encoding is None:
-            encoding = self.encoding
+            self.encoding = encoding
         with open(self.filepath, 'w', encoding=encoding) as f:
             text = '\n'.join(self.lines)
             f.write(text)
@@ -213,21 +225,25 @@ class Shapefile(File):
                 copied_file.directory,
                 encoding=copied_file.encoding
             )
+
             if not self.is_compressed():
                 copied_shapefile._lines = copied_file._lines
+            
             return copied_shapefile
+        
         return copied_file
 
-    def is_compressed(self) -> bool:
+    def is_compressed(self) -> Optional[bool]:
         with open(self.filepath, 'r', encoding=_detect_encoding(self.filepath)) as f:
             try:
                 header = f.read(32)
                 if header.startswith("SIMISA@@@@@@@@@@JINX0s1t______"):
                     return False
                 elif header == "":
-                    raise AttributeError("Could not read shapefile header.")
+                    return None
             except UnicodeDecodeError:
                 pass
+            
             return True
 
     def compress(self, ffeditc_path) -> None:
@@ -238,6 +254,7 @@ class Shapefile(File):
     def decompress(self, ffeditc_path) -> None:
         if self.is_compressed():
             subprocess.call([ffeditc_path, self.filepath, "/u", "/o:" + self.filepath])
+            self.encoding = _detect_encoding(self.filepath)
             self._lines = super()._read()
 
     @property
@@ -328,7 +345,7 @@ class Shapefile(File):
                     parts[4] = str(point.z)
                     line = " ".join(parts)
                     self.lines[line_idx] = line
-                    #self._save()
+                    self._save()
                     return True
                 current_point_idx += 1
 
@@ -369,7 +386,7 @@ class Shapefile(File):
                     parts[3] = str(uv_point.v)
                     line = " ".join(parts)
                     self.lines[line_idx] = line
-                    #self._save()
+                    self._save()
                     return True
                 current_uv_point_idx += 1
 
@@ -429,7 +446,7 @@ class Shapefile(File):
                     parts[4] = str(normal.vec_z)
                     line = " ".join(parts)
                     self.lines[line_idx] = line
-                    #self._save()
+                    self._save()
                     return True
                 current_normal_idx += 1
 
@@ -453,6 +470,9 @@ class Shapefile(File):
                 current_subobject_idx += 1
 
         return subobject_idxs
+    
+    def get_indexed_trilists_in_subobject(self, lod_dlevel: int, subobject_idx: int) -> Dict[int, IndexedTrilist]:
+        raise NotImplementedError()
     
     def get_vertices_in_subobject(self, lod_dlevel: int, subobject_idx: int) -> List[Vertex]:
         vertices = {}
@@ -708,7 +728,7 @@ class Shapefile(File):
         if vertex1._lod_dlevel != vertex2._lod_dlevel:
             raise AttributeError("Cannot insert a new vertex between vertices in two different LOD distance levels.")
         if vertex1._subobject_idx != vertex2._subobject_idx:
-            raise AttributeError("Cannot insert a new vertex between vertices in two different sub objects.")
+            raise AttributeError("Cannot insert a new vertex between vertices in two different subobjects.")
         if vertex1._prim_state_idx != vertex2._prim_state_idx:
             raise AttributeError("Cannot insert a new vertex between vertices in two different prim states.")
 
@@ -955,7 +975,8 @@ class Trackcenter:
         return f"Trackcenter(centerpoints={self.centerpoints})"
     
     def __add__(self, trackcenter2):
-        return Trackcenter(np.vstack((self.centerpoints, trackcenter2.centerpoints)))
+        combined_centerpoints = np.vstack((self.centerpoints, trackcenter2.centerpoints))
+        return Trackcenter(combined_centerpoints)
 
 
 def find_directory_files(directory: str, match_files: List[str], ignore_files: List[str]) -> List[str]:
@@ -984,6 +1005,7 @@ def load_shape(filename: str, directory: str, encoding: str = None) -> Shapefile
 
 def generate_empty_centerpoints() -> Trackcenter:
     centerpoints = np.empty((0, 3))
+
     return Trackcenter(centerpoints)
 
 
@@ -993,6 +1015,7 @@ def generate_straight_centerpoints(length: float, num_points: int = 1000, start_
     y = np.full_like(z, start_point.y)
 
     centerpoints = np.vstack((x, y, z)).T
+
     return Trackcenter(centerpoints)
 
 
@@ -1007,6 +1030,7 @@ def generate_curve_centerpoints(curve_radius: float, curve_angle: float, num_poi
         x = start_point.x - (curve_radius * (1 - np.cos(theta)))
 
     centerpoints = np.vstack((x, y, z)).T
+    
     return Trackcenter(centerpoints)
 
 
@@ -1028,8 +1052,8 @@ def find_closest_centerpoint(point_along_track: Point, trackcenter: Trackcenter,
         raise ValueError("Invalid plane. Choose either 'xy' or 'xz'.")
     
     distances = np.linalg.norm(centerpoints_2d - point_2d, axis=1)
-    
     closest_index = np.argmin(distances)
+
     return Point.from_numpy(trackcenter.centerpoints[closest_index])
 
 
@@ -1062,8 +1086,8 @@ def signed_distance_from_centerpoint(point_along_track: Point, trackcenter_point
 
     vector_to_point = point_proj - center_proj
     cross = np.cross(reference_vector, vector_to_point)
-
     signed_distance = np.linalg.norm(vector_to_point[:2]) * np.sign(cross[-1])
+
     return signed_distance
 
 
@@ -1089,6 +1113,7 @@ def distance_along_curved_track(point_along_track: Point, trackcenter: Trackcent
 
     meters_to_degrees = 1 / 111320
     cumulative_distance_degrees = cumulative_distance * meters_to_degrees
+
     return cumulative_distance_degrees[index]
 
 
@@ -1137,6 +1162,7 @@ def get_new_position_from_angle(curve_radius: float, curve_angle: float, origina
     new_z = start_point[2] + calculated_curve_point[2]
     
     new_position = np.array([new_x, original_point[1], new_z]) + offset
+
     return Point.from_numpy(new_position)
 
 
@@ -1162,6 +1188,7 @@ def get_new_position_from_trackcenter(signed_distance: float, original_point: Po
     lateral_vector = np.array([-tangent_vector[2], 0, tangent_vector[0]])
 
     new_position = closest_center + signed_distance * lateral_vector
+
     return Point.from_numpy(new_position)
 
 

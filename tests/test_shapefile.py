@@ -22,11 +22,13 @@ import trackshapeutils as tsu
 
 @pytest.fixture(scope="module")
 def global_storage():
-    return {
+    data = {
         "shape": tsu.load_shape("DK10f_A1tPnt5dLft.s", "./tests/data"),
         "shape_copied": tsu.load_shape("DK10f_A1tPnt5dLft_copied.s", "./tests/data"),
         "shape_compressed": tsu.load_shape("DK10f_A1tPnt5dLft_compressed.s", "./tests/data")
     }
+    data["shape_changed"] = data["shape"].copy(new_filename="DK10f_A1tPnt5dLft_changed.s")
+    return data
 
 def test_shape_is_compressed(global_storage):
     shape = global_storage["shape_compressed"]
@@ -50,7 +52,6 @@ def test_shape_repl_compressed(global_storage):
 def test_copy_shape(global_storage):
     shape = global_storage["shape"]
     copied_shape = shape.copy(new_filename="DK10f_A1tPnt5dLft_copied.s")
-    print(copied_shape)
     assert copied_shape.filename == "DK10f_A1tPnt5dLft_copied.s"
 
 def test_lines_access(global_storage):
@@ -105,14 +106,14 @@ def test_get_point_by_idx(global_storage):
     assert point.z == 75.1042
 
 def test_set_point_value(global_storage):
-    shape = global_storage["shape_copied"]
+    shape = global_storage["shape_changed"]
     point_idx_to_update = 4
     new_x_value = 0.5
     new_y_value = 0.5
     new_z_value = 0.5
     point_to_update = tsu.Point(new_x_value, new_y_value, new_z_value)
     shape.set_point_value(point_idx_to_update, point_to_update)
-    #shape._read()
+    shape._read()
     updated_point = shape.get_point_by_idx(point_idx_to_update)
     assert updated_point.x == new_x_value
     assert updated_point.y == new_y_value
@@ -130,13 +131,13 @@ def test_get_uvpoint_by_idx(global_storage):
     assert uvpoint.v == -14.0208
 
 def test_set_uvpoint_value(global_storage):
-    shape = global_storage["shape_copied"]
+    shape = global_storage["shape_changed"]
     uv_point_idx_to_update = 4
     new_u_value = 0.5
     new_v_value = 0.5
     uv_point_to_update = tsu.UVPoint(new_u_value, new_v_value)
     shape.set_uvpoint_value(uv_point_idx_to_update, uv_point_to_update)
-    #shape._read()
+    shape._read()
     updated_uv_point = shape.get_uvpoint_by_idx(uv_point_idx_to_update)
     assert updated_uv_point.u == new_u_value
     assert updated_uv_point.v == new_v_value
@@ -154,14 +155,14 @@ def test_get_normal_by_idx(global_storage):
     assert normal.vec_z == 0
 
 def test_set_normal_value(global_storage):
-    shape = global_storage["shape_copied"]
+    shape = global_storage["shape_changed"]
     normal_idx_to_update = 4
     new_vec_x_value = 0.5
     new_vec_y_value = 0.5
     new_vec_z_value = 0.5
     normal_to_update = tsu.Normal(new_vec_x_value, new_vec_y_value, new_vec_z_value)
     shape.set_normal_value(normal_idx_to_update, normal_to_update)
-    #shape._read()
+    shape._read()
     updated_normal = shape.get_normal_by_idx(normal_idx_to_update)
     assert updated_normal.vec_x == new_vec_x_value
     assert updated_normal.vec_y == new_vec_y_value
