@@ -119,6 +119,22 @@ def test_set_point_value(global_storage):
     assert updated_point.y == new_y_value
     assert updated_point.z == new_z_value
 
+def test_set_point_count(global_storage):
+    shape = global_storage["shape_changed"]
+    updated_count = shape.set_point_count(0)
+    assert updated_count
+
+def test_add_point(global_storage):
+    shape = global_storage["shape_changed"]
+    new_point = tsu.Point(0, 0, 0)
+    new_point_index = shape.add_point(new_point)
+    shape._read()
+    assert new_point_index is not None
+    updated_point = shape.get_point_by_idx(new_point_index)
+    assert updated_point.x == new_point.x
+    assert updated_point.y == new_point.y
+    assert updated_point.z == new_point.z
+
 def test_get_uvpoints(global_storage):
     shape = global_storage["shape"]
     uvpoints = shape.get_uvpoints()
@@ -141,6 +157,21 @@ def test_set_uvpoint_value(global_storage):
     updated_uv_point = shape.get_uvpoint_by_idx(uv_point_idx_to_update)
     assert updated_uv_point.u == new_u_value
     assert updated_uv_point.v == new_v_value
+
+def test_set_uvpoint_count(global_storage):
+    shape = global_storage["shape_changed"]
+    updated_count = shape.set_uvpoint_count(0)
+    assert updated_count
+
+def test_add_uvpoint(global_storage):
+    shape = global_storage["shape_changed"]
+    new_uvpoint = tsu.UVPoint(0, 0)
+    new_uvpoint_index = shape.add_uvpoint(new_uvpoint)
+    shape._read()
+    assert new_uvpoint_index is not None
+    added_uvpoint = shape.get_uvpoint_by_idx(new_uvpoint_index)
+    assert added_uvpoint.u == new_uvpoint.u
+    assert added_uvpoint.v == new_uvpoint.v
 
 def test_get_normals(global_storage):
     shape = global_storage["shape"]
@@ -167,6 +198,22 @@ def test_set_normal_value(global_storage):
     assert updated_normal.vec_x == new_vec_x_value
     assert updated_normal.vec_y == new_vec_y_value
     assert updated_normal.vec_z == new_vec_z_value
+
+def test_set_normal_count(global_storage):
+    shape = global_storage["shape_changed"]
+    updated_count = shape.set_normal_count(0)
+    assert updated_count
+
+def test_add_normal(global_storage):
+    shape = global_storage["shape_changed"]
+    new_normal = tsu.Normal(0, 0, 0)
+    new_normal_index = shape.add_normal(new_normal)
+    shape._read()
+    assert new_normal_index is not None
+    added_normal = shape.get_normal_by_idx(new_normal_index)
+    assert added_normal.vec_x == new_normal.vec_x
+    assert added_normal.vec_y == new_normal.vec_y
+    assert added_normal.vec_z == new_normal.vec_z
 
 def test_get_subobject_idxs_in_lod_dlevel(global_storage):
     shape = global_storage["shape"]
@@ -203,3 +250,10 @@ def test_get_connected_vertices(global_storage):
     vertices = shape.get_vertices_by_prim_state(lod_dlevel, prim_state)
     connected_vertices = shape.get_connected_vertices(vertices[100])
     assert len(connected_vertices) == 2
+
+def test_set_vertices_count(global_storage):
+    shape = global_storage["shape_changed"]
+    lod_dlevel = 200
+    subobject_idx = 0
+    updated_count = shape.set_vertices_count(lod_dlevel, subobject_idx, 133337)
+    assert updated_count
