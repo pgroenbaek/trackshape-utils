@@ -39,9 +39,10 @@ __version__ = '0.2.0'
 __all__ = [
     'find_directory_files', 'load_file', 'load_shape',
     'generate_empty_centerpoints', 'generate_straight_centerpoints', 'generate_curve_centerpoints',
-    'autodetect_centerpoints', 'find_closest_centerpoint', 'signed_distance_from_centerpoint',
-    'distance_along_curved_track', 'distance_along_straight_track', 'get_curve_point_from_angle',
-    'get_new_position_from_angle', 'get_new_position_from_trackcenter',
+    'generate_centerpoints_from_tsection', 'find_closest_centerpoint', 'signed_distance_from_centerpoint',
+    'distance_along_curved_track', 'distance_along_straight_track', 'get_curve_centerpoint_from_angle',
+    'get_straight_centerpoint_from_length', 'get_new_position_from_angle',
+    'get_new_position_from_length', 'get_new_position_from_trackcenter',
     'PrimState', 'Point', 'UVPoint', 'Normal', 'Vertex', 'IndexedTrilist', 'File', 'Shapefile', 'Trackcenter'
 ]
 
@@ -51,7 +52,8 @@ __author__ = 'Peter Grønbæk Andersen <peter@grnbk.io>'
 from .trackshapeutils import find_directory_files
 from .trackshapeutils import load_file, load_shape
 from .trackshapeutils import generate_empty_centerpoints, generate_straight_centerpoints, generate_curve_centerpoints
-from .trackshapeutils import autodetect_centerpoints, find_closest_centerpoint, signed_distance_from_centerpoint
-from .trackshapeutils import distance_along_curved_track, distance_along_straight_track, get_curve_point_from_angle
-from .trackshapeutils import get_new_position_from_angle, get_new_position_from_trackcenter
+from .trackshapeutils import generate_centerpoints_from_tsection, find_closest_centerpoint, signed_distance_from_centerpoint
+from .trackshapeutils import distance_along_curved_track, distance_along_straight_track, get_curve_centerpoint_from_angle
+from .trackshapeutils import get_straight_centerpoint_from_length, get_new_position_from_angle
+from .trackshapeutils import get_new_position_from_length, get_new_position_from_trackcenter
 from .trackshapeutils import PrimState, Point, UVPoint, Normal, Vertex, IndexedTrilist, File, Shapefile, Trackcenter

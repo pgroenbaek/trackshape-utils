@@ -229,6 +229,19 @@ def test_get_indexed_trilists_in_subobject(global_storage):
     assert len(indexed_trilists) == 21
     assert len(indexed_trilists[0]) == 2
 
+def test_get_indexed_trilists_in_subobject(global_storage):
+    shape = global_storage["shape_changed"]
+    lod_dlevel = 200
+    subobject_idx = 0
+    indexed_trilists = shape.get_indexed_trilists_in_subobject(lod_dlevel, subobject_idx)
+    trilist_to_update = indexed_trilists[0][0]
+    trilist_to_update.vertex_idxs = [1, 2, 3]
+    trilist_to_update.normal_idxs = [1]
+    trilist_to_update.flags = ['00000000']
+    updated_trilist = shape.update_indexed_trilist(trilist_to_update)
+    assert updated_trilist
+    # TODO More assertions
+
 def test_get_vertices_in_subobject(global_storage):
     shape = global_storage["shape"]
     lod_dlevel = 200
@@ -248,8 +261,20 @@ def test_get_connected_vertices(global_storage):
     lod_dlevel = 200
     prim_state = shape.get_prim_state_by_idx(0)
     vertices = shape.get_vertices_by_prim_state(lod_dlevel, prim_state)
-    connected_vertices = shape.get_connected_vertices(vertices[100])
+    connected_vertices = shape.get_connected_vertices(prim_state, vertices[100])
     assert len(connected_vertices) == 2
+
+def test_add_vertex_to_subobject(global_storage):
+    shape = global_storage["shape_changed"]
+    lod_dlevel = 200
+    subobject_idx = 0
+    vertex_point = tsu.Point(0, 0, 0)
+    vertex_uv_point = tsu.UVPoint(0, 0)
+    vertex_normal = tsu.Normal(0, 0, 0)
+    added_vertex = shape.add_vertex_to_subobject(lod_dlevel, subobject_idx, vertex_point, vertex_uv_point, vertex_normal)
+    assert added_vertex is not None
+    assert added_vertex._vertex_idx != -1
+    # TODO More assertions
 
 def test_set_vertices_count(global_storage):
     shape = global_storage["shape_changed"]
