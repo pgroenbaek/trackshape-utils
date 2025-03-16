@@ -1087,7 +1087,7 @@ class Shapefile(File):
         
         return Normal.from_numpy(vertex_normal_sum)
     
-    def insert_vertex_between(self, vertex1: Vertex, vertex2: Vertex) -> Vertex:
+    def insert_vertex_between(self, vertex1: Vertex, vertex2: Vertex) -> Optional[Vertex]:
         if vertex1._lod_dlevel != vertex2._lod_dlevel:
             raise AttributeError("Cannot insert a new vertex between vertices in two different LOD distance levels.")
         if vertex1._subobject_idx != vertex2._subobject_idx:
@@ -1102,49 +1102,50 @@ class Shapefile(File):
 
         new_vertex = self.add_vertex_to_subobject(vertex1._lod_dlevel, vertex1._subobject_idx, new_point, new_uv_point, new_normal)
 
-        indexed_trilists = self.get_indexed_trilists_in_subobject(lod_dlevel, subobject_idx)
-        for prim_state_idx in indexed_trilists:
-            for indexed_trilist in indexed_trilists[prim_state_idx]:
-                changed_indexed_trilist = copy.deepcopy(indexed_trilist)
-                changed_indexed_trilist.vertex_idxs = []
-                changed_indexed_trilist.normal_idxs = []
-                changed_indexed_trilist.flags = []
-                
-                triangles = [tuple(indexed_trilist.vertex_idxs[i : i + 3]) for i in range(0, len(indexed_trilist.vertex_idxs), 3)]
-                for tri_idx, tri in enumerate(triangles):
-                    if vertex1._vertex_idx not in tri and vertex2._vertex_idx not in tri:
-                        changed_indexed_trilist.vertex_idxs.extend(tri)
-                        changed_indexed_trilist.normal_idxs.append(indexed_trilist.normal_idxs[tri_idx])
-                        changed_indexed_trilist.flags.append(indexed_trilist.flags[tri_idx])
-                
-                for tri_idx, tri in enumerate(triangles):
-                    if vertex1._vertex_idx in tri and vertex2._vertex_idx in tri:
-                        vertex3_idx = [v for v in tri if v not in (vertex1._vertex_idx, vertex2._vertex_idx)][0]
-                        new_triangle1 = [vertex1._vertex_idx, new_vertex._vertex_idx, vertex3_idx]
-                        new_triangle2 = [new_vertex._vertex_idx, vertex2._vertex_idx, vertex3_idx]
+        if new_vertex is not None:
+            indexed_trilists = self.get_indexed_trilists_in_subobject(lod_dlevel, subobject_idx)
+            for prim_state_idx in indexed_trilists:
+                for indexed_trilist in indexed_trilists[prim_state_idx]:
+                    changed_indexed_trilist = copy.deepcopy(indexed_trilist)
+                    changed_indexed_trilist.vertex_idxs = []
+                    changed_indexed_trilist.normal_idxs = []
+                    changed_indexed_trilist.flags = []
+                    
+                    triangles = [tuple(indexed_trilist.vertex_idxs[i : i + 3]) for i in range(0, len(indexed_trilist.vertex_idxs), 3)]
+                    for tri_idx, tri in enumerate(triangles):
+                        if vertex1._vertex_idx not in tri and vertex2._vertex_idx not in tri:
+                            changed_indexed_trilist.vertex_idxs.extend(tri)
+                            changed_indexed_trilist.normal_idxs.append(indexed_trilist.normal_idxs[tri_idx])
+                            changed_indexed_trilist.flags.append(indexed_trilist.flags[tri_idx])
+                    
+                    for tri_idx, tri in enumerate(triangles):
+                        if vertex1._vertex_idx in tri and vertex2._vertex_idx in tri:
+                            vertex3_idx = [v for v in tri if v not in (vertex1._vertex_idx, vertex2._vertex_idx)][0]
+                            new_triangle1 = [vertex1._vertex_idx, new_vertex._vertex_idx, vertex3_idx]
+                            new_triangle2 = [new_vertex._vertex_idx, vertex2._vertex_idx, vertex3_idx]
 
-                        vertex3 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, vertex3_idx)
+                            vertex3 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, vertex3_idx)
 
-                        new_normal1 = self.calculate_surface_normal(vertex1.point, new_vertex.point, vertex3.point)
-                        new_normal2 = self.calculate_surface_normal(new_vertex.point, vertex2.point, vertex3.point)
+                            new_normal1 = self.calculate_surface_normal(vertex1.point, new_vertex.point, vertex3.point)
+                            new_normal2 = self.calculate_surface_normal(new_vertex.point, vertex2.point, vertex3.point)
 
-                        new_normal_idx1 = self.add_normal(new_normal1)
-                        new_normal_idx2 = self.add_normal(new_normal2)
+                            new_normal_idx1 = self.add_normal(new_normal1)
+                            new_normal_idx2 = self.add_normal(new_normal2)
 
-                        changed_indexed_trilist.vertex_idxs.extend(new_triangle1)
-                        changed_indexed_trilist.vertex_idxs.extend(new_triangle2)
-                        changed_indexed_trilist.normal_idxs.append(new_normal_idx1)
-                        changed_indexed_trilist.normal_idxs.append(new_normal_idx2)
-                        changed_indexed_trilist.flags.append("00000000")
-                        changed_indexed_trilist.flags.append("00000000")
+                            changed_indexed_trilist.vertex_idxs.extend(new_triangle1)
+                            changed_indexed_trilist.vertex_idxs.extend(new_triangle2)
+                            changed_indexed_trilist.normal_idxs.append(new_normal_idx1)
+                            changed_indexed_trilist.normal_idxs.append(new_normal_idx2)
+                            changed_indexed_trilist.flags.append("00000000")
+                            changed_indexed_trilist.flags.append("00000000")
 
-                self.update_indexed_trilist(changed_indexed_trilist)
+                    # TODO Adjust subobject header / vertex sets as necessary
+                    self.update_indexed_trilist(changed_indexed_trilist)
 
-                connected_vertex_points = [vertex.point for vertex in self.get_connected_vertices(new_vertex)]
-                new_vertex_normal = self.calculate_vertex_normal(new_vertex.point, connected_vertex_points)
-                self.set_normal_value(new_vertex._normal_idx, new_vertex_normal)
+                    connected_vertex_points = [vertex.point for vertex in self.get_connected_vertices(new_vertex)]
+                    new_vertex_normal = self.calculate_vertex_normal(new_vertex.point, connected_vertex_points)
+                    self.set_normal_value(new_vertex._normal_idx, new_vertex_normal)
 
-        # TODO Adjust subobject header / vertex sets as necessary
         return new_vertex
     
     def remove_vertex(self, vertex: Vertex, reconnect_geometry: bool = True) -> bool:
