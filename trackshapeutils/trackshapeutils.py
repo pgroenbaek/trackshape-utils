@@ -136,7 +136,7 @@ class Vertex:
     def __repr__(self):
         return f"""Vertex(vertex_idx={self._vertex_idx}, point={self.point}, point_idx={self._point_idx}, uv_point={self.uv_point}, 
             uv_point_idx={self._uv_point_idx}, normal={self.normal}, normal_idx={self._normal_idx},
-            lod_dlevel={self._normal_idx}, subobject_idx={self._subobject_idx})"""
+            lod_dlevel={self._lod_dlevel}, subobject_idx={self._subobject_idx})"""
 
     def __eq__(self, other):
         if isinstance(other, Vertex):
@@ -705,7 +705,7 @@ class Shapefile(File):
                             flags_in_trilist.extend(flags)
                         collecting_flags = not line.endswith(')')
 
-                    if processing_trilist and ')' in line.lower():
+                    if processing_trilist and '\t)' in line.lower():
                         processing_trilist = False
 
                         indexed_trilist = IndexedTrilist(
@@ -773,7 +773,7 @@ class Shapefile(File):
                                 lines_to_remove.append(line_idx)
                                 collecting_flags = not line.endswith(')')
 
-                        if processing_trilist and ')' in line.lower():
+                        if processing_trilist and '\t)' in line.lower():
                             processing_trilist = False
 
         if lines_to_remove:
@@ -841,7 +841,7 @@ class Shapefile(File):
 
         for line_idx, line in enumerate(self.lines):
             if "dlevel_selection (" in line.lower():
-                parts = line.split(' ')
+                parts = line.split()
                 current_dlevel = int(parts[2])
 
             if current_dlevel == lod_dlevel:
@@ -955,7 +955,7 @@ class Shapefile(File):
                                 connected_vertex_idxs = list(set(connected_vertex_idxs))
 
             for vertex_idx in connected_vertex_idxs:
-                connected_vertices.append(vertices)
+                connected_vertices.append(vertices[vertex_idx])
 
         return connected_vertices
     
@@ -1058,10 +1058,10 @@ class Shapefile(File):
         raise NotImplementedError()
     
     def calculate_point_midpoint(self, point1: Point, point2: Point) -> Point:
-        return Point.from_numpy(point1.to_numpy() - point2.to_numpy() / 2)
+        return Point.from_numpy((point1.to_numpy() - point2.to_numpy()) / 2)
     
     def calculate_uvpoint_midpoint(self, uv_point1: UVPoint, uv_point2: UVPoint) -> UVPoint:
-        return UVPoint.from_numpy(uv_point1.to_numpy() - uv_point2.to_numpy() / 2)
+        return UVPoint.from_numpy((uv_point1.to_numpy() - uv_point2.to_numpy()) / 2)
         
     def calculate_surface_normal(self, point1: Point, point2: Point, point3: Point) -> Normal:
         edge1 = point2.to_numpy() - point1.to_numpy()
@@ -1087,7 +1087,7 @@ class Shapefile(File):
         
         return Normal.from_numpy(vertex_normal_sum)
     
-    def insert_vertex_between(self, vertex1: Vertex, vertex2: Vertex) -> Optional[Vertex]:
+    def insert_vertex_between(self, prim_state: PrimState, vertex1: Vertex, vertex2: Vertex) -> Optional[Vertex]:
         if vertex1._lod_dlevel != vertex2._lod_dlevel:
             raise AttributeError("Cannot insert a new vertex between vertices in two different LOD distance levels.")
         if vertex1._subobject_idx != vertex2._subobject_idx:
@@ -1105,50 +1105,51 @@ class Shapefile(File):
         if new_vertex is not None:
             indexed_trilists = self.get_indexed_trilists_in_subobject(lod_dlevel, subobject_idx)
             for prim_state_idx in indexed_trilists:
-                for indexed_trilist in indexed_trilists[prim_state_idx]:
-                    changed_indexed_trilist = copy.deepcopy(indexed_trilist)
-                    changed_indexed_trilist.vertex_idxs = []
-                    changed_indexed_trilist.normal_idxs = []
-                    changed_indexed_trilist.flags = []
-                    
-                    triangles = [tuple(indexed_trilist.vertex_idxs[i : i + 3]) for i in range(0, len(indexed_trilist.vertex_idxs), 3)]
-                    for tri_idx, tri in enumerate(triangles):
-                        if vertex1._vertex_idx not in tri and vertex2._vertex_idx not in tri:
-                            changed_indexed_trilist.vertex_idxs.extend(tri)
-                            changed_indexed_trilist.normal_idxs.append(indexed_trilist.normal_idxs[tri_idx])
-                            changed_indexed_trilist.flags.append(indexed_trilist.flags[tri_idx])
-                    
-                    for tri_idx, tri in enumerate(triangles):
-                        if vertex1._vertex_idx in tri and vertex2._vertex_idx in tri:
-                            vertex3_idx = [v for v in tri if v not in (vertex1._vertex_idx, vertex2._vertex_idx)][0]
-                            new_triangle1 = [vertex1._vertex_idx, new_vertex._vertex_idx, vertex3_idx]
-                            new_triangle2 = [new_vertex._vertex_idx, vertex2._vertex_idx, vertex3_idx]
+                if prim_state_idx == prim_state.idx:
+                    for indexed_trilist in indexed_trilists[prim_state_idx]:
+                        changed_indexed_trilist = copy.deepcopy(indexed_trilist)
+                        changed_indexed_trilist.vertex_idxs = []
+                        changed_indexed_trilist.normal_idxs = []
+                        changed_indexed_trilist.flags = []
+                        
+                        triangles = [tuple(indexed_trilist.vertex_idxs[i : i + 3]) for i in range(0, len(indexed_trilist.vertex_idxs), 3)]
+                        for tri_idx, tri in enumerate(triangles):
+                            if vertex1._vertex_idx not in tri and vertex2._vertex_idx not in tri:
+                                changed_indexed_trilist.vertex_idxs.extend(tri)
+                                changed_indexed_trilist.normal_idxs.append(indexed_trilist.normal_idxs[tri_idx])
+                                changed_indexed_trilist.flags.append(indexed_trilist.flags[tri_idx])
+                        
+                        for tri_idx, tri in enumerate(triangles):
+                            if vertex1._vertex_idx in tri and vertex2._vertex_idx in tri:
+                                vertex3_idx = [v for v in tri if v not in (vertex1._vertex_idx, vertex2._vertex_idx)][0]
+                                new_triangle1 = [vertex1._vertex_idx, new_vertex._vertex_idx, vertex3_idx]
+                                new_triangle2 = [new_vertex._vertex_idx, vertex2._vertex_idx, vertex3_idx]
 
-                            vertex3 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, vertex3_idx)
+                                vertex3 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, vertex3_idx)
 
-                            new_normal1 = self.calculate_surface_normal(vertex1.point, new_vertex.point, vertex3.point)
-                            new_normal2 = self.calculate_surface_normal(new_vertex.point, vertex2.point, vertex3.point)
+                                new_normal1 = self.calculate_surface_normal(vertex1.point, new_vertex.point, vertex3.point)
+                                new_normal2 = self.calculate_surface_normal(new_vertex.point, vertex2.point, vertex3.point)
 
-                            new_normal_idx1 = self.add_normal(new_normal1)
-                            new_normal_idx2 = self.add_normal(new_normal2)
+                                new_normal_idx1 = self.add_normal(new_normal1)
+                                new_normal_idx2 = self.add_normal(new_normal2)
 
-                            changed_indexed_trilist.vertex_idxs.extend(new_triangle1)
-                            changed_indexed_trilist.vertex_idxs.extend(new_triangle2)
-                            changed_indexed_trilist.normal_idxs.append(new_normal_idx1)
-                            changed_indexed_trilist.normal_idxs.append(new_normal_idx2)
-                            changed_indexed_trilist.flags.append("00000000")
-                            changed_indexed_trilist.flags.append("00000000")
+                                changed_indexed_trilist.vertex_idxs.extend(new_triangle1)
+                                changed_indexed_trilist.vertex_idxs.extend(new_triangle2)
+                                changed_indexed_trilist.normal_idxs.append(new_normal_idx1)
+                                changed_indexed_trilist.normal_idxs.append(new_normal_idx2)
+                                changed_indexed_trilist.flags.append("00000000")
+                                changed_indexed_trilist.flags.append("00000000")
 
-                    # TODO Adjust subobject header / vertex sets as necessary
-                    self.update_indexed_trilist(changed_indexed_trilist)
+                        # TODO Adjust subobject header / vertex sets as necessary
+                        self.update_indexed_trilist(changed_indexed_trilist)
 
-                    connected_vertex_points = [vertex.point for vertex in self.get_connected_vertices(new_vertex)]
-                    new_vertex_normal = self.calculate_vertex_normal(new_vertex.point, connected_vertex_points)
-                    self.set_normal_value(new_vertex._normal_idx, new_vertex_normal)
+                        connected_vertex_points = [vertex.point for vertex in self.get_connected_vertices(prim_state, new_vertex)]
+                        new_vertex_normal = self.calculate_vertex_normal(new_vertex.point, connected_vertex_points)
+                        self.set_normal_value(new_vertex._normal_idx, new_vertex_normal)
 
         return new_vertex
     
-    def remove_vertex(self, vertex: Vertex, reconnect_geometry: bool = True) -> bool:
+    def remove_vertex(self, prim_state: PrimState, vertex: Vertex, reconnect_geometry: bool = True) -> bool:
         lod_dlevel = vertex._lod_dlevel
         subobject_idx = vertex._subobject_idx
         vertex_idx = vertex._vertex_idx
@@ -1156,45 +1157,46 @@ class Shapefile(File):
 
         indexed_trilists = self.get_indexed_trilists_in_subobject(lod_dlevel, subobject_idx)
         for prim_state_idx in indexed_trilists:
-            for indexed_trilist in indexed_trilists[prim_state_idx]:
-                changed_indexed_trilist = copy.deepcopy(indexed_trilist)
-                changed_indexed_trilist.vertex_idxs = []
-                changed_indexed_trilist.normal_idxs = []
-                changed_indexed_trilist.flags = []
+            if prim_state_idx == prim_state.idx:
+                for indexed_trilist in indexed_trilists[prim_state_idx]:
+                    changed_indexed_trilist = copy.deepcopy(indexed_trilist)
+                    changed_indexed_trilist.vertex_idxs = []
+                    changed_indexed_trilist.normal_idxs = []
+                    changed_indexed_trilist.flags = []
 
-                triangles = [tuple(indexed_trilist.vertex_idxs[i : i + 3]) for i in range(0, len(indexed_trilist.vertex_idxs), 3)]
-                for tri_idx, tri in enumerate(triangles):
-                    if vertex_idx not in tri:
-                        changed_indexed_trilist.vertex_idxs.extend(tri)
-                        changed_indexed_trilist.normal_idxs.append(indexed_trilist.normal_idxs[tri_idx])
-                        changed_indexed_trilist.flags.append(indexed_trilist.flags[tri_idx])
-                
-                if reconnect_geometry:
+                    triangles = [tuple(indexed_trilist.vertex_idxs[i : i + 3]) for i in range(0, len(indexed_trilist.vertex_idxs), 3)]
                     for tri_idx, tri in enumerate(triangles):
-                        if vertex_idx in tri:
-                            connected_vertices = set(tri)
-                            connected_vertices.discard(vertex_idx)
-                            connected_vertices = list(connected_vertices)
+                        if vertex_idx not in tri:
+                            changed_indexed_trilist.vertex_idxs.extend(tri)
+                            changed_indexed_trilist.normal_idxs.append(indexed_trilist.normal_idxs[tri_idx])
+                            changed_indexed_trilist.flags.append(indexed_trilist.flags[tri_idx])
+                    
+                    if reconnect_geometry:
+                        for tri_idx, tri in enumerate(triangles):
+                            if vertex_idx in tri:
+                                connected_vertices = set(tri)
+                                connected_vertices.discard(vertex_idx)
+                                connected_vertices = list(connected_vertices)
 
-                            if len(connected_vertices) >= 2:
-                                for i in range(len(connected_vertices)):
-                                    for j in range(i + 1, len(connected_vertices)):
-                                        new_triangle = [connected_vertices[i], connected_vertices[j], vertex_idx]
+                                if len(connected_vertices) >= 2:
+                                    for i in range(len(connected_vertices)):
+                                        for j in range(i + 1, len(connected_vertices)):
+                                            new_triangle = [connected_vertices[i], connected_vertices[j], vertex_idx]
 
-                                        vertex1 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, new_triangle[0])
-                                        vertex2 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, new_triangle[1])
-                                        vertex3 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, new_triangle[2])
+                                            vertex1 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, new_triangle[0])
+                                            vertex2 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, new_triangle[1])
+                                            vertex3 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, new_triangle[2])
 
-                                        new_normal = self.calculate_surface_normal(vertex1.point, vertex2.point, vertex3.point)
-                                        new_normal_idx = self.add_normal(new_normal)
+                                            new_normal = self.calculate_surface_normal(vertex1.point, vertex2.point, vertex3.point)
+                                            new_normal_idx = self.add_normal(new_normal)
 
-                                        changed_indexed_trilist.vertex_idxs.extend(new_triangle)
-                                        changed_indexed_trilist.normal_idxs.append(new_normal_idx)
-                                        changed_indexed_trilist.flags.append("00000000")
+                                            changed_indexed_trilist.vertex_idxs.extend(new_triangle)
+                                            changed_indexed_trilist.normal_idxs.append(new_normal_idx)
+                                            changed_indexed_trilist.flags.append("00000000")
 
-                # TODO Adjust subobject header / vertex sets as necessary
-                self.update_indexed_trilist(changed_indexed_trilist)
-                has_updated_trilists = True
+                    # TODO Adjust subobject header / vertex sets as necessary
+                    self.update_indexed_trilist(changed_indexed_trilist)
+                    has_updated_trilists = True
 
         return has_updated_trilists
 
