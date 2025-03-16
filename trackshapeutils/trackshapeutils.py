@@ -1057,13 +1057,13 @@ class Shapefile(File):
     def update_vertex_sets(self, lod_dlevel: int, subobject_idx: int) -> bool:
         raise NotImplementedError()
     
-    def calculate_point_midpoint(self, point1: Point, point2, Point) -> Point:
+    def calculate_point_midpoint(self, point1: Point, point2: Point) -> Point:
         return Point.from_numpy(point1.to_numpy() - point2.to_numpy() / 2)
     
-    def calculate_uvpoint_midpoint(self, uv_point1: UVPoint, uv_point2, UVPoint) -> UVPoint:
+    def calculate_uvpoint_midpoint(self, uv_point1: UVPoint, uv_point2: UVPoint) -> UVPoint:
         return Point.from_numpy(uv_point1.to_numpy() - uv_point2.to_numpy() / 2)
         
-    def calculate_surface_normal(self, point1: Point, point2, Point, point3: Point) -> Normal:
+    def calculate_surface_normal(self, point1: Point, point2: Point, point3: Point) -> Normal:
         edge1 = point2.to_numpy() - point1.to_numpy()
         edge2 = point3.to_numpy() - point1.to_numpy()
 
