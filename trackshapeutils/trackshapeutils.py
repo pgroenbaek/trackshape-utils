@@ -289,6 +289,8 @@ class Shapefile(File):
         super().__init__(filename, directory, encoding=encoding, shouldRead=False)
         if not self.is_compressed():
             self._lines = super()._read()
+        else:
+            self._lines = []
 
     def __repr__(self) -> str:
         if self.is_compressed():
@@ -974,7 +976,7 @@ class Shapefile(File):
         normal_idx = vertex._normal_idx
 
         has_updated_point = self.set_point_value(point_idx, vertex.point)
-        has_updated_uv_point = self.set_uv_point_value(uv_point_idx, vertex.uv_point)
+        has_updated_uv_point = self.set_uvpoint_value(uv_point_idx, vertex.uv_point)
         has_updated_normal = self.set_normal_value(normal_idx, vertex.normal)
 
         update_successful = all([has_updated_point, has_updated_uv_point, has_updated_normal])
@@ -1158,6 +1160,7 @@ class Shapefile(File):
 
         return new_vertex
     
+    # TODO: Reconnect geometry does not work properly.
     def remove_vertex(self, prim_state: PrimState, vertex: Vertex, reconnect_geometry: bool = True) -> bool:
         lod_dlevel = vertex._lod_dlevel
         subobject_idx = vertex._subobject_idx
