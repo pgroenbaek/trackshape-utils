@@ -19,7 +19,7 @@ if __name__ == "__main__":
         new_shape_name = original_shape_name.replace("DB1s_", "DB1fb_")
 
         original_sfile = tsu.load_shape(original_shape_name, shape_load_path)
-        
+
         new_sfile = original_sfile.copy(new_filename=new_shape_name, new_directory=shape_processed_path)
         new_sfile.decompress(ffeditc_path)
 
@@ -28,7 +28,7 @@ if __name__ == "__main__":
         new_sfile.replace_ignorecase("DB_TrackSfs1w.ace", "DB_Track1w.ace")
         new_sfile.replace_ignorecase("DB_TrackSfs1sw.ace", "DB_Track1sw.ace")
 
-        lod_dlevel = 200
+        lod_dlevel = 500
         subobject_idxs = new_sfile.get_subobject_idxs_in_lod_dlevel(lod_dlevel)
         for subobject_idx in subobject_idxs:
             vertices_in_subobject = new_sfile.get_vertices_in_subobject(lod_dlevel, subobject_idx)

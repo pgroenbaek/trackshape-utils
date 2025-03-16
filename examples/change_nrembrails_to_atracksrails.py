@@ -36,18 +36,32 @@ if __name__ == "__main__":
         vertices_in_prim_state = new_sfile.get_vertices_by_prim_state(lod_dlevel, prim_state)
 
         for vertex in vertices_in_prim_state:
-            closest_centerpoint = tsu.find_closest_centerpoint(point_along_track=vertex.point, trackcenter=trackcenter, plane='xz')
-            trackcenter_distance = tsu.signed_distance_from_centerpoint(point_along_track=vertex.point, trackcenter_point=closest_centerpoint, plane="xz")
+            closest_centerpoint = tsu.find_closest_centerpoint(vertex.point, trackcenter, plane='xz')
+            trackcenter_distance = tsu.signed_distance_from_centerpoint(vertex.point, closest_centerpoint, plane="xz")
 
             if vertex.point.y == 0.2: # Railhead bottom vertices
                 connected_vertices = new_sfile.get_connected_vertices(prim_state, vertex)
-                #print([v for v in connected_vertices if v.point.y == 0.325 and v.point.z == vertex.point.z])
 
                 for connected_vertex in connected_vertices:
                     if connected_vertex.point.y == 0.325 and connected_vertex.point.z == vertex.point.z: # Connected railhead top vertices directly over the bottom ones
                         new_vertex = new_sfile.insert_vertex_between(prim_state, vertex, connected_vertex)
-                        print(new_vertex)
-            #new_sfile.remove_vertex(vertex, reconnect_geometry=False)
+
+                        # TODO: Generated track center for curves seem to veer off a bit at the far end.
+                        trackcenter_distance_new_vertex = tsu.signed_distance_from_centerpoint(new_vertex.point, closest_centerpoint, plane="xz")
+                        new_distance = trackcenter_distance_new_vertex
+                        if 0.8175 <= trackcenter_distance_new_vertex <= 0.9175:
+                            
+                        elif 0.6675 <= trackcenter_distance_new_vertex <= 0.7675:
+
+                        elif -0.7675 <= trackcenter_distance_new_vertex <= -0.6675:
+
+                        elif -0.9175 <= trackcenter_distance_new_vertex <= -0.8175:
+
+                        #get_new_position_from_trackcenter(trackcenter_distance_new_vertex, new_vertex.point, trackcenter)
+                        #new_vertex.point.
+                        #print(new_vertex)
+                        print(trackcenter_distance_new_vertex)
+            
 
         new_sfile.save()
         #new_sfile.compress(ffeditc_path)

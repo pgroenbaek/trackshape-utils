@@ -785,6 +785,9 @@ class Shapefile(File):
             
             self._lines = [line for idx, line in enumerate(self.lines) if idx not in lines_to_remove]
             
+            if len(new_vertex_trilist) == 0:
+                lines_to_add.append("vertex_idxs ( 0 )")
+            
             vertex_trilist_chunks = [tuple(new_vertex_trilist[i : i + 197]) for i in range(0, len(new_vertex_trilist), 197)]
             for index, chunk in enumerate(vertex_trilist_chunks):
                 line = "\t\t\t\t\t\t\t\t\t"
@@ -798,6 +801,9 @@ class Shapefile(File):
                     line += " ".join(map(str, chunk))
                 lines_to_add.append(line)
             
+            if len(new_normals_trilist) == 0:
+                lines_to_add.append("normal_idxs ( 0 )")
+            
             normals_trilist_chunks = [tuple(new_normals_trilist[i : i + 197]) for i in range(0, len(new_normals_trilist), 197)]
             for index, chunk in enumerate(normals_trilist_chunks):
                 line = "\t\t\t\t\t\t\t\t\t"
@@ -810,6 +816,9 @@ class Shapefile(File):
                 else:
                     line += " ".join(map(str, chunk))
                 lines_to_add.append(line)
+            
+            if len(new_flags_trilist) == 0:
+                lines_to_add.append("flags ( 0 )")
             
             flags_trilist_chunks = [tuple(new_flags_trilist[i : i + 197]) for i in range(0, len(new_flags_trilist), 197)]
             for index, chunk in enumerate(flags_trilist_chunks):
@@ -1058,10 +1067,10 @@ class Shapefile(File):
         raise NotImplementedError()
     
     def calculate_point_midpoint(self, point1: Point, point2: Point) -> Point:
-        return Point.from_numpy((point1.to_numpy() - point2.to_numpy()) / 2)
+        return Point.from_numpy((point1.to_numpy() + point2.to_numpy()) / 2)
     
     def calculate_uvpoint_midpoint(self, uv_point1: UVPoint, uv_point2: UVPoint) -> UVPoint:
-        return UVPoint.from_numpy((uv_point1.to_numpy() - uv_point2.to_numpy()) / 2)
+        return UVPoint.from_numpy((uv_point1.to_numpy() + uv_point2.to_numpy()) / 2)
         
     def calculate_surface_normal(self, point1: Point, point2: Point, point3: Point) -> Normal:
         edge1 = point2.to_numpy() - point1.to_numpy()
