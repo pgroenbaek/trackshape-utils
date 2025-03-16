@@ -1061,7 +1061,7 @@ class Shapefile(File):
         return Point.from_numpy(point1.to_numpy() - point2.to_numpy() / 2)
     
     def calculate_uvpoint_midpoint(self, uv_point1: UVPoint, uv_point2: UVPoint) -> UVPoint:
-        return Point.from_numpy(uv_point1.to_numpy() - uv_point2.to_numpy() / 2)
+        return UVPoint.from_numpy(uv_point1.to_numpy() - uv_point2.to_numpy() / 2)
         
     def calculate_surface_normal(self, point1: Point, point2: Point, point3: Point) -> Normal:
         edge1 = point2.to_numpy() - point1.to_numpy()
