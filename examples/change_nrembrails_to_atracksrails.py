@@ -31,6 +31,18 @@ if __name__ == "__main__":
         #[Vector((-0.8675000667572021, 0.32500001788139343, 0.0))]
         #[Vector((-0.8675000667572021, 0.20000000298023224, 0.0))]
 
+        # Railhead vertices for ATracks:
+        # Intersection at: <Vector (-0.7175, 0.3250, 0.0000)>
+        # Intersection at: <Vector (-0.7175, 0.3250, 0.0000)>
+        # Intersection at: <Vector (-0.7450, 0.1900, 0.0000)>
+        # Intersection at: <Vector (-0.7175, 0.3250, 0.0000)>
+        # [Vector((-0.6785000562667847, 0.1899999976158142, 0.0))]
+        # [Vector((-0.6785000562667847, 0.2150000035762787, 0.0))]
+        # [Vector((-0.7175000309944153, 0.32500001788139343, 0.0))]
+        # [Vector((-0.7894999980926514, 0.32500001788139343, 0.0))]
+        # [Vector((-0.8285000324249268, 0.2150000035762787, 0.0))]
+        # [Vector((-0.8285000324249268, 0.1899999976158142, 0.0))]
+
         lod_dlevel = 400
         prim_state = new_sfile.get_prim_state_by_name("rail_side")
         vertices_in_prim_state = new_sfile.get_vertices_by_prim_state(lod_dlevel, prim_state)
@@ -44,18 +56,20 @@ if __name__ == "__main__":
 
                 for connected_vertex in connected_vertices:
                     if connected_vertex.point.y == 0.325 and connected_vertex.point.z == vertex.point.z: # Connected railhead top vertices directly over the bottom ones
-                        new_vertex = new_sfile.insert_vertex_between(prim_state, vertex, connected_vertex)
+                        new_vertex1 = new_sfile.insert_vertex_between(prim_state, vertex, connected_vertex)
+                        #new_vertex2 = new_sfile.insert_vertex_between(prim_state, vertex, connected_vertex)
 
                         # TODO: Generated track center for curves seem to veer off a bit at the far end.
+                        # TODO: Insert and reposition vertices
                         trackcenter_distance_new_vertex = tsu.signed_distance_from_centerpoint(new_vertex.point, closest_centerpoint, plane="xz")
-                        new_distance = trackcenter_distance_new_vertex
-                        if 0.8175 <= trackcenter_distance_new_vertex <= 0.9175:
-                            
-                        elif 0.6675 <= trackcenter_distance_new_vertex <= 0.7675:
-
-                        elif -0.7675 <= trackcenter_distance_new_vertex <= -0.6675:
-
-                        elif -0.9175 <= trackcenter_distance_new_vertex <= -0.8175:
+                        if 0.8175 <= trackcenter_distance <= 0.9175:
+                            pass
+                        elif 0.6675 <= trackcenter_distance <= 0.7675:
+                            pass
+                        elif -0.7675 <= trackcenter_distance <= -0.6675:
+                            pass
+                        elif -0.9175 <= trackcenter_distance <= -0.8175:
+                            pass
 
                         #get_new_position_from_trackcenter(trackcenter_distance_new_vertex, new_vertex.point, trackcenter)
                         #new_vertex.point.
