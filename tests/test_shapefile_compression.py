@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
+import os
 import pytest
 import trackshapeutils as tsu
 
@@ -27,14 +28,16 @@ def global_storage():
         "shape_compressed": tsu.load_shape("DK10f_A1tPnt5dLft_compressed.s", "./tests/data")
     }
 
-def test_shape_compression():
-    shape = tsu.load_shape("DK10f_A1tPnt5dLft.s", "./tests/data")
+@pytest.mark.skipif(not os.path.exists("./ffeditc_unicode.exe"), reason="requires ffeditc_unicode.exe to be present in the file system")
+def test_shape_compression(global_storage):
+    shape = global_storage["shape"]
     copied_shape = shape.copy(new_filename="DK10f_A1tPnt5dLft_compressed.s")
     copied_shape.compress("./ffeditc_unicode.exe")
     assert copied_shape.is_compressed()
 
-def test_shape_decompression():
-    shape = tsu.load_shape("DK10f_A1tPnt5dLft_compressed.s", "./tests/data")
+@pytest.mark.skipif(not os.path.exists("./ffeditc_unicode.exe"), reason="requires ffeditc_unicode.exe to be present in the file system")
+def test_shape_decompression(global_storage):
+    shape = global_storage["shape_compressed"]
     copied_shape = shape.copy(new_filename="DK10f_A1tPnt5dLft_decompressed.s")
     copied_shape.decompress("./ffeditc_unicode.exe")
     assert not copied_shape.is_compressed()
