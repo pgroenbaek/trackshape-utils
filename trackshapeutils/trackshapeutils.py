@@ -1125,12 +1125,8 @@ class Shapefile(File):
 
                         vertex3 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, vertex3_idx)
 
-                        vertex1_point = self.get_point_by_idx(vertex1._point_idx)
-                        vertex2_point = self.get_point_by_idx(vertex2._point_idx)
-                        vertex3_point = self.get_point_by_idx(vertex3._point_idx)
-
-                        new_normal1 = self.calculate_surface_normal(vertex1_point, new_vertex.point, vertex3_point)
-                        new_normal2 = self.calculate_surface_normal(new_vertex.point, vertex2_point, vertex3_point)
+                        new_normal1 = self.calculate_surface_normal(vertex1.point, new_vertex.point, vertex3.point)
+                        new_normal2 = self.calculate_surface_normal(new_vertex.point, vertex2.point, vertex3.point)
 
                         new_normal_idx1 = self.add_normal(new_normal1)
                         new_normal_idx2 = self.add_normal(new_normal2)
@@ -1184,19 +1180,11 @@ class Shapefile(File):
                                     for j in range(i + 1, len(connected_vertices)):
                                         new_triangle = [connected_vertices[i], connected_vertices[j], vertex_idx]
 
-                                        vertex3 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, new_triangle[0])
-                                        vertex3 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, new_triangle[1])
+                                        vertex1 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, new_triangle[0])
+                                        vertex2 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, new_triangle[1])
                                         vertex3 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, new_triangle[2])
 
-                                        point_a = self.get_point_by_idx(vertex1._point_idx)
-                                        point_b = self.get_point_by_idx(vertex2._point_idx)
-                                        point_c = self.get_point_by_idx(vertex3._point_idx)
-
-                                        edge1 = point_b.to_numpy() - point_a.to_numpy()
-                                        edge2 = point_c.to_numpy() - point_a.to_numpy()
-                                        normal = np.cross(edge1, edge2)
-                                        normal = normal / np.linalg.norm(normal)
-                                        new_normal = Normal.from_numpy(normal)
+                                        new_normal = self.calculate_surface_normal(vertex1.point, vertex2.point, vertex3.point)
                                         new_normal_idx = self.add_normal(new_normal)
 
                                         changed_indexed_trilist.vertex_idxs.extend(new_triangle)
