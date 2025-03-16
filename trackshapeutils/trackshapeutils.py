@@ -1140,7 +1140,7 @@ class Shapefile(File):
 
                 self.update_indexed_trilist(changed_indexed_trilist)
 
-                connected_vertex_points = [v.point for v in self.get_connected_vertices(new_vertex)]
+                connected_vertex_points = [vertex.point for vertex in self.get_connected_vertices(new_vertex)]
                 new_vertex_normal = self.calculate_vertex_normal(new_vertex.point, connected_vertex_points)
                 self.set_normal_value(new_vertex._normal_idx, new_vertex_normal)
 
