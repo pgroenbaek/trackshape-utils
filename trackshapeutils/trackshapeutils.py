@@ -710,6 +710,9 @@ class Shapefile(File):
                     if processing_trilist and '\t)' in line.lower():
                         processing_trilist = False
 
+                        if current_prim_state_idx == 0:
+                            print(vertex_idxs_in_trilist)
+
                         indexed_trilist = IndexedTrilist(
                             trilist_idx=current_trilist_idx,
                             vertex_idxs=vertex_idxs_in_trilist,
@@ -786,7 +789,7 @@ class Shapefile(File):
             lines_to_add = []
             
             self._lines = [line for idx, line in enumerate(self.lines) if idx not in lines_to_remove]
-            
+
             if len(new_vertex_trilist) == 0:
                 lines_to_add.append("vertex_idxs ( 0 )")
             
@@ -892,7 +895,7 @@ class Shapefile(File):
             indexed_trilists = self.get_indexed_trilists_in_subobject(lod_dlevel, subobject_idx)
             for vertex in vertices:
                 for prim_state_idx in indexed_trilists:
-                    if prim_state_idx == prim_state.idx:
+                    if prim_state is not None and prim_state_idx == prim_state.idx:
                         for indexed_trilist in indexed_trilists[prim_state_idx]:
                             if vertex._vertex_idx in indexed_trilist.vertex_idxs:
                                 if vertex not in vertices_by_prim_state:
@@ -1067,6 +1070,10 @@ class Shapefile(File):
 
     def update_vertex_sets(self, lod_dlevel: int, subobject_idx: int) -> bool:
         raise NotImplementedError()
+
+    def calculate_point_centroid(self, points: List[Point]):
+        positions = [p.to_numpy() for p in points]
+        return np.mean(positions, axis=0)
     
     def calculate_point_midpoint(self, point1: Point, point2: Point) -> Point:
         return Point.from_numpy((point1.to_numpy() + point2.to_numpy()) / 2)
@@ -1079,7 +1086,22 @@ class Shapefile(File):
         edge2 = point3.to_numpy() - point1.to_numpy()
 
         normal = np.cross(edge1, edge2)
-        normal = normal / np.linalg.norm(normal)
+        normal /= np.linalg.norm(normal)
+
+        points = self.get_points()
+        face_centroid = (point1.to_numpy() + point2.to_numpy() + point3.to_numpy()) / 3
+        to_model_centroid = self.calculate_point_centroid(points.values()) - face_centroid
+
+        if np.dot(normal, to_model_centroid) > 0:
+            point2, point3 = point3, point2
+
+            edge1 = point2.to_numpy() - point1.to_numpy()
+            edge2 = point3.to_numpy() - point1.to_numpy()
+
+            normal = np.cross(edge1, edge2)
+            normal /= np.linalg.norm(normal)
+
+        normal = np.round(normal, 4)
 
         return Normal.from_numpy(normal)
     
@@ -1094,6 +1116,7 @@ class Shapefile(File):
             edge2 = connected_points[i + 1].to_numpy() - point.to_numpy()
 
             normal = np.cross(edge1, edge2)
+            normal = np.round(normal, 4)
             vertex_normal_sum += np.linalg.norm(normal)
         
         return Normal.from_numpy(vertex_normal_sum)
@@ -1125,7 +1148,7 @@ class Shapefile(File):
                         
                         triangles = [tuple(indexed_trilist.vertex_idxs[i : i + 3]) for i in range(0, len(indexed_trilist.vertex_idxs), 3)]
                         for tri_idx, tri in enumerate(triangles):
-                            if vertex1._vertex_idx not in tri and vertex2._vertex_idx not in tri:
+                            if vertex1._vertex_idx not in tri or vertex2._vertex_idx not in tri:
                                 changed_indexed_trilist.vertex_idxs.extend(tri)
                                 changed_indexed_trilist.normal_idxs.append(indexed_trilist.normal_idxs[tri_idx])
                                 changed_indexed_trilist.flags.append(indexed_trilist.flags[tri_idx])
@@ -1138,6 +1161,7 @@ class Shapefile(File):
 
                                 vertex3 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, vertex3_idx)
 
+                                # TODO: Some surfaces are flipped
                                 new_normal1 = self.calculate_surface_normal(vertex1.point, new_vertex.point, vertex3.point)
                                 new_normal2 = self.calculate_surface_normal(new_vertex.point, vertex2.point, vertex3.point)
 
@@ -1152,7 +1176,8 @@ class Shapefile(File):
                                 changed_indexed_trilist.flags.append("00000000")
 
                         # TODO Adjust subobject header / vertex sets as necessary
-                        self.update_indexed_trilist(changed_indexed_trilist)
+                        result = self.update_indexed_trilist(changed_indexed_trilist)
+                        print(result)
 
                         connected_vertex_points = [vertex.point for vertex in self.get_connected_vertices(prim_state, new_vertex)]
                         new_vertex_normal = self.calculate_vertex_normal(new_vertex.point, connected_vertex_points)
@@ -1478,6 +1503,7 @@ def get_new_position_from_length(length: float, original_point: Point, trackcent
 def get_new_position_from_trackcenter(signed_distance: float, original_point: Point, trackcenter: Trackcenter) -> Point:
     centerpoints = trackcenter.centerpoints
     closest_center = find_closest_centerpoint(original_point, trackcenter, plane="xz")
+    closest_center = closest_center.to_numpy()
 
     tck, _ = splprep(centerpoints.T, s=0)
     num_samples = 1000

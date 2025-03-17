@@ -113,6 +113,7 @@ def test_set_point_value(global_storage):
     new_z_value = 0.5
     point_to_update = tsu.Point(new_x_value, new_y_value, new_z_value)
     shape.set_point_value(point_idx_to_update, point_to_update)
+    shape.save()
     shape._read()
     updated_point = shape.get_point_by_idx(point_idx_to_update)
     assert updated_point.x == new_x_value
@@ -128,6 +129,7 @@ def test_add_point(global_storage):
     shape = global_storage["shape_changed"]
     new_point = tsu.Point(0, 0, 0)
     new_point_index = shape.add_point(new_point)
+    shape.save()
     shape._read()
     assert new_point_index is not None
     updated_point = shape.get_point_by_idx(new_point_index)
@@ -153,6 +155,7 @@ def test_set_uvpoint_value(global_storage):
     new_v_value = 0.5
     uv_point_to_update = tsu.UVPoint(new_u_value, new_v_value)
     shape.set_uvpoint_value(uv_point_idx_to_update, uv_point_to_update)
+    shape.save()
     shape._read()
     updated_uv_point = shape.get_uvpoint_by_idx(uv_point_idx_to_update)
     assert updated_uv_point.u == new_u_value
@@ -167,6 +170,7 @@ def test_add_uvpoint(global_storage):
     shape = global_storage["shape_changed"]
     new_uvpoint = tsu.UVPoint(0, 0)
     new_uvpoint_index = shape.add_uvpoint(new_uvpoint)
+    shape.save()
     shape._read()
     assert new_uvpoint_index is not None
     added_uvpoint = shape.get_uvpoint_by_idx(new_uvpoint_index)
@@ -193,6 +197,7 @@ def test_set_normal_value(global_storage):
     new_vec_z_value = 0.5
     normal_to_update = tsu.Normal(new_vec_x_value, new_vec_y_value, new_vec_z_value)
     shape.set_normal_value(normal_idx_to_update, normal_to_update)
+    shape.save()
     shape._read()
     updated_normal = shape.get_normal_by_idx(normal_idx_to_update)
     assert updated_normal.vec_x == new_vec_x_value
@@ -208,6 +213,7 @@ def test_add_normal(global_storage):
     shape = global_storage["shape_changed"]
     new_normal = tsu.Normal(0, 0, 0)
     new_normal_index = shape.add_normal(new_normal)
+    shape.save()
     shape._read()
     assert new_normal_index is not None
     added_normal = shape.get_normal_by_idx(new_normal_index)
@@ -229,7 +235,7 @@ def test_get_indexed_trilists_in_subobject(global_storage):
     assert len(indexed_trilists) == 21
     assert len(indexed_trilists[0]) == 2
 
-def test_get_indexed_trilists_in_subobject(global_storage):
+def test_update_indexed_trilists_in_subobject(global_storage):
     shape = global_storage["shape_changed"]
     lod_dlevel = 200
     subobject_idx = 0
@@ -239,6 +245,8 @@ def test_get_indexed_trilists_in_subobject(global_storage):
     trilist_to_update.normal_idxs = [1]
     trilist_to_update.flags = ['00000000']
     updated_trilist = shape.update_indexed_trilist(trilist_to_update)
+    shape.save()
+    shape._read()
     assert updated_trilist
     # TODO More assertions
 
@@ -272,6 +280,8 @@ def test_add_vertex_to_subobject(global_storage):
     vertex_uv_point = tsu.UVPoint(0, 0)
     vertex_normal = tsu.Normal(0, 0, 0)
     added_vertex = shape.add_vertex_to_subobject(lod_dlevel, subobject_idx, vertex_point, vertex_uv_point, vertex_normal)
+    shape.save()
+    shape._read()
     assert added_vertex is not None
     assert added_vertex._vertex_idx != -1
     # TODO More assertions
