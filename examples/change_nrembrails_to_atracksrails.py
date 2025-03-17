@@ -63,7 +63,7 @@ if __name__ == "__main__":
                 for connected_vertex in connected_vertices:
                     if connected_vertex.point.y == 0.325 and connected_vertex.point.z == vertex.point.z: # Connected railhead top vertices directly over the bottom ones
                         closest_centerpoint = tsu.find_closest_centerpoint(vertex.point, trackcenter, plane="xz")
-                        distance_from_center = tsu.signed_distance_from_centerpoint(vertex.point, closest_centerpoint, plane="xz")
+                        distance_from_center = tsu.signed_distance_between(vertex.point, closest_centerpoint, plane="xz")
 
                         railside_bottom_vertex = vertex
                         railside_top_vertex = connected_vertex
