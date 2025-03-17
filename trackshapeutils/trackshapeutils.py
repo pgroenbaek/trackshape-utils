@@ -1156,14 +1156,24 @@ class Shapefile(File):
                         for tri_idx, tri in enumerate(triangles):
                             if vertex1._vertex_idx in tri and vertex2._vertex_idx in tri:
                                 vertex3_idx = [v for v in tri if v not in (vertex1._vertex_idx, vertex2._vertex_idx)][0]
-                                new_triangle1 = [vertex1._vertex_idx, new_vertex._vertex_idx, vertex3_idx]
-                                new_triangle2 = [new_vertex._vertex_idx, vertex2._vertex_idx, vertex3_idx]
-
                                 vertex3 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, vertex3_idx)
 
-                                # TODO: Some surfaces are flipped
-                                new_normal1 = self.calculate_surface_normal(vertex1.point, new_vertex.point, vertex3.point)
-                                new_normal2 = self.calculate_surface_normal(new_vertex.point, vertex2.point, vertex3.point)
+                                original_winding = list(tri)
+                                idx1, idx2, idx3 = [original_winding.index(v) for v in (vertex1._vertex_idx, vertex2._vertex_idx, vertex3_idx)]
+
+                                if (idx2 - idx1) % 3 == 1:  # CCW order
+                                    new_triangle1 = [vertex1._vertex_idx, new_vertex._vertex_idx, vertex3_idx]
+                                    new_triangle1_points = [vertex1.point, new_vertex.point, vertex3.point]
+                                    new_triangle2 = [new_vertex._vertex_idx, vertex2._vertex_idx, vertex3_idx]
+                                    new_triangle2_points = [new_vertex.point, vertex2.point, vertex3.point]
+                                else:  # CW order
+                                    new_triangle1 = [vertex1._vertex_idx, vertex3_idx, new_vertex._vertex_idx]
+                                    new_triangle1_points = [vertex1.point, vertex3.point, new_vertex.point]
+                                    new_triangle2 = [new_vertex._vertex_idx, vertex3_idx, vertex2._vertex_idx]
+                                    new_triangle2_points = [new_vertex.point, vertex3.point, vertex2.point]
+
+                                new_normal1 = self.calculate_surface_normal(new_triangle1_points[0], new_triangle1_points[1], new_triangle1_points[2])
+                                new_normal2 = self.calculate_surface_normal(new_triangle2_points[0], new_triangle2_points[1], new_triangle2_points[2])
 
                                 new_normal_idx1 = self.add_normal(new_normal1)
                                 new_normal_idx2 = self.add_normal(new_normal2)
