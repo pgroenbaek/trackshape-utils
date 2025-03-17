@@ -1161,15 +1161,15 @@ class Shapefile(File):
                                 original_winding = list(tri)
                                 idx1, idx2, idx3 = [original_winding.index(v) for v in (vertex1._vertex_idx, vertex2._vertex_idx, vertex3_idx)]
 
-                                if (idx2 - idx1) % 3 == 1:  # CCW order
-                                    new_triangle1 = [vertex1._vertex_idx, new_vertex._vertex_idx, vertex3_idx]
+                                if (idx2 - idx1) % 3 == 1: # CCW order
+                                    new_triangle1_idxs = [vertex1._vertex_idx, new_vertex._vertex_idx, vertex3_idx]
                                     new_triangle1_points = [vertex1.point, new_vertex.point, vertex3.point]
-                                    new_triangle2 = [new_vertex._vertex_idx, vertex2._vertex_idx, vertex3_idx]
+                                    new_triangle2_idxs = [new_vertex._vertex_idx, vertex2._vertex_idx, vertex3_idx]
                                     new_triangle2_points = [new_vertex.point, vertex2.point, vertex3.point]
-                                else:  # CW order
-                                    new_triangle1 = [vertex1._vertex_idx, vertex3_idx, new_vertex._vertex_idx]
+                                else: # CW order
+                                    new_triangle1_idxs = [vertex1._vertex_idx, vertex3_idx, new_vertex._vertex_idx]
                                     new_triangle1_points = [vertex1.point, vertex3.point, new_vertex.point]
-                                    new_triangle2 = [new_vertex._vertex_idx, vertex3_idx, vertex2._vertex_idx]
+                                    new_triangle2_idxs = [new_vertex._vertex_idx, vertex3_idx, vertex2._vertex_idx]
                                     new_triangle2_points = [new_vertex.point, vertex3.point, vertex2.point]
 
                                 new_normal1 = self.calculate_surface_normal(new_triangle1_points[0], new_triangle1_points[1], new_triangle1_points[2])
@@ -1178,8 +1178,8 @@ class Shapefile(File):
                                 new_normal_idx1 = self.add_normal(new_normal1)
                                 new_normal_idx2 = self.add_normal(new_normal2)
 
-                                changed_indexed_trilist.vertex_idxs.extend(new_triangle1)
-                                changed_indexed_trilist.vertex_idxs.extend(new_triangle2)
+                                changed_indexed_trilist.vertex_idxs.extend(new_triangle1_idxs)
+                                changed_indexed_trilist.vertex_idxs.extend(new_triangle2_idxs)
                                 changed_indexed_trilist.normal_idxs.append(new_normal_idx1)
                                 changed_indexed_trilist.normal_idxs.append(new_normal_idx2)
                                 changed_indexed_trilist.flags.append("00000000")
