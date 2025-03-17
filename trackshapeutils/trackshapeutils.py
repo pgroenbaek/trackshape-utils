@@ -1479,11 +1479,11 @@ def get_straight_centerpoint_from_length(length: float, start_angle: float = 0, 
     return Point.from_numpy(np.array([x, y, z]))
 
 
-def get_new_position_from_angle(curve_radius: float, curve_angle: float, original_point: Point, trackcenter: Trackcenter, start_angle: float = 0, start_point: Point = Point(0, 0, 0)) -> Point:
+def get_new_position_from_angle(new_curve_radius: float, new_curve_angle: float, original_point: Point, trackcenter: Trackcenter, start_angle: float = 0, start_point: Point = Point(0, 0, 0)) -> Point:
     closest_center = find_closest_centerpoint(original_point, trackcenter, plane='xz')
     offset = original_point.to_numpy() - closest_center.to_numpy()
 
-    calculated_curve_point = get_curve_centerpoint_from_angle(curve_radius, curve_angle, start_angle)
+    calculated_curve_point = get_curve_centerpoint_from_angle(new_curve_radius, new_curve_angle, start_angle)
 
     new_x = start_point.x + calculated_curve_point.x
     new_z = start_point.z + calculated_curve_point.z
@@ -1493,11 +1493,11 @@ def get_new_position_from_angle(curve_radius: float, curve_angle: float, origina
     return Point.from_numpy(new_position)
 
 
-def get_new_position_from_length(length: float, original_point: Point, trackcenter: Trackcenter, start_angle: float = 0, start_point: Point = Point(0, 0, 0)) -> Point:
+def get_new_position_from_length(new_length: float, original_point: Point, trackcenter: Trackcenter, start_angle: float = 0, start_point: Point = Point(0, 0, 0)) -> Point:
     closest_center = find_closest_centerpoint(original_point, trackcenter, plane='xz')
     offset = original_point.to_numpy() - closest_center.to_numpy()
 
-    calculated_straight_point = get_straight_centerpoint_from_length(length, start_angle)
+    calculated_straight_point = get_straight_centerpoint_from_length(new_length, start_angle)
 
     new_x = start_point.x + calculated_straight_point.x
     new_z = start_point.z + calculated_straight_point.z
@@ -1507,7 +1507,7 @@ def get_new_position_from_length(length: float, original_point: Point, trackcent
     return Point.from_numpy(new_position)
 
 
-def get_new_position_from_trackcenter(signed_distance: float, original_point: Point, trackcenter: Trackcenter) -> Point:
+def get_new_position_from_trackcenter(new_signed_distance: float, original_point: Point, trackcenter: Trackcenter) -> Point:
     centerpoints = trackcenter.centerpoints
     closest_center = find_closest_centerpoint(original_point, trackcenter, plane="xz")
     closest_center = closest_center.to_numpy()
@@ -1529,6 +1529,6 @@ def get_new_position_from_trackcenter(signed_distance: float, original_point: Po
     tangent_vector /= np.linalg.norm(tangent_vector)
     lateral_vector = np.array([-tangent_vector[2], 0, tangent_vector[0]])
 
-    new_position = closest_center + signed_distance * lateral_vector
+    new_position = closest_center + new_signed_distance * lateral_vector
 
     return Point.from_numpy(new_position)
