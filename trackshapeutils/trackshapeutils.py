@@ -1398,7 +1398,7 @@ def signed_distance_between(point1: Point, point2: Point, plane="xz") -> float:
 
 
 def distance_between(point1: Point, point2: Point, plane="xz") -> float:
-    signed_distance = self.signed_distance_between(point1, point2, plane)
+    signed_distance = signed_distance_between(point1, point2, plane)
     distance = abs(signed_distance)
 
     return distance
