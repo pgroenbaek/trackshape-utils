@@ -710,9 +710,6 @@ class Shapefile(File):
                     if processing_trilist and '\t)' in line.lower():
                         processing_trilist = False
 
-                        if current_prim_state_idx == 0:
-                            print(vertex_idxs_in_trilist)
-
                         indexed_trilist = IndexedTrilist(
                             trilist_idx=current_trilist_idx,
                             vertex_idxs=vertex_idxs_in_trilist,
@@ -1147,12 +1144,15 @@ class Shapefile(File):
                         changed_indexed_trilist.flags = []
                         
                         triangles = [tuple(indexed_trilist.vertex_idxs[i : i + 3]) for i in range(0, len(indexed_trilist.vertex_idxs), 3)]
+
+                        # Re-add all unaffected triangles.
                         for tri_idx, tri in enumerate(triangles):
                             if vertex1._vertex_idx not in tri or vertex2._vertex_idx not in tri:
                                 changed_indexed_trilist.vertex_idxs.extend(tri)
                                 changed_indexed_trilist.normal_idxs.append(indexed_trilist.normal_idxs[tri_idx])
                                 changed_indexed_trilist.flags.append(indexed_trilist.flags[tri_idx])
                         
+                        # Split all affected triangles before re-adding them and calculate new surface normals.
                         for tri_idx, tri in enumerate(triangles):
                             if vertex1._vertex_idx in tri and vertex2._vertex_idx in tri:
                                 vertex3_idx = [v for v in tri if v not in (vertex1._vertex_idx, vertex2._vertex_idx)][0]
@@ -1176,9 +1176,9 @@ class Shapefile(File):
                                 changed_indexed_trilist.flags.append("00000000")
 
                         # TODO Adjust subobject header / vertex sets as necessary
-                        result = self.update_indexed_trilist(changed_indexed_trilist)
-                        print(result)
+                        self.update_indexed_trilist(changed_indexed_trilist)
 
+                        # Recalculate vertex normals.
                         connected_vertex_points = [vertex.point for vertex in self.get_connected_vertices(prim_state, new_vertex)]
                         new_vertex_normal = self.calculate_vertex_normal(new_vertex.point, connected_vertex_points)
                         self.set_normal_value(new_vertex._normal_idx, new_vertex_normal)
@@ -1363,38 +1363,45 @@ def find_closest_centerpoint(point_along_track: Point, trackcenter: Trackcenter,
     return Point.from_numpy(trackcenter.centerpoints[closest_index])
 
 
-def signed_distance_from_centerpoint(point_along_track: Point, trackcenter_point: Point, plane="xz") -> float:
-    point = point_along_track.to_numpy()
-    center = trackcenter_point.to_numpy()
+def signed_distance_between(point1: Point, point2: Point, plane="xz") -> float:
+    point1 = point1.to_numpy()
+    point2 = point2.to_numpy()
 
     if plane == "x":
-        point_proj = np.array([point[0], 0, 0])
-        center_proj = np.array([center[0], 0, 0])
+        point1_proj = np.array([point1[0], 0, 0])
+        point2_proj = np.array([point2[0], 0, 0])
         reference_vector = np.array([0, 1, 0])
     elif plane == "y":
-        point_proj = np.array([0, point[1], 0])
-        center_proj = np.array([0, center[1], 0])
+        point1_proj = np.array([0, point1[1], 0])
+        point2_proj = np.array([0, point2[1], 0])
         reference_vector = np.array([1, 0, 0])
     elif plane == "xy":
-        point_proj = np.array([point[0], point[1], 0])
-        center_proj = np.array([center[0], center[1], 0])
+        point1_proj = np.array([point1[0], point1[1], 0])
+        point2_proj = np.array([point2[0], point2[1], 0])
         reference_vector = np.array([1, 0, 0])
     elif plane == "xz":
-        point_proj = np.array([point[0], 0, point[2]])
-        center_proj = np.array([center[0], 0, center[2]])
+        point1_proj = np.array([point1[0], 0, point1[2]])
+        point2_proj = np.array([point2[0], 0, point2[2]])
         reference_vector = np.array([0, 1, 0])
     elif plane == "z":
-        point_proj = np.array([0, 0, point[2]])
-        center_proj = np.array([0, 0, center[2]])
+        point1_proj = np.array([0, 0, point1[2]])
+        point2_proj = np.array([0, 0, point2[2]])
         reference_vector = np.array([1, 0, 0])
     else:
         raise ValueError("Invalid plane. Choose 'x', 'y', 'xy', 'xz', or 'z'.")
 
-    vector_to_point = point_proj - center_proj
+    vector_to_point = point1_proj - point2_proj
     cross = np.cross(reference_vector, vector_to_point)
     signed_distance = np.linalg.norm(vector_to_point[:2]) * np.sign(cross[-1])
 
     return signed_distance
+
+
+def distance_between(point1: Point, point2: Point, plane="xz") -> float:
+    signed_distance = self.signed_distance_between(point1, point2, plane)
+    distance = abs(signed_distance)
+
+    return distance
 
 
 def distance_along_curved_track(point_along_track: Point, trackcenter: Trackcenter, curve_angle: float, curve_radius: float) -> float:
