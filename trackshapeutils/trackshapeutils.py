@@ -1024,6 +1024,7 @@ class Shapefile(File):
                             f"\t\t\t\t\t\t\t\t\tvertex_uvs ( 1 {new_vertex._uv_point_idx} )",
                             "\t\t\t\t\t\t\t\t)"
                         ]
+                        # TODO Adjust subobject header / vertex sets as necessary
                         self.set_vertices_count(lod_dlevel, subobject_idx, current_vertex_idx + 1)
                         new_vertex._vertex_idx = current_vertex_idx
                         return new_vertex
@@ -1068,15 +1069,18 @@ class Shapefile(File):
     def update_vertex_sets(self, lod_dlevel: int, subobject_idx: int) -> bool:
         raise NotImplementedError()
 
-    def calculate_point_centroid(self, points: List[Point]):
+    def calculate_point_centroid(self, points: List[Point]) -> Point:
         positions = [p.to_numpy() for p in points]
-        return np.mean(positions, axis=0)
+        centroid = np.mean(positions, axis=0)
+        return Point.from_numpy(centroid)
     
     def calculate_point_midpoint(self, point1: Point, point2: Point) -> Point:
-        return Point.from_numpy((point1.to_numpy() + point2.to_numpy()) / 2)
+        midpoint = (point1.to_numpy() + point2.to_numpy()) / 2
+        return Point.from_numpy(midpoint)
     
     def calculate_uvpoint_midpoint(self, uv_point1: UVPoint, uv_point2: UVPoint) -> UVPoint:
-        return UVPoint.from_numpy((uv_point1.to_numpy() + uv_point2.to_numpy()) / 2)
+        midpoint = (uv_point1.to_numpy() + uv_point2.to_numpy()) / 2
+        return UVPoint.from_numpy(midpoint)
         
     def calculate_surface_normal(self, point1: Point, point2: Point, point3: Point) -> Normal:
         edge1 = point2.to_numpy() - point1.to_numpy()
@@ -1084,19 +1088,6 @@ class Shapefile(File):
 
         normal = np.cross(edge1, edge2)
         normal /= np.linalg.norm(normal)
-
-        points = self.get_points()
-        face_centroid = (point1.to_numpy() + point2.to_numpy() + point3.to_numpy()) / 3
-        to_model_centroid = self.calculate_point_centroid(points.values()) - face_centroid
-
-        if np.dot(normal, to_model_centroid) > 0:
-            point2, point3 = point3, point2
-
-            edge1 = point2.to_numpy() - point1.to_numpy()
-            edge2 = point3.to_numpy() - point1.to_numpy()
-
-            normal = np.cross(edge1, edge2)
-            normal /= np.linalg.norm(normal)
 
         normal = np.round(normal, 4)
 
@@ -1118,14 +1109,22 @@ class Shapefile(File):
         
         return Normal.from_numpy(vertex_normal_sum)
     
-    def insert_vertex_between(self, prim_state: PrimState, vertex1: Vertex, vertex2: Vertex) -> Optional[Vertex]:
+    def insert_vertex_between(self, indexed_trilist: IndexedTrilist, vertex1: Vertex, vertex2: Vertex) -> Optional[Vertex]:
         if vertex1._lod_dlevel != vertex2._lod_dlevel:
-            raise AttributeError("Cannot insert a new vertex between vertices in two different LOD distance levels.")
+            raise ValueError("Cannot insert a new vertex between specified vertices: 'vertex1' and 'vertex2' are not at the same LOD distance level.")
         if vertex1._subobject_idx != vertex2._subobject_idx:
-            raise AttributeError("Cannot insert a new vertex between vertices in two different subobjects.")
+            raise ValueError("Cannot insert a new vertex between specified vertices: 'vertex1' and 'vertex2' are not in the same subobject.")
+        if indexed_trilist._lod_dlevel != vertex1._lod_dlevel:
+            raise ValueError("Cannot insert a new vertex between specified vertices: 'vertex1' and 'indexed_trilist' are not at the same LOD distance level.")
+        if indexed_trilist._subobject_idx != vertex1._subobject_idx:
+            raise ValueError("Cannot insert a new vertex between specified vertices: 'vertex1' and 'indexed_trilist' are not in the same subobject.")
+        if indexed_trilist._lod_dlevel != vertex2._lod_dlevel:
+            raise ValueError("Cannot insert a new vertex between specified vertices: 'vertex2' and 'indexed_trilist' are not at the same LOD distance level.")
+        if indexed_trilist._subobject_idx != vertex2._subobject_idx:
+            raise ValueError("Cannot insert a new vertex between specified vertices: 'vertex2' and 'indexed_trilist' are not in the same subobject.")
 
-        lod_dlevel = vertex1._lod_dlevel
-        subobject_idx = vertex1._subobject_idx
+        lod_dlevel = indexed_trilist._lod_dlevel
+        subobject_idx = indexed_trilist._subobject_idx
 
         new_point = self.calculate_point_midpoint(vertex1.point, vertex2.point)
         new_uv_point = self.calculate_uvpoint_midpoint(vertex1.uv_point, vertex2.uv_point)
@@ -1134,118 +1133,165 @@ class Shapefile(File):
         new_vertex = self.add_vertex_to_subobject(vertex1._lod_dlevel, vertex1._subobject_idx, new_point, new_uv_point, new_normal)
 
         if new_vertex is not None:
-            indexed_trilists = self.get_indexed_trilists_in_subobject(lod_dlevel, subobject_idx)
-            for prim_state_idx in indexed_trilists:
-                if prim_state_idx == prim_state.idx:
-                    for indexed_trilist in indexed_trilists[prim_state_idx]:
-                        changed_indexed_trilist = copy.deepcopy(indexed_trilist)
-                        changed_indexed_trilist.vertex_idxs = []
-                        changed_indexed_trilist.normal_idxs = []
-                        changed_indexed_trilist.flags = []
-                        
-                        triangles = [tuple(indexed_trilist.vertex_idxs[i : i + 3]) for i in range(0, len(indexed_trilist.vertex_idxs), 3)]
+            changed_indexed_trilist = copy.deepcopy(indexed_trilist)
+            changed_indexed_trilist.vertex_idxs = []
+            changed_indexed_trilist.normal_idxs = []
+            changed_indexed_trilist.flags = []
+            
+            triangles = [tuple(indexed_trilist.vertex_idxs[i : i + 3]) for i in range(0, len(indexed_trilist.vertex_idxs), 3)]
 
-                        # Re-add all unaffected triangles.
-                        for tri_idx, tri in enumerate(triangles):
-                            if vertex1._vertex_idx not in tri or vertex2._vertex_idx not in tri:
-                                changed_indexed_trilist.vertex_idxs.extend(tri)
-                                changed_indexed_trilist.normal_idxs.append(indexed_trilist.normal_idxs[tri_idx])
-                                changed_indexed_trilist.flags.append(indexed_trilist.flags[tri_idx])
-                        
-                        # Split all affected triangles before re-adding them and calculate new surface normals.
-                        for tri_idx, tri in enumerate(triangles):
-                            if vertex1._vertex_idx in tri and vertex2._vertex_idx in tri:
-                                vertex3_idx = [v for v in tri if v not in (vertex1._vertex_idx, vertex2._vertex_idx)][0]
-                                vertex3 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, vertex3_idx)
+            # Re-add all unaffected triangles.
+            for tri_idx, tri in enumerate(triangles):
+                if vertex1._vertex_idx not in tri or vertex2._vertex_idx not in tri:
+                    changed_indexed_trilist.vertex_idxs.extend(tri)
+                    changed_indexed_trilist.normal_idxs.append(indexed_trilist.normal_idxs[tri_idx])
+                    changed_indexed_trilist.flags.append(indexed_trilist.flags[tri_idx])
+            
+            # Split all affected triangles before re-adding them and calculate new surface normals.
+            for tri_idx, tri in enumerate(triangles):
+                if vertex1._vertex_idx in tri and vertex2._vertex_idx in tri:
+                    vertex3_idx = [v for v in tri if v not in (vertex1._vertex_idx, vertex2._vertex_idx)][0]
+                    vertex3 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, vertex3_idx)
 
-                                original_winding = list(tri)
-                                idx1, idx2, idx3 = [original_winding.index(v) for v in (vertex1._vertex_idx, vertex2._vertex_idx, vertex3_idx)]
+                    original_winding = list(tri)
+                    idx1, idx2, idx3 = [original_winding.index(v) for v in (vertex1._vertex_idx, vertex2._vertex_idx, vertex3_idx)]
 
-                                if (idx2 - idx1) % 3 == 1: # CCW order
-                                    new_triangle1_idxs = [vertex1._vertex_idx, new_vertex._vertex_idx, vertex3_idx]
-                                    new_triangle1_points = [vertex1.point, new_vertex.point, vertex3.point]
-                                    new_triangle2_idxs = [new_vertex._vertex_idx, vertex2._vertex_idx, vertex3_idx]
-                                    new_triangle2_points = [new_vertex.point, vertex2.point, vertex3.point]
-                                else: # CW order
-                                    new_triangle1_idxs = [vertex1._vertex_idx, vertex3_idx, new_vertex._vertex_idx]
-                                    new_triangle1_points = [vertex1.point, vertex3.point, new_vertex.point]
-                                    new_triangle2_idxs = [new_vertex._vertex_idx, vertex3_idx, vertex2._vertex_idx]
-                                    new_triangle2_points = [new_vertex.point, vertex3.point, vertex2.point]
+                    if (idx2 - idx1) % 3 == 1: # CCW order
+                        new_triangle1_idxs = [vertex1._vertex_idx, new_vertex._vertex_idx, vertex3_idx]
+                        new_triangle1_points = [vertex1.point, new_vertex.point, vertex3.point]
+                        new_triangle2_idxs = [new_vertex._vertex_idx, vertex2._vertex_idx, vertex3_idx]
+                        new_triangle2_points = [new_vertex.point, vertex2.point, vertex3.point]
+                    else: # CW order
+                        new_triangle1_idxs = [vertex1._vertex_idx, vertex3_idx, new_vertex._vertex_idx]
+                        new_triangle1_points = [vertex1.point, vertex3.point, new_vertex.point]
+                        new_triangle2_idxs = [new_vertex._vertex_idx, vertex3_idx, vertex2._vertex_idx]
+                        new_triangle2_points = [new_vertex.point, vertex3.point, vertex2.point]
 
-                                new_normal1 = self.calculate_surface_normal(new_triangle1_points[0], new_triangle1_points[1], new_triangle1_points[2])
-                                new_normal2 = self.calculate_surface_normal(new_triangle2_points[0], new_triangle2_points[1], new_triangle2_points[2])
+                    new_normal1 = self.calculate_surface_normal(new_triangle1_points[0], new_triangle1_points[1], new_triangle1_points[2])
+                    new_normal2 = self.calculate_surface_normal(new_triangle2_points[0], new_triangle2_points[1], new_triangle2_points[2])
 
-                                new_normal_idx1 = self.add_normal(new_normal1)
-                                new_normal_idx2 = self.add_normal(new_normal2)
+                    new_normal_idx1 = self.add_normal(new_normal1)
+                    new_normal_idx2 = self.add_normal(new_normal2)
 
-                                changed_indexed_trilist.vertex_idxs.extend(new_triangle1_idxs)
-                                changed_indexed_trilist.vertex_idxs.extend(new_triangle2_idxs)
-                                changed_indexed_trilist.normal_idxs.append(new_normal_idx1)
-                                changed_indexed_trilist.normal_idxs.append(new_normal_idx2)
-                                changed_indexed_trilist.flags.append("00000000")
-                                changed_indexed_trilist.flags.append("00000000")
+                    changed_indexed_trilist.vertex_idxs.extend(new_triangle1_idxs)
+                    changed_indexed_trilist.vertex_idxs.extend(new_triangle2_idxs)
+                    changed_indexed_trilist.normal_idxs.append(new_normal_idx1)
+                    changed_indexed_trilist.normal_idxs.append(new_normal_idx2)
+                    changed_indexed_trilist.flags.append("00000000")
+                    changed_indexed_trilist.flags.append("00000000")
 
-                        # TODO Adjust subobject header / vertex sets as necessary
-                        self.update_indexed_trilist(changed_indexed_trilist)
+            # TODO Adjust subobject header / vertex sets as necessary
+            self.update_indexed_trilist(changed_indexed_trilist)
 
-                        # Recalculate vertex normals.
-                        connected_vertex_points = [vertex.point for vertex in self.get_connected_vertices(prim_state, new_vertex)]
-                        new_vertex_normal = self.calculate_vertex_normal(new_vertex.point, connected_vertex_points)
-                        self.set_normal_value(new_vertex._normal_idx, new_vertex_normal)
+            # Recalculate vertex normals.
+            connected_vertex_points = [vertex.point for vertex in self.get_connected_vertices(prim_state, new_vertex)]
+            new_vertex_normal = self.calculate_vertex_normal(new_vertex.point, connected_vertex_points)
+            self.set_normal_value(new_vertex._normal_idx, new_vertex_normal)
 
         return new_vertex
+
+    def insert_triangle_between(self, indexed_trilist: IndexedTrilist, vertex1: Vertex, vertex2: Vertex, vertex3: Vertex) -> bool:
+        if vertex1._lod_dlevel != vertex2._lod_dlevel:
+            raise ValueError("Cannot insert a new triangle between specified vertices: 'vertex1' and 'vertex2' are not at the same LOD distance level.")
+        if vertex1._lod_dlevel != vertex3._lod_dlevel:
+            raise ValueError("Cannot insert a new triangle between specified vertices: 'vertex1' and 'vertex3' are not at the same LOD distance level.")
+        if vertex2._lod_dlevel != vertex3._lod_dlevel:
+            raise ValueError("Cannot insert a new triangle between specified vertices: 'vertex2' and 'vertex3' are not at the same LOD distance level.")
+        if vertex1._subobject_idx != vertex2._subobject_idx:
+            raise ValueError("Cannot insert a new triangle between specified vertices: 'vertex1' and 'vertex2' are not in the same subobject.")
+        if vertex1._subobject_idx != vertex3._subobject_idx:
+            raise ValueError("Cannot insert a new triangle between specified vertices: 'vertex1' and 'vertex3' are not in the same subobject.")
+        if vertex2._subobject_idx != vertex3._subobject_idx:
+            raise ValueError("Cannot insert a new triangle between specified vertices: 'vertex2' and 'vertex3' are not in the same subobject.")
+        if indexed_trilist._lod_dlevel != vertex1._lod_dlevel:
+            raise ValueError("Cannot insert a new triangle between specified vertices: 'vertex1' and 'indexed_trilist' are not at the same LOD distance level.")
+        if indexed_trilist._subobject_idx != vertex1._subobject_idx:
+            raise ValueError("Cannot insert a new triangle between specified vertices: 'vertex1' and 'indexed_trilist' are not in the same subobject.")
+        if indexed_trilist._lod_dlevel != vertex2._lod_dlevel:
+            raise ValueError("Cannot insert a new triangle between specified vertices: 'vertex2' and 'indexed_trilist' are not at the same LOD distance level.")
+        if indexed_trilist._subobject_idx != vertex2._subobject_idx:
+            raise ValueError("Cannot insert a new triangle between specified vertices: 'vertex2' and 'indexed_trilist' are not in the same subobject.")
+        if indexed_trilist._lod_dlevel != vertex3._lod_dlevel:
+            raise ValueError("Cannot insert a new triangle between specified vertices: 'vertex3' and 'indexed_trilist' are not at the same LOD distance level.")
+        if indexed_trilist._subobject_idx != vertex3._subobject_idx:
+            raise ValueError("Cannot insert a new triangle between specified vertices: 'vertex3' and 'indexed_trilist' are not in the same subobject.")
+
+        new_normal = self.calculate_surface_normal(vertex1.point, vertex2.point, vertex3.point)
+
+        new_normal_idx = self.add_normal(new_normal)
+
+        indexed_trilist.vertex_idxs.append(vertex1._vertex_idx)
+        indexed_trilist.vertex_idxs.append(vertex2._vertex_idx)
+        indexed_trilist.vertex_idxs.append(vertex3._vertex_idx)
+        indexed_trilist.normal_idxs.append(new_normal_idx)
+        indexed_trilist.flags.append("00000000")
+
+        # TODO Adjust subobject header / vertex sets as necessary
+        has_updated_trilist = self.update_indexed_trilist(indexed_trilist)
+
+        return has_updated_trilist
     
-    # TODO: Reconnect geometry does not work properly.
-    def remove_vertex(self, prim_state: PrimState, vertex: Vertex, reconnect_geometry: bool = True) -> bool:
-        lod_dlevel = vertex._lod_dlevel
-        subobject_idx = vertex._subobject_idx
+    def remove_triangle_between(self, indexed_trilist: IndexedTrilist, vertex1: Vertex, vertex2: Vertex, vertex3: Vertex) -> bool:
+        if vertex1._lod_dlevel != vertex2._lod_dlevel:
+            raise ValueError("Cannot remove triangle between specified vertices: 'vertex1' and 'vertex2' are not at the same LOD distance level.")
+        if vertex1._lod_dlevel != vertex3._lod_dlevel:
+            raise ValueError("Cannot remove triangle between specified vertices: 'vertex1' and 'vertex3' are not at the same LOD distance level.")
+        if vertex2._lod_dlevel != vertex3._lod_dlevel:
+            raise ValueError("Cannot remove triangle between specified vertices: 'vertex2' and 'vertex3' are not at the same LOD distance level.")
+        if vertex1._subobject_idx != vertex2._subobject_idx:
+            raise ValueError("Cannot remove triangle between specified vertices: 'vertex1' and 'vertex2' are not in the same subobject.")
+        if vertex1._subobject_idx != vertex3._subobject_idx:
+            raise ValueError("Cannot remove triangle between specified vertices: 'vertex1' and 'vertex3' are not in the same subobject.")
+        if vertex2._subobject_idx != vertex3._subobject_idx:
+            raise ValueError("Cannot remove triangle between specified vertices: 'vertex2' and 'vertex3' are not in the same subobject.")
+        if indexed_trilist._lod_dlevel != vertex1._lod_dlevel:
+            raise ValueError("Cannot remove triangle between specified vertices: 'vertex1' and 'indexed_trilist' are not at the same LOD distance level.")
+        if indexed_trilist._subobject_idx != vertex1._subobject_idx:
+            raise ValueError("Cannot remove triangle between specified vertices: 'vertex1' and 'indexed_trilist' are not in the same subobject.")
+        if indexed_trilist._lod_dlevel != vertex2._lod_dlevel:
+            raise ValueError("Cannot remove triangle between specified vertices: 'vertex2' and 'indexed_trilist' are not at the same LOD distance level.")
+        if indexed_trilist._subobject_idx != vertex2._subobject_idx:
+            raise ValueError("Cannot remove triangle between specified vertices: 'vertex2' and 'indexed_trilist' are not in the same subobject.")
+        if indexed_trilist._lod_dlevel != vertex3._lod_dlevel:
+            raise ValueError("Cannot remove triangle between specified vertices: 'vertex3' and 'indexed_trilist' are not at the same LOD distance level.")
+        if indexed_trilist._subobject_idx != vertex3._subobject_idx:
+            raise ValueError("Cannot remove triangle between specified vertices: 'vertex3' and 'indexed_trilist' are not in the same subobject.")
+
+        vertex1_idx = vertex1._vertex_idx
+        vertex2_idx = vertex2._vertex_idx
+        vertex3_idx = vertex3._vertex_idx
+
+        triangles = [tuple(indexed_trilist.vertex_idxs[i : i + 3]) for i in range(0, len(indexed_trilist.vertex_idxs), 3)]
+        for tri_idx, tri in enumerate(triangles):
+            if vertex1_idx in tri and vertex2_idx in tri and vertex3_idx in tri:
+                del indexed_trilist.vertex_idxs[tri_idx * 3 : tri_idx * 3 + 2]
+                del indexed_trilist.normal_idxs[tri_idx]
+                del indexed_trilist.flags[tri_idx]
+        
+        # TODO Adjust subobject header / vertex sets as necessary
+        has_updated_trilist = self.update_indexed_trilist(indexed_trilist)
+
+        return has_updated_trilist
+
+    def remove_triangles_connected_to_vertex(self, indexed_trilist: IndexedTrilist, vertex: Vertex) -> bool:
+        if indexed_trilist._lod_dlevel != vertex._lod_dlevel:
+            raise ValueError("Cannot remove triangles connected to vertex: 'vertex' and 'indexed_trilist' are not at the same LOD distance level.")
+        if indexed_trilist._subobject_idx != vertex._subobject_idx:
+            raise ValueError("Cannot remove triangles connected to vertex: 'vertex' and 'indexed_trilist' are not in the same subobject.")
+
         vertex_idx = vertex._vertex_idx
-        has_updated_trilists = False
 
-        indexed_trilists = self.get_indexed_trilists_in_subobject(lod_dlevel, subobject_idx)
-        for prim_state_idx in indexed_trilists:
-            if prim_state_idx == prim_state.idx:
-                for indexed_trilist in indexed_trilists[prim_state_idx]:
-                    changed_indexed_trilist = copy.deepcopy(indexed_trilist)
-                    changed_indexed_trilist.vertex_idxs = []
-                    changed_indexed_trilist.normal_idxs = []
-                    changed_indexed_trilist.flags = []
+        triangles = [tuple(indexed_trilist.vertex_idxs[i : i + 3]) for i in range(0, len(indexed_trilist.vertex_idxs), 3)]
+        for tri_idx, tri in enumerate(triangles):
+            if vertex_idx in tri:
+                del indexed_trilist.vertex_idxs[tri_idx * 3 : tri_idx * 3 + 2]
+                del indexed_trilist.normal_idxs[tri_idx]
+                del indexed_trilist.flags[tri_idx]
+        
+        # TODO Adjust subobject header / vertex sets as necessary
+        has_updated_trilist = self.update_indexed_trilist(indexed_trilist)
 
-                    triangles = [tuple(indexed_trilist.vertex_idxs[i : i + 3]) for i in range(0, len(indexed_trilist.vertex_idxs), 3)]
-                    for tri_idx, tri in enumerate(triangles):
-                        if vertex_idx not in tri:
-                            changed_indexed_trilist.vertex_idxs.extend(tri)
-                            changed_indexed_trilist.normal_idxs.append(indexed_trilist.normal_idxs[tri_idx])
-                            changed_indexed_trilist.flags.append(indexed_trilist.flags[tri_idx])
-                    
-                    if reconnect_geometry:
-                        for tri_idx, tri in enumerate(triangles):
-                            if vertex_idx in tri:
-                                connected_vertices = set(tri)
-                                connected_vertices.discard(vertex_idx)
-                                connected_vertices = list(connected_vertices)
-
-                                if len(connected_vertices) >= 2:
-                                    for i in range(len(connected_vertices)):
-                                        for j in range(i + 1, len(connected_vertices)):
-                                            new_triangle = [connected_vertices[i], connected_vertices[j], vertex_idx]
-
-                                            vertex1 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, new_triangle[0])
-                                            vertex2 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, new_triangle[1])
-                                            vertex3 = self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, new_triangle[2])
-
-                                            new_normal = self.calculate_surface_normal(vertex1.point, vertex2.point, vertex3.point)
-                                            new_normal_idx = self.add_normal(new_normal)
-
-                                            changed_indexed_trilist.vertex_idxs.extend(new_triangle)
-                                            changed_indexed_trilist.normal_idxs.append(new_normal_idx)
-                                            changed_indexed_trilist.flags.append("00000000")
-
-                    # TODO Adjust subobject header / vertex sets as necessary
-                    self.update_indexed_trilist(changed_indexed_trilist)
-                    has_updated_trilists = True
-
-        return has_updated_trilists
+        return has_updated_trilist
 
 
 class Trackcenter:
@@ -1408,7 +1454,7 @@ def signed_distance_between(point1: Point, point2: Point, plane="xz") -> float:
 
 
 def distance_between(point1: Point, point2: Point, plane="xz") -> float:
-    signed_distance = signed_distance_between(point1, point2, plane)
+    signed_distance = signed_distance_between(point1, point2, plane=plane)
     distance = abs(signed_distance)
 
     return distance
