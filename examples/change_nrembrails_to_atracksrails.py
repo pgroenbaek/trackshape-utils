@@ -90,10 +90,10 @@ if __name__ == "__main__":
             print(r)
 
         # Modify the existing railside vertices to be the top rectangle of the new ATracks-like railside.
-        last_vertices_right_outer = None
-        last_vertices_right_inner = None
-        last_vertices_left_inner = None
-        last_vertices_left_outer = None
+        prev_vertices_right_outer = None
+        prev_vertices_right_inner = None
+        prev_vertices_left_inner = None
+        prev_vertices_left_outer = None
 
         for bottom_left, top_left, top_right, bottom_right in railside_rectangles:
             # left = vertices closer to track start
@@ -156,7 +156,7 @@ if __name__ == "__main__":
                         (railbase_outer_top2, 0.215, 0.8285, u_value_left, -0.951, -1.0, 0.0, 0.0),
                         (railbase_outer_bottom, 0.192, 0.8285, u_value_left, -0.975, -1.0, 0.0, 0.0)
                     ])
-                    last_vertices_right_outer = (bottom_left, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
+                    prev_vertices_right_outer = (bottom_left, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
                 elif 0.6675 <= distance_from_center <= 0.7675: # Inside right rail.
                     update_vertex_data.extend([
                         (railbase_inner, 0.2268, 0.7374, u_value_left, -0.975, 0.219822, 0.97554, 0.0),
@@ -164,7 +164,7 @@ if __name__ == "__main__":
                         (railbase_outer_top2, 0.215, 0.6785, u_value_left, -0.951, 1.0, 0.0, 0.0),
                         (railbase_outer_bottom, 0.192, 0.6785, u_value_left, -0.975, 1.0, 0.0, 0.0)
                     ])
-                    last_vertices_right_inner = (bottom_left, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
+                    prev_vertices_right_inner = (bottom_left, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
                 elif -0.7675 <= distance_from_center <= -0.6675: # Inside left rail.
                     update_vertex_data.extend([
                         (railbase_inner, 0.2268, -0.7374, u_value_left, -0.975, -0.219822, 0.97554, 0.0),
@@ -172,7 +172,7 @@ if __name__ == "__main__":
                         (railbase_outer_top2, 0.215, -0.6785, u_value_left, -0.951, -1.0, 0.0, 0.0),
                         (railbase_outer_bottom, 0.192, -0.6785, u_value_left, -0.975, -1.0, 0.0, 0.0)
                     ])
-                    last_vertices_left_inner = (bottom_left, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
+                    prev_vertices_left_inner = (bottom_left, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
                 elif -0.9175 <= distance_from_center <= -0.8175: # Outside left rail.
                     update_vertex_data.extend([
                         (railbase_inner, 0.2268, -0.7694, u_value_left, -0.975, 0.219822, 0.97554, 0.0),
@@ -180,7 +180,7 @@ if __name__ == "__main__":
                         (railbase_outer_top2, 0.215, -0.8285, u_value_left, -0.951, 1.0, 0.0, 0.0),
                         (railbase_outer_bottom, 0.192, -0.8285, u_value_left, -0.975, 1.0, 0.0, 0.0)
                     ])
-                    last_vertices_left_outer = (bottom_left, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
+                    prev_vertices_left_outer = (bottom_left, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
             
             # Right side of the rectangle.
             railbase_inner = new_sfile.add_vertex_to_subobject(lod_dlevel, 0, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
@@ -189,7 +189,7 @@ if __name__ == "__main__":
             railbase_outer_bottom = new_sfile.add_vertex_to_subobject(lod_dlevel, 0, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
 
             # Different values and triangle ordering depending on which railside it is.
-            # Also specify new triangles from the new vertices to the latest set of vertices added for the railside.
+            # Also specify new triangles from the new vertices to the previous set of vertices added for the railside.
             if 0.8175 <= distance_from_center <= 0.9175: # Outside right rail.
                 update_vertex_data.extend([
                     (railbase_inner, 0.2268, 0.7694, u_value_right, -0.975, -0.219822, 0.97554, 0.0),
@@ -197,18 +197,18 @@ if __name__ == "__main__":
                     (railbase_outer_top2, 0.215, 0.8285, u_value_right, -0.951, -1.0, 0.0, 0.0),
                     (railbase_outer_bottom, 0.192, 0.8285, u_value_right, -0.975, -1.0, 0.0, 0.0)
                 ])
-                last_bottom_right, last_railbase_inner, last_railbase_outer_top1, last_railbase_outer_top2, last_railbase_outer_bottom = last_vertices_right_outer
+                prev_bottom_right, prev_railbase_inner, prev_railbase_outer_top1, prev_railbase_outer_top2, prev_railbase_outer_bottom = prev_vertices_right_outer
                 new_triangles.extend([
-                    (bottom_right, last_bottom_right, railbase_inner),
-                    (railbase_inner, last_bottom_right, last_railbase_inner),
-                    (railbase_inner, last_railbase_inner, railbase_outer_top1),
-                    (railbase_outer_top1, last_railbase_inner, last_railbase_outer_top1),
-                    (railbase_outer_top1, last_railbase_outer_top1, railbase_outer_top2),
-                    (railbase_outer_top2, last_railbase_outer_top1, last_railbase_outer_top2),
-                    (railbase_outer_top2, last_railbase_outer_top2, railbase_outer_bottom),
-                    (railbase_outer_bottom, last_railbase_outer_top2, last_railbase_outer_bottom),
+                    (bottom_right, prev_bottom_right, railbase_inner),
+                    (railbase_inner, prev_bottom_right, prev_railbase_inner),
+                    (railbase_inner, prev_railbase_inner, railbase_outer_top1),
+                    (railbase_outer_top1, prev_railbase_inner, prev_railbase_outer_top1),
+                    (railbase_outer_top1, prev_railbase_outer_top1, railbase_outer_top2),
+                    (railbase_outer_top2, prev_railbase_outer_top1, prev_railbase_outer_top2),
+                    (railbase_outer_top2, prev_railbase_outer_top2, railbase_outer_bottom),
+                    (railbase_outer_bottom, prev_railbase_outer_top2, prev_railbase_outer_bottom),
                 ])
-                last_vertices_right_outer = (bottom_right, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
+                prev_vertices_right_outer = (bottom_right, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
             elif 0.6675 <= distance_from_center <= 0.7675: # Inside right rail.
                 update_vertex_data.extend([
                     (railbase_inner, 0.2268, 0.7374, u_value_right, -0.975, 0.219822, 0.97554, 0.0),
@@ -216,18 +216,18 @@ if __name__ == "__main__":
                     (railbase_outer_top2, 0.215, 0.6785, u_value_right, -0.951, 1.0, 0.0, 0.0),
                     (railbase_outer_bottom, 0.192, 0.6785, u_value_right, -0.975, 1.0, 0.0, 0.0)
                 ])
-                last_bottom_right, last_railbase_inner, last_railbase_outer_top1, last_railbase_outer_top2, last_railbase_outer_bottom = last_vertices_right_inner
+                prev_bottom_right, prev_railbase_inner, prev_railbase_outer_top1, prev_railbase_outer_top2, prev_railbase_outer_bottom = prev_vertices_right_inner
                 new_triangles.extend([
-                    (bottom_right, railbase_inner, last_bottom_right),
-                    (railbase_inner, last_railbase_inner, last_bottom_right),
-                    (railbase_inner, railbase_outer_top1, last_railbase_inner),
-                    (railbase_outer_top1, last_railbase_outer_top1, last_railbase_inner),
-                    (railbase_outer_top1, railbase_outer_top2, last_railbase_outer_top1),
-                    (railbase_outer_top2, last_railbase_outer_top1, last_railbase_outer_top2),
-                    (railbase_outer_top2, railbase_outer_bottom, last_railbase_outer_top2),
-                    (railbase_outer_bottom, last_railbase_outer_bottom, last_railbase_outer_top2),
+                    (bottom_right, railbase_inner, prev_bottom_right),
+                    (railbase_inner, prev_railbase_inner, prev_bottom_right),
+                    (railbase_inner, railbase_outer_top1, prev_railbase_inner),
+                    (railbase_outer_top1, prev_railbase_outer_top1, prev_railbase_inner),
+                    (railbase_outer_top1, railbase_outer_top2, prev_railbase_outer_top1),
+                    (railbase_outer_top2, prev_railbase_outer_top1, prev_railbase_outer_top2),
+                    (railbase_outer_top2, railbase_outer_bottom, prev_railbase_outer_top2),
+                    (railbase_outer_bottom, prev_railbase_outer_bottom, prev_railbase_outer_top2),
                 ])
-                last_vertices_right_inner = (bottom_right, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
+                prev_vertices_right_inner = (bottom_right, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
             elif -0.7675 <= distance_from_center <= -0.6675: # Inside left rail.
                 update_vertex_data.extend([
                     (railbase_inner, 0.2268, -0.7374, u_value_right, -0.975, -0.219822, 0.97554, 0.0),
@@ -235,18 +235,18 @@ if __name__ == "__main__":
                     (railbase_outer_top2, 0.215, -0.6785, u_value_right, -0.951, -1.0, 0.0, 0.0),
                     (railbase_outer_bottom, 0.192, -0.6785, u_value_right, -0.975, -1.0, 0.0, 0.0)
                 ])
-                last_bottom_right, last_railbase_inner, last_railbase_outer_top1, last_railbase_outer_top2, last_railbase_outer_bottom = last_vertices_left_inner
+                prev_bottom_right, prev_railbase_inner, prev_railbase_outer_top1, prev_railbase_outer_top2, prev_railbase_outer_bottom = prev_vertices_left_inner
                 new_triangles.extend([
-                    (bottom_right, last_bottom_right, railbase_inner),
-                    (railbase_inner, last_bottom_right, last_railbase_inner),
-                    (railbase_inner, last_railbase_inner, railbase_outer_top1),
-                    (railbase_outer_top1, last_railbase_inner, last_railbase_outer_top1),
-                    (railbase_outer_top1, last_railbase_outer_top1, railbase_outer_top2),
-                    (railbase_outer_top2, last_railbase_outer_top1, last_railbase_outer_top2),
-                    (railbase_outer_top2, last_railbase_outer_top2, railbase_outer_bottom),
-                    (railbase_outer_bottom, last_railbase_outer_top2, last_railbase_outer_bottom),
+                    (bottom_right, prev_bottom_right, railbase_inner),
+                    (railbase_inner, prev_bottom_right, prev_railbase_inner),
+                    (railbase_inner, prev_railbase_inner, railbase_outer_top1),
+                    (railbase_outer_top1, prev_railbase_inner, prev_railbase_outer_top1),
+                    (railbase_outer_top1, prev_railbase_outer_top1, railbase_outer_top2),
+                    (railbase_outer_top2, prev_railbase_outer_top1, prev_railbase_outer_top2),
+                    (railbase_outer_top2, prev_railbase_outer_top2, railbase_outer_bottom),
+                    (railbase_outer_bottom, prev_railbase_outer_top2, prev_railbase_outer_bottom),
                 ])
-                last_vertices_left_inner = (bottom_right, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
+                prev_vertices_left_inner = (bottom_right, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
             elif -0.9175 <= distance_from_center <= -0.8175: # Outside left rail.
                 update_vertex_data.extend([
                     (railbase_inner, 0.2268, -0.7694, u_value_right, -0.975, 0.219822, 0.97554, 0.0),
@@ -254,18 +254,18 @@ if __name__ == "__main__":
                     (railbase_outer_top2, 0.215, -0.8285, u_value_right, -0.951, 1.0, 0.0, 0.0),
                     (railbase_outer_bottom, 0.192, -0.8285, u_value_right, -0.975, 1.0, 0.0, 0.0)
                 ])
-                last_bottom_right, last_railbase_inner, last_railbase_outer_top1, last_railbase_outer_top2, last_railbase_outer_bottom = last_vertices_left_outer
+                prev_bottom_right, prev_railbase_inner, prev_railbase_outer_top1, prev_railbase_outer_top2, prev_railbase_outer_bottom = prev_vertices_left_outer
                 new_triangles.extend([
-                    (bottom_right, railbase_inner, last_bottom_right),
-                    (railbase_inner, last_railbase_inner, last_bottom_right),
-                    (railbase_inner, railbase_outer_top1, last_railbase_inner),
-                    (railbase_outer_top1, last_railbase_outer_top1, last_railbase_inner),
-                    (railbase_outer_top1, railbase_outer_top2, last_railbase_outer_top1),
-                    (railbase_outer_top2, last_railbase_outer_top1, last_railbase_outer_top2),
-                    (railbase_outer_top2, railbase_outer_bottom, last_railbase_outer_top2),
-                    (railbase_outer_bottom, last_railbase_outer_bottom, last_railbase_outer_top2),
+                    (bottom_right, railbase_inner, prev_bottom_right),
+                    (railbase_inner, prev_railbase_inner, prev_bottom_right),
+                    (railbase_inner, railbase_outer_top1, prev_railbase_inner),
+                    (railbase_outer_top1, prev_railbase_outer_top1, prev_railbase_inner),
+                    (railbase_outer_top1, railbase_outer_top2, prev_railbase_outer_top1),
+                    (railbase_outer_top2, prev_railbase_outer_top1, prev_railbase_outer_top2),
+                    (railbase_outer_top2, railbase_outer_bottom, prev_railbase_outer_top2),
+                    (railbase_outer_bottom, prev_railbase_outer_bottom, prev_railbase_outer_top2),
                 ])
-                last_vertices_left_outer = (bottom_right, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
+                prev_vertices_left_outer = (bottom_right, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
             
             # Update the created vertices.
             for vertex, new_height, new_center_distance, new_u_value, new_v_value, new_normal_vecx, new_normal_vecy, new_normal_vecz in update_vertex_data:
