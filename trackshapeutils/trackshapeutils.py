@@ -1195,7 +1195,11 @@ class Shapefile(File):
         edge2 = point3.to_numpy() - point1.to_numpy()
 
         normal = np.cross(edge1, edge2)
-        normal /= np.linalg.norm(normal)
+        
+        if np.linalg.norm(normal) > 1e-10:
+            normal /= np.linalg.norm(normal)
+        else:
+            normal = np.zeros_like(normal)
 
         normal = np.round(normal, 4)
 
@@ -1212,8 +1216,14 @@ class Shapefile(File):
             edge2 = connected_points[i + 1].to_numpy() - point.to_numpy()
 
             normal = np.cross(edge1, edge2)
+
+            if np.linalg.norm(normal) > 1e-10:
+                normal /= np.linalg.norm(normal)
+            else:
+                normal = np.zeros_like(normal)
+
             normal = np.round(normal, 4)
-            vertex_normal_sum += np.linalg.norm(normal)
+            vertex_normal_sum += normal
         
         return Normal.from_numpy(vertex_normal_sum)
     
