@@ -31,7 +31,7 @@ from scipy.spatial import KDTree
 from typing import List, Dict, Optional
 
 
-def _detect_encoding(filepath):
+def _detect_encoding(filepath: str) -> str:
     with open(filepath, 'rb') as f:
         b = f.read(4)
         bstartswith = b.startswith
