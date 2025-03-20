@@ -331,11 +331,11 @@ class Shapefile(File):
             
             return True
 
-    def compress(self, ffeditc_path) -> None:
+    def compress(self, ffeditc_path: str) -> None:
         if not self.is_compressed():
             subprocess.call([ffeditc_path, self.filepath, "/o:" + self.filepath])
 
-    def decompress(self, ffeditc_path) -> None:
+    def decompress(self, ffeditc_path: str) -> None:
         if self.is_compressed():
             subprocess.call([ffeditc_path, self.filepath, "/u", "/o:" + self.filepath])
             self.encoding = _detect_encoding(self.filepath)
@@ -1195,7 +1195,7 @@ class Shapefile(File):
         edge2 = point3.to_numpy() - point1.to_numpy()
 
         normal = np.cross(edge1, edge2)
-        
+
         if np.linalg.norm(normal) > 1e-10:
             normal /= np.linalg.norm(normal)
         else:
