@@ -1,3 +1,24 @@
+# Railhead vertices from center to outside:
+#[Vector((-0.7175, 0.2, 0.0))]
+#[Vector((-0.7175, 0.325, 0.0))]
+#[Vector((-0.8675, 0.325, 0.0))]
+#[Vector((-0.8675, 0.2, 0.0))]
+
+# Railhead vertices for ATracks:
+# [Vector((-0.6785, 0.192, 0.0))]
+# [Vector((-0.6785, 0.215, 0.0))]
+# [Vector((-0.7694, 0.2268, 0.0))]
+# [Vector((-0.7175, 0.325, 0.0))]
+# [Vector((-0.7895, 0.325, 0.0))]
+# [Vector((-0.7374, 0.2268, 0.0))]
+# [Vector((-0.8285, 0.215, 0.0))]
+# [Vector((-0.8285, 0.192, 0.0))]
+
+# Points needed for UVPoints:
+# Top of rail base: [Vector((-0.7535000443458557, 0.23000000417232513, 0.0))]
+# Bottom of rail: [Vector((-0.7619999647140503, 0.1899999976158142, 0.0))]
+# Bottom of rail: [Vector((-0.7619999647140503, 0.1899999976158142, 0.0))]
+
 import os
 import trackshapeutils as tsu
 
@@ -51,8 +72,11 @@ if __name__ == "__main__":
             railside_bottom_vertices.sort(key=lambda v: v.point.x)
             railside_top_vertices.sort(key=lambda v: v.point.x)
 
-        # Find rectangles between the vertical edges of the rail sides.
-        railside_rectangles = []
+        # Find the rectangles between the vertical edges of the rail sides.
+        railside_rectangles_right_outer = []
+        railside_rectangles_right_inner = []
+        railside_rectangles_left_inner = []
+        railside_rectangles_left_outer = []
 
         for i in range(len(railside_bottom_vertices) - 1):
             bottom_left = railside_bottom_vertices[i]
@@ -63,226 +87,303 @@ if __name__ == "__main__":
             tolerance = 0.05
             if abs(bottom_left.point.x - bottom_right.point.x) < tolerance:
                 if abs(bottom_left.point.z - bottom_right.point.z) > tolerance:
+                    closest_centerpoint = tsu.find_closest_centerpoint(top_left.point, trackcenter, plane="xz")
+                    distance_from_center = tsu.signed_distance_between(top_left.point, closest_centerpoint, plane="xz")
+
                     rectangle = (bottom_left, top_left, top_right, bottom_right)
-                    railside_rectangles.append(rectangle)
-        
-        # Railhead vertices from center to outside:
-        #[Vector((-0.7175, 0.2, 0.0))]
-        #[Vector((-0.7175, 0.325, 0.0))]
-        #[Vector((-0.8675, 0.325, 0.0))]
-        #[Vector((-0.8675, 0.2, 0.0))]
 
-        # Railhead vertices for ATracks:
-        # [Vector((-0.6785, 0.192, 0.0))]
-        # [Vector((-0.6785, 0.215, 0.0))]
-        # [Vector((-0.7694, 0.2268, 0.0))]
-        # [Vector((-0.7175, 0.325, 0.0))]
-        # [Vector((-0.7895, 0.325, 0.0))]
-        # [Vector((-0.7374, 0.2268, 0.0))]
-        # [Vector((-0.8285, 0.215, 0.0))]
-        # [Vector((-0.8285, 0.192, 0.0))]
+                    if 0.8175 <= distance_from_center <= 0.9175: # Outer right railside.
+                        railside_rectangles_right_outer.append(rectangle)
 
-        # Points needed for UVPoints:
-        # Top of rail base: [Vector((-0.7535000443458557, 0.23000000417232513, 0.0))]
-        # Bottom of rail: [Vector((-0.7619999647140503, 0.1899999976158142, 0.0))]
-        # Bottom of rail: [Vector((-0.7619999647140503, 0.1899999976158142, 0.0))]
-        for r in railside_rectangles:
-            print(r)
+                    elif 0.6675 <= distance_from_center <= 0.7675: # Inner right railside.
+                        railside_rectangles_right_inner.append(rectangle)
+
+                    elif -0.7675 <= distance_from_center <= -0.6675: # Inner left railside.
+                        railside_rectangles_left_inner.append(rectangle)
+
+                    elif -0.9175 <= distance_from_center <= -0.8175: # Outer left railside.
+                        railside_rectangles_left_outer.append(rectangle)
+
 
         # Modify the existing railside vertices to be the top rectangle of the new ATracks-like railside.
-        prev_vertices_right_outer = None
-        prev_vertices_right_inner = None
-        prev_vertices_left_inner = None
-        prev_vertices_left_outer = None
+        update_vertex_data = [] # Format: [(vertex, new_height, new_center_distance, new_u_value, new_v_value, new_normal_vecx, new_normal_vecy, new_normal_vecz), ...]
+        new_triangles = [] # Format: [(vertex1, vertex2, vertex3), ...]
+        prev_vertices = None
 
-        for bottom_left, top_left, top_right, bottom_right in railside_rectangles:
+        # Outer right railside.
+        for idx, (bottom_left, top_left, top_right, bottom_right) in enumerate(railside_rectangles_right_outer):
             # left = vertices closer to track start
             # right = vertices further away from track start
 
-            first_rectangle = bottom_left.point.z == 0
-            closest_centerpoint = tsu.find_closest_centerpoint(top_left.point, trackcenter, plane="xz")
-            distance_from_center = tsu.signed_distance_between(top_left.point, closest_centerpoint, plane="xz")
             distance_along_track_left = tsu.distance_along_straight_track(top_left.point, trackcenter)
             distance_along_track_right = tsu.distance_along_straight_track(top_right.point, trackcenter)
             rails_delta_texcoord = 2
             u_value_left = float(distance_along_track_left * rails_delta_texcoord)
             u_value_right = float(distance_along_track_right * rails_delta_texcoord)
 
-            update_vertex_data = [] # Format: [(vertex, new_height, new_center_distance, new_u_value, new_v_value, new_normal_vecx, new_normal_vecy, new_normal_vecz), ...]
-            new_triangles = [] # Format: [(vertex1, vertex2, vertex3), ...]
-
-            # Different values depending on which railside it is.
-            if 0.8175 <= distance_from_center <= 0.9175: # Outside right rail.
-                update_vertex_data.extend([
-                    (bottom_left, 0.2268, 0.7694, u_value_left, -0.9808, -0.981249, -0.192746, 0.0),
-                    (top_left, 0.325, 0.7895, u_value_left, -0.951, -0.981249, -0.192746, 0.0),
-                    (top_right, 0.325, 0.7895, u_value_right, -0.951, -0.981249, -0.192746, 0.0),
-                    (bottom_right, 0.2268, 0.7694, u_value_right, -0.9808, -0.981249, -0.192746, 0.0)
-                ])
-            elif 0.6675 <= distance_from_center <= 0.7675: # Inside right rail.
-                update_vertex_data.extend([
-                    (bottom_left, 0.2268, 0.7374, u_value_left, -0.9808, 0.981249, -0.192746, 0.0),
-                    (top_left, 0.325, 0.7175, u_value_left, -0.951, 0.981249, -0.192746, 0.0),
-                    (top_right, 0.325, 0.7175, u_value_right, -0.951, 0.981249, -0.192746, 0.0),
-                    (bottom_right, 0.2268, 0.7374, u_value_right, -0.9808, 0.981249, -0.192746, 0.0)
-                ])
-            elif -0.7675 <= distance_from_center <= -0.6675: # Inside left rail.
-                update_vertex_data.extend([
-                    (bottom_left, 0.2268, -0.7374, u_value_left, -0.9808, -0.981249, -0.192746, 0.0),
-                    (top_left, 0.325, -0.7175, u_value_left, -0.951, -0.981249, -0.192746, 0.0),
-                    (top_right, 0.325, -0.7175, u_value_right, -0.951, -0.981249, -0.192746, 0.0),
-                    (bottom_right, 0.2268, -0.7374, u_value_right, -0.9808, -0.981249, -0.192746, 0.0)
-                ])
-            elif -0.9175 <= distance_from_center <= -0.8175: # Outside left rail.
-                update_vertex_data.extend([
-                    (bottom_left, 0.2268, -0.7694, u_value_left, -0.9808, 0.981249, -0.192746, 0.0),
-                    (top_left, 0.325, -0.7895, u_value_left, -0.951, 0.981249, -0.192746, 0.0),
-                    (top_right, 0.325, -0.7895, u_value_right, -0.951, 0.981249, -0.192746, 0.0),
-                    (bottom_right, 0.2268, -0.7694, u_value_right, -0.9808, 0.981249, -0.192746, 0.0)
-                ])
+            # Updated values for existing vertices.
+            update_vertex_data.extend([
+                (bottom_left, 0.2268, 0.7694, u_value_left, -0.9808, -0.981249, -0.192746, 0.0),
+                (top_left, 0.325, 0.7895, u_value_left, -0.951, -0.981249, -0.192746, 0.0),
+                (top_right, 0.325, 0.7895, u_value_right, -0.951, -0.981249, -0.192746, 0.0),
+                (bottom_right, 0.2268, 0.7694, u_value_right, -0.9808, -0.981249, -0.192746, 0.0)
+            ])
 
             # Insert new vertices and triangles from top to bottom of the new ATracks-like railside.
-            if first_rectangle: # First rectangle of a railside, so also insert new vertices for the left side of the rectangle.
-                railbase_inner = new_sfile.add_vertex_to_subobject(lod_dlevel, 0, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
-                railbase_outer_top1 = new_sfile.add_vertex_to_subobject(lod_dlevel, 0, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
-                railbase_outer_top2 = new_sfile.add_vertex_to_subobject(lod_dlevel, 0, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
-                railbase_outer_bottom = new_sfile.add_vertex_to_subobject(lod_dlevel, 0, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
+            if idx == 0: # First rectangle of a railside, so also insert new vertices for the left side of the rectangle.
+                railbase_inner = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
+                new_sfile.save()
+                railbase_outer_top1 = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
+                railbase_outer_top2 = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
+                railbase_outer_bottom = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
 
-                # Different values depending on which railside it is.
-                if 0.8175 <= distance_from_center <= 0.9175: # Outside right rail.
-                    update_vertex_data.extend([
-                        (railbase_inner, 0.2268, 0.7694, u_value_left, -0.975, -0.219822, 0.97554, 0.0),
-                        (railbase_outer_top1, 0.215, 0.8285, u_value_left, -0.951, -0.219822, 0.97554, 0.0),
-                        (railbase_outer_top2, 0.215, 0.8285, u_value_left, -0.951, -1.0, 0.0, 0.0),
-                        (railbase_outer_bottom, 0.192, 0.8285, u_value_left, -0.975, -1.0, 0.0, 0.0)
-                    ])
-                    prev_vertices_right_outer = (bottom_left, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
-                elif 0.6675 <= distance_from_center <= 0.7675: # Inside right rail.
-                    update_vertex_data.extend([
-                        (railbase_inner, 0.2268, 0.7374, u_value_left, -0.975, 0.219822, 0.97554, 0.0),
-                        (railbase_outer_top1, 0.215, 0.6785, u_value_left, -0.951, 0.219822, 0.97554, 0.0),
-                        (railbase_outer_top2, 0.215, 0.6785, u_value_left, -0.951, 1.0, 0.0, 0.0),
-                        (railbase_outer_bottom, 0.192, 0.6785, u_value_left, -0.975, 1.0, 0.0, 0.0)
-                    ])
-                    prev_vertices_right_inner = (bottom_left, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
-                elif -0.7675 <= distance_from_center <= -0.6675: # Inside left rail.
-                    update_vertex_data.extend([
-                        (railbase_inner, 0.2268, -0.7374, u_value_left, -0.975, -0.219822, 0.97554, 0.0),
-                        (railbase_outer_top1, 0.215, -0.6785, u_value_left, -0.951, -0.219822, 0.97554, 0.0),
-                        (railbase_outer_top2, 0.215, -0.6785, u_value_left, -0.951, -1.0, 0.0, 0.0),
-                        (railbase_outer_bottom, 0.192, -0.6785, u_value_left, -0.975, -1.0, 0.0, 0.0)
-                    ])
-                    prev_vertices_left_inner = (bottom_left, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
-                elif -0.9175 <= distance_from_center <= -0.8175: # Outside left rail.
-                    update_vertex_data.extend([
-                        (railbase_inner, 0.2268, -0.7694, u_value_left, -0.975, 0.219822, 0.97554, 0.0),
-                        (railbase_outer_top1, 0.215, -0.8285, u_value_left, -0.951, 0.219822, 0.97554, 0.0),
-                        (railbase_outer_top2, 0.215, -0.8285, u_value_left, -0.951, 1.0, 0.0, 0.0),
-                        (railbase_outer_bottom, 0.192, -0.8285, u_value_left, -0.975, 1.0, 0.0, 0.0)
-                    ])
-                    prev_vertices_left_outer = (bottom_left, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
+                # Updated values for newly created vertices.
+                update_vertex_data.extend([
+                    (railbase_inner, 0.2268, 0.7694, u_value_left, -0.975, -0.219822, 0.97554, 0.0),
+                    (railbase_outer_top1, 0.215, 0.8285, u_value_left, -0.951, -0.219822, 0.97554, 0.0),
+                    (railbase_outer_top2, 0.215, 0.8285, u_value_left, -0.951, -1.0, 0.0, 0.0),
+                    (railbase_outer_bottom, 0.192, 0.8285, u_value_left, -0.975, -1.0, 0.0, 0.0)
+                ])
+                prev_vertices = (bottom_left, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
             
-            # Right side of the rectangle.
-            railbase_inner = new_sfile.add_vertex_to_subobject(lod_dlevel, 0, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
-            railbase_outer_top1 = new_sfile.add_vertex_to_subobject(lod_dlevel, 0, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
-            railbase_outer_top2 = new_sfile.add_vertex_to_subobject(lod_dlevel, 0, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
-            railbase_outer_bottom = new_sfile.add_vertex_to_subobject(lod_dlevel, 0, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
+            # Add new vertices for the right side of the rectangle.
+            railbase_inner = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
+            railbase_outer_top1 = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
+            railbase_outer_top2 = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
+            railbase_outer_bottom = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
 
-            # Different values and triangle ordering depending on which railside it is.
-            # Also specify new triangles from the new vertices to the previous set of vertices added for the railside.
-            if 0.8175 <= distance_from_center <= 0.9175: # Outside right rail.
+            # Updated values for the created vertices.
+            update_vertex_data.extend([
+                (railbase_inner, 0.2268, 0.7694, u_value_right, -0.975, -0.219822, 0.97554, 0.0),
+                (railbase_outer_top1, 0.215, 0.8285, u_value_right, -0.951, -0.219822, 0.97554, 0.0),
+                (railbase_outer_top2, 0.215, 0.8285, u_value_right, -0.951, -1.0, 0.0, 0.0),
+                (railbase_outer_bottom, 0.192, 0.8285, u_value_right, -0.975, -1.0, 0.0, 0.0)
+            ])
+
+            # Specify new triangles from the new vertices to the previous set of vertices added for the railside.
+            prev_bottom_right, prev_railbase_inner, prev_railbase_outer_top1, prev_railbase_outer_top2, prev_railbase_outer_bottom = prev_vertices
+            new_triangles.extend([
+                (bottom_right, prev_bottom_right, railbase_inner),
+                (railbase_inner, prev_bottom_right, prev_railbase_inner),
+                (railbase_inner, prev_railbase_inner, railbase_outer_top1),
+                (railbase_outer_top1, prev_railbase_inner, prev_railbase_outer_top1),
+                (railbase_outer_top1, prev_railbase_outer_top1, railbase_outer_top2),
+                (railbase_outer_top2, prev_railbase_outer_top1, prev_railbase_outer_top2),
+                (railbase_outer_top2, prev_railbase_outer_top2, railbase_outer_bottom),
+                (railbase_outer_bottom, prev_railbase_outer_top2, prev_railbase_outer_bottom),
+            ])
+            prev_vertices = (bottom_right, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
+        
+
+        # Inner right railside.
+        for idx, (bottom_left, top_left, top_right, bottom_right) in enumerate(railside_rectangles_right_inner):
+            # left = vertices closer to track start
+            # right = vertices further away from track start
+
+            distance_along_track_left = tsu.distance_along_straight_track(top_left.point, trackcenter)
+            distance_along_track_right = tsu.distance_along_straight_track(top_right.point, trackcenter)
+            rails_delta_texcoord = 2
+            u_value_left = float(distance_along_track_left * rails_delta_texcoord)
+            u_value_right = float(distance_along_track_right * rails_delta_texcoord)
+
+            # Updated values for existing vertices.
+            update_vertex_data.extend([
+                (bottom_left, 0.2268, 0.7374, u_value_left, -0.9808, 0.981249, -0.192746, 0.0),
+                (top_left, 0.325, 0.7175, u_value_left, -0.951, 0.981249, -0.192746, 0.0),
+                (top_right, 0.325, 0.7175, u_value_right, -0.951, 0.981249, -0.192746, 0.0),
+                (bottom_right, 0.2268, 0.7374, u_value_right, -0.9808, 0.981249, -0.192746, 0.0)
+            ])
+
+            # Insert new vertices and triangles from top to bottom of the new ATracks-like railside.
+            if idx == 0: # First rectangle of the railside, so also insert new vertices for the left side of the rectangle.
+                railbase_inner = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
+                railbase_outer_top1 = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
+                railbase_outer_top2 = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
+                railbase_outer_bottom = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
+
+                # Updated values for newly created vertices.
                 update_vertex_data.extend([
-                    (railbase_inner, 0.2268, 0.7694, u_value_right, -0.975, -0.219822, 0.97554, 0.0),
-                    (railbase_outer_top1, 0.215, 0.8285, u_value_right, -0.951, -0.219822, 0.97554, 0.0),
-                    (railbase_outer_top2, 0.215, 0.8285, u_value_right, -0.951, -1.0, 0.0, 0.0),
-                    (railbase_outer_bottom, 0.192, 0.8285, u_value_right, -0.975, -1.0, 0.0, 0.0)
+                    (railbase_inner, 0.2268, 0.7374, u_value_left, -0.975, 0.219822, 0.97554, 0.0),
+                    (railbase_outer_top1, 0.215, 0.6785, u_value_left, -0.951, 0.219822, 0.97554, 0.0),
+                    (railbase_outer_top2, 0.215, 0.6785, u_value_left, -0.951, 1.0, 0.0, 0.0),
+                    (railbase_outer_bottom, 0.192, 0.6785, u_value_left, -0.975, 1.0, 0.0, 0.0)
                 ])
-                prev_bottom_right, prev_railbase_inner, prev_railbase_outer_top1, prev_railbase_outer_top2, prev_railbase_outer_bottom = prev_vertices_right_outer
-                new_triangles.extend([
-                    (bottom_right, prev_bottom_right, railbase_inner),
-                    (railbase_inner, prev_bottom_right, prev_railbase_inner),
-                    (railbase_inner, prev_railbase_inner, railbase_outer_top1),
-                    (railbase_outer_top1, prev_railbase_inner, prev_railbase_outer_top1),
-                    (railbase_outer_top1, prev_railbase_outer_top1, railbase_outer_top2),
-                    (railbase_outer_top2, prev_railbase_outer_top1, prev_railbase_outer_top2),
-                    (railbase_outer_top2, prev_railbase_outer_top2, railbase_outer_bottom),
-                    (railbase_outer_bottom, prev_railbase_outer_top2, prev_railbase_outer_bottom),
-                ])
-                prev_vertices_right_outer = (bottom_right, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
-            elif 0.6675 <= distance_from_center <= 0.7675: # Inside right rail.
-                update_vertex_data.extend([
-                    (railbase_inner, 0.2268, 0.7374, u_value_right, -0.975, 0.219822, 0.97554, 0.0),
-                    (railbase_outer_top1, 0.215, 0.6785, u_value_right, -0.951, 0.219822, 0.97554, 0.0),
-                    (railbase_outer_top2, 0.215, 0.6785, u_value_right, -0.951, 1.0, 0.0, 0.0),
-                    (railbase_outer_bottom, 0.192, 0.6785, u_value_right, -0.975, 1.0, 0.0, 0.0)
-                ])
-                prev_bottom_right, prev_railbase_inner, prev_railbase_outer_top1, prev_railbase_outer_top2, prev_railbase_outer_bottom = prev_vertices_right_inner
-                new_triangles.extend([
-                    (bottom_right, railbase_inner, prev_bottom_right),
-                    (railbase_inner, prev_railbase_inner, prev_bottom_right),
-                    (railbase_inner, railbase_outer_top1, prev_railbase_inner),
-                    (railbase_outer_top1, prev_railbase_outer_top1, prev_railbase_inner),
-                    (railbase_outer_top1, railbase_outer_top2, prev_railbase_outer_top1),
-                    (railbase_outer_top2, prev_railbase_outer_top1, prev_railbase_outer_top2),
-                    (railbase_outer_top2, railbase_outer_bottom, prev_railbase_outer_top2),
-                    (railbase_outer_bottom, prev_railbase_outer_bottom, prev_railbase_outer_top2),
-                ])
-                prev_vertices_right_inner = (bottom_right, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
-            elif -0.7675 <= distance_from_center <= -0.6675: # Inside left rail.
-                update_vertex_data.extend([
-                    (railbase_inner, 0.2268, -0.7374, u_value_right, -0.975, -0.219822, 0.97554, 0.0),
-                    (railbase_outer_top1, 0.215, -0.6785, u_value_right, -0.951, -0.219822, 0.97554, 0.0),
-                    (railbase_outer_top2, 0.215, -0.6785, u_value_right, -0.951, -1.0, 0.0, 0.0),
-                    (railbase_outer_bottom, 0.192, -0.6785, u_value_right, -0.975, -1.0, 0.0, 0.0)
-                ])
-                prev_bottom_right, prev_railbase_inner, prev_railbase_outer_top1, prev_railbase_outer_top2, prev_railbase_outer_bottom = prev_vertices_left_inner
-                new_triangles.extend([
-                    (bottom_right, prev_bottom_right, railbase_inner),
-                    (railbase_inner, prev_bottom_right, prev_railbase_inner),
-                    (railbase_inner, prev_railbase_inner, railbase_outer_top1),
-                    (railbase_outer_top1, prev_railbase_inner, prev_railbase_outer_top1),
-                    (railbase_outer_top1, prev_railbase_outer_top1, railbase_outer_top2),
-                    (railbase_outer_top2, prev_railbase_outer_top1, prev_railbase_outer_top2),
-                    (railbase_outer_top2, prev_railbase_outer_top2, railbase_outer_bottom),
-                    (railbase_outer_bottom, prev_railbase_outer_top2, prev_railbase_outer_bottom),
-                ])
-                prev_vertices_left_inner = (bottom_right, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
-            elif -0.9175 <= distance_from_center <= -0.8175: # Outside left rail.
-                update_vertex_data.extend([
-                    (railbase_inner, 0.2268, -0.7694, u_value_right, -0.975, 0.219822, 0.97554, 0.0),
-                    (railbase_outer_top1, 0.215, -0.8285, u_value_right, -0.951, 0.219822, 0.97554, 0.0),
-                    (railbase_outer_top2, 0.215, -0.8285, u_value_right, -0.951, 1.0, 0.0, 0.0),
-                    (railbase_outer_bottom, 0.192, -0.8285, u_value_right, -0.975, 1.0, 0.0, 0.0)
-                ])
-                prev_bottom_right, prev_railbase_inner, prev_railbase_outer_top1, prev_railbase_outer_top2, prev_railbase_outer_bottom = prev_vertices_left_outer
-                new_triangles.extend([
-                    (bottom_right, railbase_inner, prev_bottom_right),
-                    (railbase_inner, prev_railbase_inner, prev_bottom_right),
-                    (railbase_inner, railbase_outer_top1, prev_railbase_inner),
-                    (railbase_outer_top1, prev_railbase_outer_top1, prev_railbase_inner),
-                    (railbase_outer_top1, railbase_outer_top2, prev_railbase_outer_top1),
-                    (railbase_outer_top2, prev_railbase_outer_top1, prev_railbase_outer_top2),
-                    (railbase_outer_top2, railbase_outer_bottom, prev_railbase_outer_top2),
-                    (railbase_outer_bottom, prev_railbase_outer_bottom, prev_railbase_outer_top2),
-                ])
-                prev_vertices_left_outer = (bottom_right, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
+                prev_vertices = (bottom_left, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
             
-            # Update the created vertices.
-            for vertex, new_height, new_center_distance, new_u_value, new_v_value, new_normal_vecx, new_normal_vecy, new_normal_vecz in update_vertex_data:
-                new_position = tsu.get_new_position_from_trackcenter(new_center_distance, vertex.point, trackcenter)
-                vertex.point.x = new_position.x
-                vertex.point.y = new_height
-                vertex.point.z = new_position.z
-                vertex.uv_point.u = new_u_value
-                vertex.uv_point.v = new_v_value
-                vertex.normal.vec_x = new_normal_vecx
-                vertex.normal.vec_y = new_normal_vecy
-                vertex.normal.vec_z = new_normal_vecz
-                new_sfile.update_vertex(vertex)
+            # Add new vertices for the right side of the rectangle.
+            railbase_inner = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
+            railbase_outer_top1 = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
+            railbase_outer_top2 = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
+            railbase_outer_bottom = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
+
+            # Updated values for the created vertices.
+            update_vertex_data.extend([
+                (railbase_inner, 0.2268, 0.7374, u_value_right, -0.975, 0.219822, 0.97554, 0.0),
+                (railbase_outer_top1, 0.215, 0.6785, u_value_right, -0.951, 0.219822, 0.97554, 0.0),
+                (railbase_outer_top2, 0.215, 0.6785, u_value_right, -0.951, 1.0, 0.0, 0.0),
+                (railbase_outer_bottom, 0.192, 0.6785, u_value_right, -0.975, 1.0, 0.0, 0.0)
+            ])
+
+            # Specify new triangles from the new vertices to the previous set of vertices added for the railside.
+            prev_bottom_right, prev_railbase_inner, prev_railbase_outer_top1, prev_railbase_outer_top2, prev_railbase_outer_bottom = prev_vertices
+            new_triangles.extend([
+                (bottom_right, railbase_inner, prev_bottom_right),
+                (railbase_inner, prev_railbase_inner, prev_bottom_right),
+                (railbase_inner, railbase_outer_top1, prev_railbase_inner),
+                (railbase_outer_top1, prev_railbase_outer_top1, prev_railbase_inner),
+                (railbase_outer_top1, railbase_outer_top2, prev_railbase_outer_top1),
+                (railbase_outer_top2, prev_railbase_outer_top1, prev_railbase_outer_top2),
+                (railbase_outer_top2, railbase_outer_bottom, prev_railbase_outer_top2),
+                (railbase_outer_bottom, prev_railbase_outer_bottom, prev_railbase_outer_top2),
+            ])
+            prev_vertices = (bottom_right, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
+        
+
+        # Inner left railside.
+        for idx, (bottom_left, top_left, top_right, bottom_right) in enumerate(railside_rectangles_left_inner):
+            # left = vertices closer to track start
+            # right = vertices further away from track start
+
+            distance_along_track_left = tsu.distance_along_straight_track(top_left.point, trackcenter)
+            distance_along_track_right = tsu.distance_along_straight_track(top_right.point, trackcenter)
+            rails_delta_texcoord = 2
+            u_value_left = float(distance_along_track_left * rails_delta_texcoord)
+            u_value_right = float(distance_along_track_right * rails_delta_texcoord)
+
+            # Updated values for existing vertices.
+            update_vertex_data.extend([
+                (bottom_left, 0.2268, -0.7374, u_value_left, -0.9808, -0.981249, -0.192746, 0.0),
+                (top_left, 0.325, -0.7175, u_value_left, -0.951, -0.981249, -0.192746, 0.0),
+                (top_right, 0.325, -0.7175, u_value_right, -0.951, -0.981249, -0.192746, 0.0),
+                (bottom_right, 0.2268, -0.7374, u_value_right, -0.9808, -0.981249, -0.192746, 0.0)
+            ])
             
-            # Insert new triangles between the created vertices.
-            for vertex1, vertex2, vertex3 in new_triangles:
-                new_sfile.insert_triangle_between(railside_indexed_trilist, vertex1, vertex2, vertex3)
+            # Insert new vertices and triangles from top to bottom of the new ATracks-like railside.
+            if idx == 0: # First rectangle of the railside, so also insert new vertices for the left side of the rectangle.
+                railbase_inner = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
+                railbase_outer_top1 = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
+                railbase_outer_top2 = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
+                railbase_outer_bottom = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
+
+                # Updated values for newly created vertices.
+                update_vertex_data.extend([
+                    (railbase_inner, 0.2268, -0.7374, u_value_left, -0.975, -0.219822, 0.97554, 0.0),
+                    (railbase_outer_top1, 0.215, -0.6785, u_value_left, -0.951, -0.219822, 0.97554, 0.0),
+                    (railbase_outer_top2, 0.215, -0.6785, u_value_left, -0.951, -1.0, 0.0, 0.0),
+                    (railbase_outer_bottom, 0.192, -0.6785, u_value_left, -0.975, -1.0, 0.0, 0.0)
+                ])
+                prev_vertices = (bottom_left, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
+            
+            # Add new vertices for the right side of the rectangle.
+            railbase_inner = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
+            railbase_outer_top1 = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
+            railbase_outer_top2 = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
+            railbase_outer_bottom = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
+
+            # Updated values for the created vertices.
+            update_vertex_data.extend([
+                (railbase_inner, 0.2268, -0.7374, u_value_right, -0.975, -0.219822, 0.97554, 0.0),
+                (railbase_outer_top1, 0.215, -0.6785, u_value_right, -0.951, -0.219822, 0.97554, 0.0),
+                (railbase_outer_top2, 0.215, -0.6785, u_value_right, -0.951, -1.0, 0.0, 0.0),
+                (railbase_outer_bottom, 0.192, -0.6785, u_value_right, -0.975, -1.0, 0.0, 0.0)
+            ])
+
+            # Specify new triangles from the new vertices to the previous set of vertices added for the railside.
+            prev_bottom_right, prev_railbase_inner, prev_railbase_outer_top1, prev_railbase_outer_top2, prev_railbase_outer_bottom = prev_vertices
+            new_triangles.extend([
+                (bottom_right, prev_bottom_right, railbase_inner),
+                (railbase_inner, prev_bottom_right, prev_railbase_inner),
+                (railbase_inner, prev_railbase_inner, railbase_outer_top1),
+                (railbase_outer_top1, prev_railbase_inner, prev_railbase_outer_top1),
+                (railbase_outer_top1, prev_railbase_outer_top1, railbase_outer_top2),
+                (railbase_outer_top2, prev_railbase_outer_top1, prev_railbase_outer_top2),
+                (railbase_outer_top2, prev_railbase_outer_top2, railbase_outer_bottom),
+                (railbase_outer_bottom, prev_railbase_outer_top2, prev_railbase_outer_bottom),
+            ])
+            prev_vertices = (bottom_right, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
+        
+
+        # Outer left railside.
+        for idx, (bottom_left, top_left, top_right, bottom_right) in enumerate(railside_rectangles_left_outer):
+            # left = vertices closer to track start
+            # right = vertices further away from track start
+
+            distance_along_track_left = tsu.distance_along_straight_track(top_left.point, trackcenter)
+            distance_along_track_right = tsu.distance_along_straight_track(top_right.point, trackcenter)
+            rails_delta_texcoord = 2
+            u_value_left = float(distance_along_track_left * rails_delta_texcoord)
+            u_value_right = float(distance_along_track_right * rails_delta_texcoord)
+
+            # Updated values for existing vertices.
+            update_vertex_data.extend([
+                (bottom_left, 0.2268, -0.7694, u_value_left, -0.9808, 0.981249, -0.192746, 0.0),
+                (top_left, 0.325, -0.7895, u_value_left, -0.951, 0.981249, -0.192746, 0.0),
+                (top_right, 0.325, -0.7895, u_value_right, -0.951, 0.981249, -0.192746, 0.0),
+                (bottom_right, 0.2268, -0.7694, u_value_right, -0.9808, 0.981249, -0.192746, 0.0)
+            ])
+
+            # Insert new vertices and triangles from top to bottom of the new ATracks-like railside.
+            if idx == 0: # First rectangle of the railside, so also insert new vertices for the left side of the rectangle.
+                railbase_inner = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
+                railbase_outer_top1 = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
+                railbase_outer_top2 = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
+                railbase_outer_bottom = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_left.point, bottom_left.uv_point, bottom_left.normal)
+
+                # Updated values for newly created vertices.
+                update_vertex_data.extend([
+                    (railbase_inner, 0.2268, -0.7694, u_value_left, -0.975, 0.219822, 0.97554, 0.0),
+                    (railbase_outer_top1, 0.215, -0.8285, u_value_left, -0.951, 0.219822, 0.97554, 0.0),
+                    (railbase_outer_top2, 0.215, -0.8285, u_value_left, -0.951, 1.0, 0.0, 0.0),
+                    (railbase_outer_bottom, 0.192, -0.8285, u_value_left, -0.975, 1.0, 0.0, 0.0)
+                ])
+                prev_vertices = (bottom_left, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
+            
+            # Add new vertices for the right side of the rectangle.
+            railbase_inner = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
+            railbase_outer_top1 = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
+            railbase_outer_top2 = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
+            railbase_outer_bottom = new_sfile.add_vertex_to_subobject(railside_indexed_trilist, bottom_right.point, bottom_right.uv_point, bottom_right.normal)
+
+            # Updated values for the created vertices.
+            update_vertex_data.extend([
+                (railbase_inner, 0.2268, -0.7694, u_value_right, -0.975, 0.219822, 0.97554, 0.0),
+                (railbase_outer_top1, 0.215, -0.8285, u_value_right, -0.951, 0.219822, 0.97554, 0.0),
+                (railbase_outer_top2, 0.215, -0.8285, u_value_right, -0.951, 1.0, 0.0, 0.0),
+                (railbase_outer_bottom, 0.192, -0.8285, u_value_right, -0.975, 1.0, 0.0, 0.0)
+            ])
+
+            # Specify new triangles from the new vertices to the previous set of vertices added for the railside.
+            prev_bottom_right, prev_railbase_inner, prev_railbase_outer_top1, prev_railbase_outer_top2, prev_railbase_outer_bottom = prev_vertices
+            new_triangles.extend([
+                (bottom_right, railbase_inner, prev_bottom_right),
+                (railbase_inner, prev_railbase_inner, prev_bottom_right),
+                (railbase_inner, railbase_outer_top1, prev_railbase_inner),
+                (railbase_outer_top1, prev_railbase_outer_top1, prev_railbase_inner),
+                (railbase_outer_top1, railbase_outer_top2, prev_railbase_outer_top1),
+                (railbase_outer_top2, prev_railbase_outer_top1, prev_railbase_outer_top2),
+                (railbase_outer_top2, railbase_outer_bottom, prev_railbase_outer_top2),
+                (railbase_outer_bottom, prev_railbase_outer_bottom, prev_railbase_outer_top2),
+            ])
+            prev_vertices = (bottom_right, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
+        
+
+        # Update the existing and created vertices.
+        for vertex, new_height, new_center_distance, new_u_value, new_v_value, new_normal_vecx, new_normal_vecy, new_normal_vecz in update_vertex_data:
+            new_position = tsu.get_new_position_from_trackcenter(new_center_distance, vertex.point, trackcenter)
+            vertex.point.x = new_position.x
+            vertex.point.y = new_height
+            vertex.point.z = new_position.z
+            vertex.uv_point.u = new_u_value
+            vertex.uv_point.v = new_v_value
+            vertex.normal.vec_x = new_normal_vecx
+            vertex.normal.vec_y = new_normal_vecy
+            vertex.normal.vec_z = new_normal_vecz
+            new_sfile.update_vertex(vertex)
+        
+        # Insert new triangles between the created vertices.
+        for vertex1, vertex2, vertex3 in new_triangles:
+            new_sfile.insert_triangle_between(railside_indexed_trilist, vertex1, vertex2, vertex3)
+
 
         new_sfile.save()
         #new_sfile.compress(ffeditc_path)
