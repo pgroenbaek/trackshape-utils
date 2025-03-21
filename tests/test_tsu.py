@@ -54,3 +54,8 @@ def test_generate_curve_centerpoints():
     trackcenter = tsu.generate_curve_centerpoints(curve_angle=20, curve_radius=500, num_points=10, start_point=tsu.Point(0, 0, 0))
     assert trackcenter.centerpoints.shape == (10, 3)
     assert trackcenter.centerpoints.size == 30
+
+def test_generate_centerpoints_from_tsection():
+    trackcenter = tsu.generate_centerpoints_from_tsection(shape_name="A1tPnt3dBCmpdLftMnlDiv.s", num_points_per_path=10)
+    assert trackcenter.centerpoints.shape == (40, 3)
+    assert trackcenter.centerpoints.size == 120

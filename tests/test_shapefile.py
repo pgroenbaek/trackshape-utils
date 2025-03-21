@@ -267,9 +267,12 @@ def test_get_vertices_by_prim_state(global_storage):
 def test_get_connected_vertices(global_storage):
     shape = global_storage["shape"]
     lod_dlevel = 200
+    subobject_idx = 0
     prim_state = shape.get_prim_state_by_idx(0)
     vertices = shape.get_vertices_by_prim_state(lod_dlevel, prim_state)
-    connected_vertices = shape.get_connected_vertices(prim_state, vertices[100])
+    indexed_trilists = shape.get_indexed_trilists_in_subobject_by_prim_state(lod_dlevel, subobject_idx, prim_state)
+    indexed_trilist = indexed_trilists[0]
+    connected_vertices = shape.get_connected_vertices(indexed_trilist, vertices[100])
     assert len(connected_vertices) == 2
 
 def test_add_vertex_to_subobject(global_storage):
@@ -279,7 +282,11 @@ def test_add_vertex_to_subobject(global_storage):
     vertex_point = tsu.Point(0, 0, 0)
     vertex_uv_point = tsu.UVPoint(0, 0)
     vertex_normal = tsu.Normal(0, 0, 0)
-    added_vertex = shape.add_vertex_to_subobject(lod_dlevel, subobject_idx, vertex_point, vertex_uv_point, vertex_normal)
+    prim_state = shape.get_prim_state_by_idx(0)
+    vertices = shape.get_vertices_by_prim_state(lod_dlevel, prim_state)
+    indexed_trilists = shape.get_indexed_trilists_in_subobject_by_prim_state(lod_dlevel, subobject_idx, prim_state)
+    indexed_trilist = indexed_trilists[0]
+    added_vertex = shape.add_vertex_to_subobject(lod_dlevel, subobject_idx, indexed_trilist, vertex_point, vertex_uv_point, vertex_normal)
     shape.save()
     shape._read()
     assert added_vertex is not None

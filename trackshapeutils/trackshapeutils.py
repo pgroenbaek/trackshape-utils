@@ -646,7 +646,8 @@ class Shapefile(File):
 
         return subobject_idxs
     
-    def get_prim_state_idxs_in_subobject(self, lod_dlevel: int, subobject_idx: int):
+    def get_prim_states_in_subobject(self, lod_dlevel: int, subobject_idx: int) -> List[PrimState]:
+        # TODO implement
         raise NotImplementedError()
 
     def get_indexed_trilists_in_subobject(self, lod_dlevel: int, subobject_idx: int) -> Dict[int, List[IndexedTrilist]]:
@@ -731,6 +732,14 @@ class Shapefile(File):
                         flags_in_trilist = []
 
         return indexed_trilists
+
+    def get_indexed_trilists_in_subobject_by_prim_state(self, lod_dlevel: int, subobject_idx: int, prim_state: PrimState) -> List[IndexedTrilist]:
+        indexed_trilists = self.get_indexed_trilists_in_subobject(lod_dlevel, subobject_idx)
+
+        if prim_state.idx in indexed_trilists:
+            return indexed_trilists[prim_state.idx]
+            
+        return []
     
     def update_geometry_info(self, lod_dlevel: int, subobject_idx: int) -> bool:
         current_dlevel = -1
@@ -745,8 +754,9 @@ class Shapefile(File):
         normal_idxs_counts = []
 
         indexed_trilists = self.get_indexed_trilists_in_subobject(lod_dlevel, subobject_idx)
-        for prim_state in indexed_trilists:
-            for indexed_trilist in indexed_trilists[prim_state]:
+
+        for prim_state_idx in indexed_trilists:
+            for indexed_trilist in indexed_trilists[prim_state_idx]:
                 vertex_idxs_counts.append(len(indexed_trilist.vertex_idxs))
                 normal_idxs_counts.append(len(indexed_trilist.normal_idxs))
 
@@ -755,11 +765,11 @@ class Shapefile(File):
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
-            if current_dlevel == indexed_trilist._lod_dlevel:
+            if current_dlevel == lod_dlevel:
                 if "sub_object (" in line.lower():
                     current_subobject_idx += 1
                 
-                if current_subobject_idx == indexed_trilist._subobject_idx:
+                if current_subobject_idx == subobject_idx:
                     if "geometry_info (" in line.lower():
                         parts = line.split(" ")
                         parts[2] = str(sum(normal_idxs_counts))
@@ -784,7 +794,7 @@ class Shapefile(File):
         
         return has_updated_geometry_info and has_updated_cullable_prims
         
-    def increase_vertexset_count(self, indexed_trilist: IndexedTrilist) -> Optional[int]:
+    def increase_vertexset_count(self, lod_dlevel: int, subobject_idx: int, indexed_trilist: IndexedTrilist) -> Optional[int]:
         current_dlevel = -1
         current_subobject_idx = -1
         current_geometry_node_idx = -1
@@ -796,11 +806,11 @@ class Shapefile(File):
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
-            if current_dlevel == indexed_trilist._lod_dlevel:
+            if current_dlevel == lod_dlevel:
                 if "sub_object (" in line.lower():
                     current_subobject_idx += 1
                 
-                if current_subobject_idx == indexed_trilist._subobject_idx:
+                if current_subobject_idx == subobject_idx:
                     if "geometry_node (" in line.lower():
                         current_geometry_node_idx += 1
 
@@ -822,11 +832,11 @@ class Shapefile(File):
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
-            if current_dlevel == indexed_trilist._lod_dlevel:
+            if current_dlevel == lod_dlevel:
                 if "sub_object (" in line.lower():
                     current_subobject_idx += 1
                 
-                if current_subobject_idx == indexed_trilist._subobject_idx:
+                if current_subobject_idx == subobject_idx:
                     if "vertex_set (" in line.lower():
                         parts = line.split(" ")
                         vertexset_idx = int(parts[2])
@@ -998,27 +1008,21 @@ class Shapefile(File):
         return vertices_in_subobject
 
     def get_vertices_by_prim_state(self, lod_dlevel: int, prim_state: PrimState) -> List[Vertex]:
-        points = self.get_points()
-        uvpoints = self.get_uvpoints()
-        normals = self.get_normals()
-        prim_states = self.get_prim_states()
         subobject_idxs = self.get_subobject_idxs_in_lod_dlevel(lod_dlevel)
 
         vertices_by_prim_state = []
         for subobject_idx in subobject_idxs:
             vertices = self.get_vertices_in_subobject(lod_dlevel, subobject_idx)
-            indexed_trilists = self.get_indexed_trilists_in_subobject(lod_dlevel, subobject_idx)
+            indexed_trilists = self.get_indexed_trilists_in_subobject_by_prim_state(lod_dlevel, subobject_idx, prim_state)
             for vertex in vertices:
-                for prim_state_idx in indexed_trilists:
-                    if prim_state is not None and prim_state_idx == prim_state.idx:
-                        for indexed_trilist in indexed_trilists[prim_state_idx]:
-                            if vertex._vertex_idx in indexed_trilist.vertex_idxs:
-                                if vertex not in vertices_by_prim_state:
-                                    vertices_by_prim_state.append(vertex)
+                for indexed_trilist in indexed_trilists:
+                    if vertex._vertex_idx in indexed_trilist.vertex_idxs:
+                        if vertex not in vertices_by_prim_state:
+                            vertices_by_prim_state.append(vertex)
 
         return vertices_by_prim_state
 
-    def get_vertex_in_subobject_by_idx(self,  lod_dlevel: int, subobject_idx: int, vertex_idx: int) -> Optional[Vertex]:
+    def get_vertex_in_subobject_by_idx(self, lod_dlevel: int, subobject_idx: int, vertex_idx: int) -> Optional[Vertex]:
         current_dlevel = -1
         current_subobject_idx = -1
         current_vertex_idx = 0
@@ -1058,33 +1062,31 @@ class Shapefile(File):
 
         return None
 
-    def get_prim_states_for_vertex(self):
+    def get_prim_states_for_vertex(self, vertex: Vertex):
+        prim_states = self.get_prim_states()
+        indexed_trilists = self.get_indexed_trilists_in_subobject(find_vertex_dlevel, find_vertex_subobject_idx)
+        # TODO implement
         raise NotImplementedError()
 
-    def get_connected_vertices(self, prim_state: PrimState, vertex: Vertex) -> List[Vertex]:
+    def get_connected_vertices(self, indexed_trilist: IndexedTrilist, vertex: Vertex) -> List[Vertex]:
         find_vertex_idx = vertex._vertex_idx
         find_vertex_dlevel = vertex._lod_dlevel
         find_vertex_subobject_idx = vertex._subobject_idx
-        find_vertex_prim_state_idx = prim_state.idx
 
         vertices = self.get_vertices_in_subobject(find_vertex_dlevel, find_vertex_subobject_idx)
-        indexed_trilists = self.get_indexed_trilists_in_subobject(find_vertex_dlevel, find_vertex_subobject_idx)
 
         connected_vertices = []
         connected_vertex_idxs = []
-        if find_vertex_prim_state_idx in indexed_trilists:
-            indexed_trilists_for_prim_state = indexed_trilists[find_vertex_prim_state_idx]
-            for indexed_trilist in indexed_trilists_for_prim_state:
-                triangles = [tuple(indexed_trilist.vertex_idxs[i : i + 3]) for i in range(0, len(indexed_trilist.vertex_idxs), 3)]
-                for tri in triangles:
-                    if find_vertex_idx in tri:
-                        for vertex_idx in tri:
-                            if vertex_idx != find_vertex_idx:
-                                connected_vertex_idxs.append(vertex_idx)
-                                connected_vertex_idxs = list(set(connected_vertex_idxs))
+        triangles = [tuple(indexed_trilist.vertex_idxs[i : i + 3]) for i in range(0, len(indexed_trilist.vertex_idxs), 3)]
+        for tri in triangles:
+            if find_vertex_idx in tri:
+                for vertex_idx in tri:
+                    if vertex_idx != find_vertex_idx:
+                        connected_vertex_idxs.append(vertex_idx)
+                        connected_vertex_idxs = list(set(connected_vertex_idxs))
 
-            for vertex_idx in connected_vertex_idxs:
-                connected_vertices.append(vertices[vertex_idx])
+        for vertex_idx in connected_vertex_idxs:
+            connected_vertices.append(vertices[vertex_idx])
 
         return connected_vertices
     
@@ -1100,7 +1102,12 @@ class Shapefile(File):
         update_successful = all([has_updated_point, has_updated_uv_point, has_updated_normal])
         return update_successful
 
-    def add_vertex_to_subobject(self, indexed_trilist: IndexedTrilist, point: Point, uv_point: UVPoint, normal: Normal) -> Optional[Vertex]:
+    def add_vertex_to_subobject(self, lod_dlevel: int, subobject_idx: int, indexed_trilist: IndexedTrilist, point: Point, uv_point: UVPoint, normal: Normal) -> Optional[Vertex]:
+        if lod_dlevel != indexed_trilist._lod_dlevel:
+            raise ValueError("Cannot add a new vertex to specified subobject: 'indexed_trilist' is not at the same LOD distance level as 'lod_dlevel'.")
+        if subobject_idx != indexed_trilist._subobject_idx:
+            raise ValueError("Cannot add a new vertex to specified subobject: 'indexed_trilist' is not part of subobject with index 'subobject_idx'.")
+        
         current_dlevel = -1
         current_subobject_idx = -1
         current_vertex_idx = 0
@@ -1110,7 +1117,7 @@ class Shapefile(File):
         new_uv_point_idx = self.add_uvpoint(uv_point)
         new_normal_idx = self.add_normal(normal)
 
-        new_vertex_idx = self.increase_vertexset_count(indexed_trilist)
+        new_vertex_idx = self.increase_vertexset_count(lod_dlevel, subobject_idx, indexed_trilist)
 
         new_vertex = Vertex(
             vertex_idx=new_vertex_idx,
@@ -1120,8 +1127,8 @@ class Shapefile(File):
             point_idx=new_point_idx,
             uv_point_idx=new_uv_point_idx,
             normal_idx=new_normal_idx,
-            lod_dlevel=indexed_trilist._lod_dlevel,
-            subobject_idx=indexed_trilist._subobject_idx
+            lod_dlevel=lod_dlevel,
+            subobject_idx=subobject_idx
         )
 
         for line_idx, line in enumerate(self.lines):
@@ -1129,24 +1136,24 @@ class Shapefile(File):
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
-            if current_dlevel == indexed_trilist._lod_dlevel:
+            if current_dlevel == lod_dlevel:
                 if "sub_object (" in line.lower():
                     current_subobject_idx += 1
                 
-                if current_subobject_idx == indexed_trilist._subobject_idx:
+                if current_subobject_idx == subobject_idx:
                     if 'vertices (' in line.lower():
                         processing_vertices = True
 
                     if processing_vertices and ')' in line.lower():
                         if current_vertex_idx == new_vertex_idx or 'vert' not in self.lines[line_idx - 1].lower():
                             processing_vertices = False
-                            new_count = len(self.get_vertices_in_subobject(indexed_trilist._lod_dlevel, indexed_trilist._subobject_idx)) + 1
+                            new_count = len(self.get_vertices_in_subobject(lod_dlevel, subobject_idx)) + 1
                             self.lines[line_idx - 1 : line_idx - 1] = [
                                 f"\t\t\t\t\t\t\t\tvertex ( 00000000 {new_vertex._point_idx} {new_vertex._normal_idx} ff969696 ff808080",
                                 f"\t\t\t\t\t\t\t\t\tvertex_uvs ( 1 {new_vertex._uv_point_idx} )",
                                 "\t\t\t\t\t\t\t\t)"
                             ]
-                            self.set_vertices_count(indexed_trilist._lod_dlevel, indexed_trilist._subobject_idx, new_count)
+                            self.set_vertices_count(lod_dlevel, subobject_idx, new_count)
                             return new_vertex
                     
                     if processing_vertices and 'vertex (' in line.lower():
@@ -1179,15 +1186,19 @@ class Shapefile(File):
 
     def calculate_point_centroid(self, points: List[Point]) -> Point:
         positions = [p.to_numpy() for p in points]
+
         centroid = np.mean(positions, axis=0)
+
         return Point.from_numpy(centroid)
     
     def calculate_point_midpoint(self, point1: Point, point2: Point) -> Point:
         midpoint = (point1.to_numpy() + point2.to_numpy()) / 2
+
         return Point.from_numpy(midpoint)
     
     def calculate_uvpoint_midpoint(self, uv_point1: UVPoint, uv_point2: UVPoint) -> UVPoint:
         midpoint = (uv_point1.to_numpy() + uv_point2.to_numpy()) / 2
+
         return UVPoint.from_numpy(midpoint)
         
     def calculate_face_normal(self, point1: Point, point2: Point, point3: Point) -> Normal:
@@ -1260,7 +1271,7 @@ class Shapefile(File):
                     del indexed_trilist.normal_idxs[tri_idx]
                     del indexed_trilist.flags[tri_idx]
             
-            # Split all affected triangles, re-add them and calculate new surface normals.
+            # Split all affected triangles, re-add them and calculate new face normals.
             for tri_idx, tri in enumerate(triangles):
                 if vertex1._vertex_idx in tri and vertex2._vertex_idx in tri:
                     vertex3_idx = [v for v in tri if v not in (vertex1._vertex_idx, vertex2._vertex_idx)][0]
@@ -1286,17 +1297,17 @@ class Shapefile(File):
                     new_normal_idx1 = self.add_normal(new_normal1)
                     new_normal_idx2 = self.add_normal(new_normal2)
 
-                    changed_indexed_trilist.vertex_idxs.extend(new_triangle1_idxs)
-                    changed_indexed_trilist.vertex_idxs.extend(new_triangle2_idxs)
-                    changed_indexed_trilist.normal_idxs.append(new_normal_idx1)
-                    changed_indexed_trilist.normal_idxs.append(new_normal_idx2)
-                    changed_indexed_trilist.flags.append("00000000")
-                    changed_indexed_trilist.flags.append("00000000")
+                    indexed_trilist.vertex_idxs.extend(new_triangle1_idxs)
+                    indexed_trilist.vertex_idxs.extend(new_triangle2_idxs)
+                    indexed_trilist.normal_idxs.append(new_normal_idx1)
+                    indexed_trilist.normal_idxs.append(new_normal_idx2)
+                    indexed_trilist.flags.append("00000000")
+                    indexed_trilist.flags.append("00000000")
 
             self.update_indexed_trilist(changed_indexed_trilist)
 
             # Recalculate vertex normal.
-            connected_vertex_points = [vertex.point for vertex in self.get_connected_vertices(prim_state, new_vertex)]
+            connected_vertex_points = [vertex.point for vertex in self.get_connected_vertices(indexed_trilist, new_vertex)]
             new_vertex_normal = self.calculate_vertex_normal(new_vertex.point, connected_vertex_points)
             self.set_normal_value(new_vertex._normal_idx, new_vertex_normal)
 
@@ -1485,25 +1496,75 @@ def generate_curve_centerpoints(curve_radius: float, curve_angle: float, num_poi
     return Trackcenter(centerpoints)
 
 
-def generate_centerpoints_from_tsection(shape_name: str, tsection_file_path: str = None) -> Trackcenter:
+def generate_centerpoints_from_tsection(shape_name: str, tsection_file_path: str = None, num_points_per_path: int = 1000) -> Trackcenter:
     if tsection_file_path is None:
         module_directory = pathlib.Path(__file__).parent
         tsection_file_path = f"{module_directory}/tsection.dat"
     elif not os.path.exists(tsection_file_path):
         raise ValueError(f"Unable to generate centerpoints: Specified file '{tsection_file_path}' in parameter 'tsection_file_path' does not exist.")
 
-    tracksections = []
-    trackshapes = []
     with open(tsection_file_path, "r", encoding=_detect_encoding(tsection_file_path)) as f:
-        text = f.read()
+        tsection_text = f.read()
 
-        if re.search(r"TrackPath \(", text):
+        if re.search(r"TrackPath \(", tsection_text):
             raise ValueError(f"""Unable to generate centerpoints: The specified file '{tsection_file_path}' in parameter 'tsection_file_path' is a local 
                 tsection.dat. Only global tsection.dat files are supported.""")
 
-        lines = text.split('\n')
-        # TODO Create and return centerpoints based on data from the standardised global tsection.dat build 60 or the supplied file.
-        raise NotImplementedError()
+        trackshape_pattern = re.compile(r"TrackShape \( \d+\n(.*?)\n\)", re.DOTALL)
+        sectionidx_pattern = re.compile(r"SectionIdx \( ([^)]*) \)")
+
+        trackshape_matches = trackshape_pattern.findall(tsection_text)
+    
+        for trackshape_match in trackshape_matches:
+            if re.search(rf'FileName \( {re.escape(shape_name)} \)', trackshape_match, re.IGNORECASE):
+                trackcenter = generate_empty_centerpoints()
+
+                sectionidx_matches = sectionidx_pattern.findall(trackshape_match)
+                section_idxs = [s.strip() for s in sectionidx_matches]
+
+                for section_idx in section_idxs:
+                    tracksection_pattern = re.compile(
+                        r"TrackSection\s*\(\s*(\d+)\s*\n"
+                        r"\s*SectionSize\s*\(\s*([\d.]+)\s+([\d.]+)\s*\)\s*\n"
+                        r"\s*SectionCurve\s*\(\s*([\d.-]+)\s+([\d.-]+)\s*\)\s*\n"
+                        r"\)",
+                        re.MULTILINE
+                    )
+                    tracksection_match = tracksection_pattern.search(tsection_text)
+
+                    values = section_idx.split()
+                    num_idxs = int(values[0])
+                    start_x, start_y, start_z = map(float, values[1:4])
+                    start_angle = float(values[4])
+                    tracksection_idxs = list(map(int, values[5:5 + num_idxs]))
+
+                    for idx, tracksection_idx in enumerate(tracksection_idxs):
+                        if tracksection_match:
+                            gauge = float(tracksection_match.group(2))
+                            length = float(tracksection_match.group(3))
+                            radius = float(tracksection_match.group(4))
+                            angle = float(tracksection_match.group(5))
+
+                            if idx == 0:
+                                current_path_point = Point(start_x, start_y, start_z)
+                                current_path_angle = start_angle
+                            
+                            if length == 0:
+                                path_trackcenter = generate_curve_centerpoints(curve_radius=radius, curve_angle=angle, start_angle=current_path_angle, start_point=current_path_point, num_points=num_points_per_path)
+                            else:
+                                path_trackcenter = generate_straight_centerpoints(length=length, start_angle=current_path_angle, start_point=current_path_point, num_points=num_points_per_path)
+                            
+                            current_path_point.x += path_trackcenter.centerpoints[-1][0]
+                            current_path_point.z += path_trackcenter.centerpoints[-1][2]
+                            current_path_angle += angle
+
+                            trackcenter += path_trackcenter
+
+                        else:
+                            raise ValueError(f"""Unable to generate centerpoints: Could not find TrackSection '{tracksection_idx}' defined by TrackShape '{shape_name}'. Instead create 
+                                    the centerpoints manually using the methods 'generate_straight_centerpoints' and 'generate_curve_centerpoints'.""")
+                    
+                return trackcenter
 
     raise ValueError(f"""Unable to generate centerpoints: Unknown shape '{shape_name}'. Instead create 
         them manually using the methods 'generate_straight_centerpoints' and 'generate_curve_centerpoints'.""")
