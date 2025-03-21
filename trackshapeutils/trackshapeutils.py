@@ -457,7 +457,7 @@ class Shapefile(File):
 
             if processing_points and ')' in line.lower() and 'point (' not in line.lower():
                 processing_points = False
-                self.lines[line_idx : line_idx] = [f"\t\tpoint ( {point.x} {point.y} {point.z} )"]
+                self.lines[line_idx : line_idx] = [f"\t\tpoint ( {round(point.x, 4)} {round(point.y, 4)} {round(point.z, 4)} )"]
                 self.set_point_count(current_point_idx + 1)
                 return current_point_idx
 
@@ -528,7 +528,7 @@ class Shapefile(File):
 
             if processing_uv_points and ')' in line.lower() and 'uv_point (' not in line.lower():
                 processing_uv_points = False
-                self.lines[line_idx : line_idx] = [f"\t\tuv_point ( {uv_point.u} {uv_point.v} )"]
+                self.lines[line_idx : line_idx] = [f"\t\tuv_point ( {round(uv_point.u, 4)} {round(uv_point.v, 4)} )"]
                 self.set_uvpoint_count(current_uv_point_idx + 1)
                 return current_uv_point_idx
 
@@ -621,7 +621,7 @@ class Shapefile(File):
 
             if processing_normals and ')' in line.lower() and len(line.lower()) < 6:
                 processing_normals = False
-                self.lines[line_idx : line_idx] = [f"\t\tvector ( {normal.vec_x} {normal.vec_y} {normal.vec_z} )"]
+                self.lines[line_idx : line_idx] = [f"\t\tvector ( {round(normal.vec_x, 4)} {round(normal.vec_y, 4)} {round(normal.vec_z, 4)} )"]
                 self.set_normal_count(current_normal_idx + 1)
                 return current_normal_idx
 
@@ -1523,15 +1523,6 @@ def generate_centerpoints_from_tsection(shape_name: str, tsection_file_path: str
                 section_idxs = [s.strip() for s in sectionidx_matches]
 
                 for section_idx in section_idxs:
-                    tracksection_pattern = re.compile(
-                        r"TrackSection\s*\(\s*(\d+)\s*\n"
-                        r"\s*SectionSize\s*\(\s*([\d.]+)\s+([\d.]+)\s*\)\s*\n"
-                        r"\s*SectionCurve\s*\(\s*([\d.-]+)\s+([\d.-]+)\s*\)\s*\n"
-                        r"\)",
-                        re.MULTILINE
-                    )
-                    tracksection_match = tracksection_pattern.search(tsection_text)
-
                     values = section_idx.split()
                     num_idxs = int(values[0])
                     start_x, start_y, start_z = map(float, values[1:4])
@@ -1539,26 +1530,35 @@ def generate_centerpoints_from_tsection(shape_name: str, tsection_file_path: str
                     tracksection_idxs = list(map(int, values[5:5 + num_idxs]))
 
                     for idx, tracksection_idx in enumerate(tracksection_idxs):
+                        tracksection_pattern = tracksection_pattern = re.compile(
+                            rf"TrackSection\s*\(\s*({tracksection_idx})\s*\n"
+                            r"\s*SectionSize\s*\(\s*([\d.]+)\s+([\d.]+)\s*\)\s*\n"
+                            r"(\s*SectionCurve\s*\(\s*([\d.-]+)\s+([\d.-]+)\s*\)\s*\n)?"
+                            r"\)",
+                            re.MULTILINE | re.DOTALL
+                        )
+                        tracksection_match = tracksection_pattern.search(tsection_text)
+
                         if tracksection_match:
-                            gauge = float(tracksection_match.group(2))
                             length = float(tracksection_match.group(3))
-                            radius = float(tracksection_match.group(4))
-                            angle = float(tracksection_match.group(5))
+                            radius = float(tracksection_match.group(5)) if tracksection_match.group(5) else None
+                            angle = float(tracksection_match.group(6)) if tracksection_match.group(6) else None
 
                             if idx == 0:
                                 current_path_point = Point(start_x, start_y, start_z)
                                 current_path_angle = start_angle
                             
-                            if length == 0:
-                                path_trackcenter = generate_curve_centerpoints(curve_radius=radius, curve_angle=angle, start_angle=current_path_angle, start_point=current_path_point, num_points=num_points_per_path)
+                            if radius is not None and angle is not None:
+                                section_trackcenter = generate_curve_centerpoints(curve_radius=radius, curve_angle=angle, start_angle=current_path_angle, start_point=current_path_point, num_points=num_points_per_path)
+                                current_path_angle += angle
                             else:
-                                path_trackcenter = generate_straight_centerpoints(length=length, start_angle=current_path_angle, start_point=current_path_point, num_points=num_points_per_path)
+                                section_trackcenter = generate_straight_centerpoints(length=length, start_angle=current_path_angle, start_point=current_path_point, num_points=num_points_per_path)
                             
-                            current_path_point.x += path_trackcenter.centerpoints[-1][0]
-                            current_path_point.z += path_trackcenter.centerpoints[-1][2]
-                            current_path_angle += angle
+                            section_endpoint = Point.from_numpy(section_trackcenter.centerpoints[-1])
+                            current_path_point.x += section_endpoint.x
+                            current_path_point.z += section_endpoint.z
 
-                            trackcenter += path_trackcenter
+                            trackcenter += section_trackcenter
 
                         else:
                             raise ValueError(f"""Unable to generate centerpoints: Could not find TrackSection '{tracksection_idx}' defined by TrackShape '{shape_name}'. Instead create 
@@ -1601,6 +1601,10 @@ def signed_distance_between(point1: Point, point2: Point, plane="xz") -> float:
         point1_proj = np.array([0, point1[1], 0])
         point2_proj = np.array([0, point2[1], 0])
         reference_vector = np.array([1, 0, 0])
+    elif plane == "z":
+        point1_proj = np.array([0, 0, point1[2]])
+        point2_proj = np.array([0, 0, point2[2]])
+        reference_vector = np.array([1, 0, 0])
     elif plane == "xy":
         point1_proj = np.array([point1[0], point1[1], 0])
         point2_proj = np.array([point2[0], point2[1], 0])
@@ -1609,12 +1613,18 @@ def signed_distance_between(point1: Point, point2: Point, plane="xz") -> float:
         point1_proj = np.array([point1[0], 0, point1[2]])
         point2_proj = np.array([point2[0], 0, point2[2]])
         reference_vector = np.array([0, 1, 0])
-    elif plane == "z":
-        point1_proj = np.array([0, 0, point1[2]])
-        point2_proj = np.array([0, 0, point2[2]])
+    elif plane == "zy":
+        point1_proj = np.array([0, point1[1], point1[2]])
+        point2_proj = np.array([0, point2[1], point2[2]])
         reference_vector = np.array([1, 0, 0])
+    elif plane == "xyz": # Euclidean distance, never signed.
+        point1_proj = np.array([point1[0], point1[1], point1[2]])
+        point2_proj = np.array([point2[0], point2[1], point2[2]])
+        vector_to_point = point2_proj - point1_proj
+        distance = np.linalg.norm(vector_to_point)
+        return distance
     else:
-        raise ValueError("Invalid plane. Choose 'x', 'y', 'xy', 'xz', or 'z'.")
+        raise ValueError("Invalid plane. Choose 'x', 'y', 'z', 'xy', 'xz', 'zy', or 'xyz'.")
 
     vector_to_point = point1_proj - point2_proj
     cross = np.cross(reference_vector, vector_to_point)
@@ -1650,10 +1660,16 @@ def distance_along_curved_track(point_along_track: Point, trackcenter: Trackcent
     cumulative_distance = np.cumsum(np.full_like(segment_lengths, arc_length))
     cumulative_distance = np.insert(cumulative_distance, 0, 0)
 
+    return cumulative_distance[index]
+
+
+def degrees_along_curved_track(point_along_track: Point, trackcenter: Trackcenter, curve_angle: float, curve_radius: float) -> float:
+    cumulative_distance = distance_along_curved_track(point_along_track, trackcenter, curve_angle, curve_radius)
+
     meters_to_degrees = 1 / 111320
     cumulative_distance_degrees = cumulative_distance * meters_to_degrees
 
-    return cumulative_distance_degrees[index]
+    return cumulative_distance_degrees
 
 
 def distance_along_straight_track(point_along_track: Point, trackcenter: Trackcenter) -> float:

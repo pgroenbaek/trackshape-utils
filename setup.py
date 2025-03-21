@@ -8,6 +8,9 @@ setup(
         'numpy',
         'scipy',
     ],
+    package_data={
+        'trackshapeutils': ['tsection.dat'],
+    },
     author="Peter Grønbæk Andersen",
     author_email="peter@grnbk.io",
     description="Collection of utilities to modify existing MSTS/ORTS track shapes",
