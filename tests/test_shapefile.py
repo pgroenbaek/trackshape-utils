@@ -264,7 +264,7 @@ def test_get_vertices_by_prim_state(global_storage):
     vertices = shape.get_vertices_by_prim_state(lod_dlevel, prim_state)
     assert len(vertices) == 3235
 
-def test_get_connected_vertices(global_storage):
+def test_get_connected_vertex_idxs(global_storage):
     shape = global_storage["shape"]
     lod_dlevel = 200
     subobject_idx = 0
@@ -272,7 +272,7 @@ def test_get_connected_vertices(global_storage):
     vertices = shape.get_vertices_by_prim_state(lod_dlevel, prim_state)
     indexed_trilists = shape.get_indexed_trilists_in_subobject_by_prim_state(lod_dlevel, subobject_idx, prim_state)
     indexed_trilist = indexed_trilists[0]
-    connected_vertices = shape.get_connected_vertices(indexed_trilist, vertices[100])
+    connected_vertices = shape.get_connected_vertex_idxs(indexed_trilist, vertices[100])
     assert len(connected_vertices) == 2
 
 def test_add_vertex_to_subobject(global_storage):

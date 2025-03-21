@@ -853,7 +853,7 @@ class Shapefile(File):
                             parts[4] = str(new_count)
                             self.lines[line_idx] = " ".join(parts)
                             vertexset_count_total += new_count
-                            new_vertex_idx = new_count
+                            new_vertex_idx = vertexset_count
                             adjust_remaining_vertexset_idxs = True
                         
         return new_vertex_idx
@@ -883,23 +883,22 @@ class Shapefile(File):
                         parts = line.split(' ')
                         current_prim_state_idx = int(parts[2])
 
-                    if current_prim_state_idx == indexed_trilist._prim_state_idx:
-                        if 'indexed_trilist (' in line.lower():
-                            processing_trilist = True
-                            current_trilist_idx += 1
-                        
-                        if current_trilist_idx == indexed_trilist._trilist_idx:
-                            if 'vertex_idxs (' in line.lower() or collecting_vertex_idxs:
-                                lines_to_remove.append(line_idx)
-                                collecting_vertex_idxs = not line.endswith(')')
+                    if 'indexed_trilist (' in line.lower():
+                        processing_trilist = True
+                        current_trilist_idx += 1
+                    
+                    if current_trilist_idx == indexed_trilist._trilist_idx:
+                        if 'vertex_idxs (' in line.lower() or collecting_vertex_idxs:
+                            lines_to_remove.append(line_idx)
+                            collecting_vertex_idxs = not line.endswith(')')
 
-                            if 'normal_idxs (' in line.lower() or collecting_normal_idxs:
-                                lines_to_remove.append(line_idx)
-                                collecting_normal_idxs = not line.endswith(')')
+                        if 'normal_idxs (' in line.lower() or collecting_normal_idxs:
+                            lines_to_remove.append(line_idx)
+                            collecting_normal_idxs = not line.endswith(')')
 
-                            if 'flags (' in line.lower() or collecting_flags:
-                                lines_to_remove.append(line_idx)
-                                collecting_flags = not line.endswith(')')
+                        if 'flags (' in line.lower() or collecting_flags:
+                            lines_to_remove.append(line_idx)
+                            collecting_flags = not line.endswith(')')
 
                         if processing_trilist and '\t)' in line.lower():
                             processing_trilist = False
@@ -936,9 +935,9 @@ class Shapefile(File):
             for index, chunk in enumerate(normals_trilist_chunks):
                 line = "\t\t\t\t\t\t\t\t\t"
                 if len(normals_trilist_chunks) == 1:
-                    line += f"normal_idxs ( {len(new_normals_trilist)} " + " ".join(map(str, chunk)) + " )"
+                    line += f"normal_idxs ( {int(len(new_vertex_trilist) / 3)} " + " ".join(map(str, chunk)) + " )"
                 elif index == 0:
-                    line += f"normal_idxs ( {len(new_normals_trilist)} " + " ".join(map(str, chunk))
+                    line += f"normal_idxs ( {int(len(new_vertex_trilist) / 3)} " + " ".join(map(str, chunk))
                 elif index == len(normals_trilist_chunks) - 1:
                     line += " ".join(map(str, chunk)) + " )"
                 else:
@@ -1007,6 +1006,26 @@ class Shapefile(File):
 
         return vertices_in_subobject
 
+    def get_vertices_count(self, lod_dlevel: int, subobject_idx: int) -> Optional[int]:
+        current_dlevel = -1
+        current_subobject_idx = -1
+
+        for line_idx, line in enumerate(self.lines):
+            if "dlevel_selection (" in line.lower():
+                parts = line.split()
+                current_dlevel = int(parts[2])
+
+            if current_dlevel == lod_dlevel:
+                if "sub_object (" in line.lower():
+                    current_subobject_idx += 1
+                
+                if current_subobject_idx == subobject_idx:
+                    if "vertices (" in line.lower():
+                        parts = line.split(' ')
+                        return int(parts[2])
+
+        return None
+
     def get_vertices_by_prim_state(self, lod_dlevel: int, prim_state: PrimState) -> List[Vertex]:
         subobject_idxs = self.get_subobject_idxs_in_lod_dlevel(lod_dlevel)
 
@@ -1068,27 +1087,20 @@ class Shapefile(File):
         # TODO implement
         raise NotImplementedError()
 
-    def get_connected_vertices(self, indexed_trilist: IndexedTrilist, vertex: Vertex) -> List[Vertex]:
+    def get_connected_vertex_idxs(self, indexed_trilist: IndexedTrilist, vertex: Vertex) -> List[int]:
         find_vertex_idx = vertex._vertex_idx
         find_vertex_dlevel = vertex._lod_dlevel
         find_vertex_subobject_idx = vertex._subobject_idx
 
-        vertices = self.get_vertices_in_subobject(find_vertex_dlevel, find_vertex_subobject_idx)
-
-        connected_vertices = []
-        connected_vertex_idxs = []
+        connected_vertex_idxs = set()
         triangles = [tuple(indexed_trilist.vertex_idxs[i : i + 3]) for i in range(0, len(indexed_trilist.vertex_idxs), 3)]
         for tri in triangles:
             if find_vertex_idx in tri:
                 for vertex_idx in tri:
                     if vertex_idx != find_vertex_idx:
-                        connected_vertex_idxs.append(vertex_idx)
-                        connected_vertex_idxs = list(set(connected_vertex_idxs))
+                        connected_vertex_idxs.add(vertex_idx)
 
-        for vertex_idx in connected_vertex_idxs:
-            connected_vertices.append(vertices[vertex_idx])
-
-        return connected_vertices
+        return list(connected_vertex_idxs)
     
     def update_vertex(self, vertex: Vertex) -> bool:
         point_idx = vertex._point_idx
@@ -1119,6 +1131,17 @@ class Shapefile(File):
 
         new_vertex_idx = self.increase_vertexset_count(lod_dlevel, subobject_idx, indexed_trilist)
 
+        indexed_trilists = self.get_indexed_trilists_in_subobject(lod_dlevel, subobject_idx)
+        
+        for prim_state_idx in indexed_trilists:
+            for indexed_trilist in indexed_trilists[prim_state_idx]:
+
+                for idx, vertex_idx in enumerate(indexed_trilist.vertex_idxs):
+                    if vertex_idx >= new_vertex_idx:
+                        indexed_trilist.vertex_idxs[idx] = vertex_idx + 1
+                
+                self.update_indexed_trilist(indexed_trilist)
+
         new_vertex = Vertex(
             vertex_idx=new_vertex_idx,
             point=point,
@@ -1147,8 +1170,8 @@ class Shapefile(File):
                     if processing_vertices and ')' in line.lower():
                         if current_vertex_idx == new_vertex_idx or 'vert' not in self.lines[line_idx - 1].lower():
                             processing_vertices = False
-                            new_count = len(self.get_vertices_in_subobject(lod_dlevel, subobject_idx)) + 1
-                            self.lines[line_idx - 1 : line_idx - 1] = [
+                            new_count = self.get_vertices_count(lod_dlevel, subobject_idx) + 1
+                            self.lines[line_idx + 2 : line_idx + 2] = [
                                 f"\t\t\t\t\t\t\t\tvertex ( 00000000 {new_vertex._point_idx} {new_vertex._normal_idx} ff969696 ff808080",
                                 f"\t\t\t\t\t\t\t\t\tvertex_uvs ( 1 {new_vertex._uv_point_idx} )",
                                 "\t\t\t\t\t\t\t\t)"
@@ -1268,7 +1291,7 @@ class Shapefile(File):
             for tri_idx, tri in enumerate(triangles):
                 if vertex1._vertex_idx in tri or vertex2._vertex_idx in tri:
                     del indexed_trilist.vertex_idxs[tri_idx * 3 : tri_idx * 3 + 2]
-                    del indexed_trilist.normal_idxs[tri_idx]
+                    del indexed_trilist.normal_idxs[tri_idx * 2 : tri_idx * 2 + 1]
                     del indexed_trilist.flags[tri_idx]
             
             # Split all affected triangles, re-add them and calculate new face normals.
@@ -1300,14 +1323,16 @@ class Shapefile(File):
                     indexed_trilist.vertex_idxs.extend(new_triangle1_idxs)
                     indexed_trilist.vertex_idxs.extend(new_triangle2_idxs)
                     indexed_trilist.normal_idxs.append(new_normal_idx1)
+                    indexed_trilist.normal_idxs.append(3)
                     indexed_trilist.normal_idxs.append(new_normal_idx2)
+                    indexed_trilist.normal_idxs.append(3)
                     indexed_trilist.flags.append("00000000")
                     indexed_trilist.flags.append("00000000")
 
-            self.update_indexed_trilist(changed_indexed_trilist)
+            self.update_indexed_trilist(indexed_trilist)
 
             # Recalculate vertex normal.
-            connected_vertex_points = [vertex.point for vertex in self.get_connected_vertices(indexed_trilist, new_vertex)]
+            connected_vertex_points = [vertex.point for vertex in self.get_connected_vertex_idxs(indexed_trilist, new_vertex)]
             new_vertex_normal = self.calculate_vertex_normal(new_vertex.point, connected_vertex_points)
             self.set_normal_value(new_vertex._normal_idx, new_vertex_normal)
 
@@ -1347,6 +1372,7 @@ class Shapefile(File):
         indexed_trilist.vertex_idxs.append(vertex2._vertex_idx)
         indexed_trilist.vertex_idxs.append(vertex3._vertex_idx)
         indexed_trilist.normal_idxs.append(new_normal_idx)
+        indexed_trilist.normal_idxs.append(3)
         indexed_trilist.flags.append("00000000")
 
         has_updated_trilist = self.update_indexed_trilist(indexed_trilist)
@@ -1387,7 +1413,7 @@ class Shapefile(File):
         for tri_idx, tri in enumerate(triangles):
             if vertex1_idx in tri and vertex2_idx in tri and vertex3_idx in tri:
                 del indexed_trilist.vertex_idxs[tri_idx * 3 : tri_idx * 3 + 2]
-                del indexed_trilist.normal_idxs[tri_idx]
+                del indexed_trilist.normal_idxs[tri_idx * 2 : tri_idx * 2 + 1]
                 del indexed_trilist.flags[tri_idx]
         
         has_updated_trilist = self.update_indexed_trilist(indexed_trilist)
@@ -1406,7 +1432,7 @@ class Shapefile(File):
         for tri_idx, tri in enumerate(triangles):
             if vertex_idx in tri:
                 del indexed_trilist.vertex_idxs[tri_idx * 3 : tri_idx * 3 + 2]
-                del indexed_trilist.normal_idxs[tri_idx]
+                del indexed_trilist.normal_idxs[tri_idx * 2 : tri_idx * 2 + 1]
                 del indexed_trilist.flags[tri_idx]
         
         has_updated_trilist = self.update_indexed_trilist(indexed_trilist)

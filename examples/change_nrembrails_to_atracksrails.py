@@ -38,6 +38,7 @@ if __name__ == "__main__":
 
     for idx, sfile_name in enumerate(shape_names):
         print(f"Shape {idx} of {len(shape_names)}...")
+        print(f"\tName: {sfile_name}")
 
         # Process .s file
         new_sfile_name = sfile_name.replace("NR_Emb", "NR_Emb_AT")
@@ -56,6 +57,7 @@ if __name__ == "__main__":
         subobject_idx = 0
         prim_state = new_sfile.get_prim_state_by_name("rail_side")
         vertices_in_prim_state = new_sfile.get_vertices_by_prim_state(lod_dlevel, prim_state)
+        vertices_in_subobject = new_sfile.get_vertices_in_subobject(lod_dlevel, subobject_idx)
         indexed_trilists = new_sfile.get_indexed_trilists_in_subobject_by_prim_state(lod_dlevel, subobject_idx, prim_state)
         railside_indexed_trilist = indexed_trilists[0]
         
@@ -65,9 +67,11 @@ if __name__ == "__main__":
 
         for vertex in vertices_in_prim_state:
             if vertex.point.y == 0.2:  # Railside bottom vertices
-                connected_vertices = new_sfile.get_connected_vertices(railside_indexed_trilist, vertex)
+                connected_vertex_idxs = new_sfile.get_connected_vertex_idxs(railside_indexed_trilist, vertex)
 
-                for connected_vertex in connected_vertices:
+                for connected_vertex_idx in connected_vertex_idxs:
+                    connected_vertex = vertices_in_subobject[connected_vertex_idx]
+
                     if connected_vertex.point.y == 0.325 and connected_vertex.point.z == vertex.point.z:  # Connected railside top vertices directly over the bottom ones
                         railside_bottom_vertices.append(vertex)
                         railside_top_vertices.append(connected_vertex)
@@ -88,25 +92,22 @@ if __name__ == "__main__":
             top_close = railside_top_vertices[i]
             top_far = railside_top_vertices[i + 1]
 
-            tolerance = 0.05
-            if abs(bottom_close.point.x - bottom_far.point.x) < tolerance:
-                if abs(bottom_close.point.z - bottom_far.point.z) > tolerance:
-                    closest_centerpoint = tsu.find_closest_centerpoint(top_close.point, trackcenter, plane="xz")
-                    distance_from_center = tsu.signed_distance_between(top_close.point, closest_centerpoint, plane="xz")
+            closest_centerpoint = tsu.find_closest_centerpoint(top_close.point, trackcenter, plane="xz")
+            distance_from_center = tsu.signed_distance_between(top_close.point, closest_centerpoint, plane="xz")
 
-                    rectangle = (bottom_close, top_close, top_far, bottom_far)
+            rectangle = (bottom_close, top_close, top_far, bottom_far)
 
-                    if 0.8175 <= distance_from_center <= 0.9175: # Outer right railside.
-                        railside_rectangles_right_outer.append(rectangle)
+            if 0.8175 <= distance_from_center <= 0.9175: # Outer right railside.
+                railside_rectangles_right_outer.append(rectangle)
 
-                    elif 0.6675 <= distance_from_center <= 0.7675: # Inner right railside.
-                        railside_rectangles_right_inner.append(rectangle)
+            elif 0.6675 <= distance_from_center <= 0.7675: # Inner right railside.
+                railside_rectangles_right_inner.append(rectangle)
 
-                    elif -0.7675 <= distance_from_center <= -0.6675: # Inner left railside.
-                        railside_rectangles_left_inner.append(rectangle)
+            elif -0.7675 <= distance_from_center <= -0.6675: # Inner left railside.
+                railside_rectangles_left_inner.append(rectangle)
 
-                    elif -0.9175 <= distance_from_center <= -0.8175: # Outer left railside.
-                        railside_rectangles_left_outer.append(rectangle)
+            elif -0.9175 <= distance_from_center <= -0.8175: # Outer left railside.
+                railside_rectangles_left_outer.append(rectangle)
 
 
         # Creation of ATracks-like rail sides.
@@ -118,6 +119,7 @@ if __name__ == "__main__":
 
         # Outer right railside.
         for idx, (bottom_close, top_close, top_far, bottom_far) in enumerate(railside_rectangles_right_outer):
+            print(f"\tProcessing outer right railside {idx + 1} of {len(railside_rectangles_right_outer)}", end='\r')
             if 'strt' in sfile_name.lower():
                 distance_along_track_close = tsu.distance_along_straight_track(top_close.point, trackcenter)
                 distance_along_track_far = tsu.distance_along_straight_track(top_far.point, trackcenter)
@@ -180,9 +182,11 @@ if __name__ == "__main__":
             ])
             prev_vertices = (bottom_far, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
         
+        print("")
 
         # Inner right railside.
         for idx, (bottom_close, top_close, top_far, bottom_far) in enumerate(railside_rectangles_right_inner):
+            print(f"\tProcessing inner right railside {idx + 1} of {len(railside_rectangles_right_inner)}", end='\r')
             if 'strt' in sfile_name.lower():
                 distance_along_track_close = tsu.distance_along_straight_track(top_close.point, trackcenter)
                 distance_along_track_far = tsu.distance_along_straight_track(top_far.point, trackcenter)
@@ -245,9 +249,11 @@ if __name__ == "__main__":
             ])
             prev_vertices = (bottom_far, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
         
+        print("")
 
         # Inner left railside.
         for idx, (bottom_close, top_close, top_far, bottom_far) in enumerate(railside_rectangles_left_inner):
+            print(f"\tProcessing inner left railside {idx + 1} of {len(railside_rectangles_left_inner)}", end='\r')
             if 'strt' in sfile_name.lower():
                 distance_along_track_close = tsu.distance_along_straight_track(top_close.point, trackcenter)
                 distance_along_track_far = tsu.distance_along_straight_track(top_far.point, trackcenter)
@@ -310,9 +316,11 @@ if __name__ == "__main__":
             ])
             prev_vertices = (bottom_far, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
         
+        print("")
 
         # Outer left railside.
         for idx, (bottom_close, top_close, top_far, bottom_far) in enumerate(railside_rectangles_left_outer):
+            print(f"\tProcessing outer left railside {idx + 1} of {len(railside_rectangles_left_outer)}", end='\r')
             if 'strt' in sfile_name.lower():
                 distance_along_track_close = tsu.distance_along_straight_track(top_close.point, trackcenter)
                 distance_along_track_far = tsu.distance_along_straight_track(top_far.point, trackcenter)
@@ -375,9 +383,11 @@ if __name__ == "__main__":
             ])
             prev_vertices = (bottom_far, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
         
+        print("")
 
         # Update the values of existing and created vertices.
-        for vertex, new_height, new_center_distance, new_u_value, new_v_value, new_normal_vecx, new_normal_vecy, new_normal_vecz in update_vertex_data:
+        for idx, (vertex, new_height, new_center_distance, new_u_value, new_v_value, new_normal_vecx, new_normal_vecy, new_normal_vecz) in enumerate(update_vertex_data):
+            print(f"\tUpdating vertex {idx + 1} of {len(update_vertex_data)}", end='\r')
             new_position = tsu.get_new_position_from_trackcenter(new_center_distance, vertex.point, trackcenter)
             vertex.point.x = new_position.x
             vertex.point.y = new_height
@@ -389,10 +399,14 @@ if __name__ == "__main__":
             vertex.normal.vec_z = new_normal_vecz
             new_sfile.update_vertex(vertex)
         
+        print("")
+
         # Insert new triangles between the created vertices.
-        for vertex1, vertex2, vertex3 in new_triangles:
+        for idx, (vertex1, vertex2, vertex3) in enumerate(new_triangles):
+            print(f"\tInserting triangle {idx + 1} of {len(new_triangles)}", end='\r')
             new_sfile.insert_triangle_between(railside_indexed_trilist, vertex1, vertex2, vertex3)
 
+        print("")
 
         new_sfile.save()
         #new_sfile.compress(ffeditc_path)
