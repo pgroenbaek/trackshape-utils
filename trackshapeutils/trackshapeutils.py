@@ -1667,58 +1667,12 @@ def distance_between(point1: Point, point2: Point, plane="xz") -> float:
     return distance
 
 
-def distance_along_curved_track(point_along_track: Point, trackcenter: Trackcenter, curve_angle: float, curve_radius: float) -> float:
-    point = point_along_track.to_numpy()
-    centerpoints = trackcenter.centerpoints
-
-    point_xz = point[[0, 2]]
-    centerpoints_xz = centerpoints[:, [0, 2]]
-
-    tck, _ = splprep(centerpoints_xz.T, s=0)
-    num_samples = 1000
-    u_values = np.linspace(0, 1, num_samples)
-    spline_points_xz = np.array(splev(u_values, tck)).T
-
-    tree = KDTree(spline_points_xz)
-    _, index = tree.query(point_xz)
-
-    arc_length = abs(curve_angle) * curve_radius
-    segment_lengths = np.linalg.norm(np.diff(spline_points_xz, axis=0), axis=1)
-    cumulative_distance = np.cumsum(np.full_like(segment_lengths, arc_length))
-    cumulative_distance = np.insert(cumulative_distance, 0, 0)
-
-    return cumulative_distance[index]
-
-
-def degrees_along_curved_track(point_along_track: Point, trackcenter: Trackcenter, curve_angle: float, curve_radius: float) -> float:
-    cumulative_distance = distance_along_curved_track(point_along_track, trackcenter, curve_angle, curve_radius)
-
-    meters_to_degrees = 1 / 111320
-    cumulative_distance_degrees = cumulative_distance * meters_to_degrees
-
-    return cumulative_distance_degrees
-
-
-def distance_along_straight_track(point_along_track: Point, trackcenter: Trackcenter) -> float:
-    point = point_along_track.to_numpy()
-    centerpoints = trackcenter.centerpoints
-
-    point_xz = point[[0, 2]]
-    centerpoints_xz = centerpoints[:, [0, 2]]
-
-    tck, _ = splprep(centerpoints_xz.T, s=0)
-    num_samples = 1000
-    u_values = np.linspace(0, 1, num_samples)
-    spline_points_xz = np.array(splev(u_values, tck)).T
-
-    tree = KDTree(spline_points_xz)
-    _, index = tree.query(point_xz)
-
-    segment_lengths = np.linalg.norm(np.diff(spline_points_xz, axis=0), axis=1)
-    cumulative_distance = np.cumsum(segment_lengths)
-    cumulative_distance = np.insert(cumulative_distance, 0, 0)
-
-    return cumulative_distance[index]
+def distance_along_curve(curve_angle: float, curve_radius: float):
+    angle_radians = math.radians(curve_angle)
+    
+    distance = radius * angle_radians
+    
+    return distance
 
 
 def distance_along_nearest_trackcenter(point_along_track: Point, trackcenter: Trackcenter, start_point: Point = Point(0, 0, 0)) -> float:
@@ -1827,3 +1781,48 @@ def get_new_position_from_trackcenter(new_signed_distance: float, original_point
     new_position = closest_center + new_signed_distance * lateral_vector
 
     return Point.from_numpy(new_position)
+
+
+def get_new_position_along_trackcenter(new_distance_along_track: float, original_point: Point, trackcenter: Trackcenter) -> List[Point]:
+    centerpoints = trackcenter.centerpoints
+
+    closest_center = find_closest_centerpoint(original_point, trackcenter, plane="xz")
+    closest_center = closest_center.to_numpy()
+
+    tck, _ = splprep(centerpoints.T, s=0)
+    num_samples = 1000
+    u_values = np.linspace(0, 1, num_samples)
+    spline_points = np.array(splev(u_values, tck)).T
+
+    tree = KDTree(spline_points)
+    _, index = tree.query(closest_center)
+
+    if index < len(spline_points) - 1:
+        tangent_vector = spline_points[index + 1] - spline_points[index]
+    else:
+        tangent_vector = spline_points[index] - spline_points[index - 1]
+
+    tangent_vector[1] = 0
+    tangent_vector /= np.linalg.norm(tangent_vector)
+
+    new_position = closest_center + new_distance_along_track * tangent_vector
+
+    branch_radius = 10
+    nearby_points = []
+
+    for i, centerpoint in enumerate(centerpoints):
+        distance_to_point = np.linalg.norm(new_position - centerpoint)
+        if distance_to_point < branch_radius:
+            nearby_points.append(i)
+
+    new_positions = []
+
+    if len(nearby_points) > 1:
+        for branch_index in nearby_points:
+            branch_point = centerpoints[branch_index]
+            branch_position = branch_point + new_distance_along_track * tangent_vector
+            new_positions.append(Point.from_numpy(branch_position))
+    else:
+        new_positions.append(Point.from_numpy(new_position))
+
+    return new_positions

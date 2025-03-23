@@ -28,7 +28,7 @@ if __name__ == "__main__":
     ffeditc_path = "./ffeditc_unicode.exe"
     match_shapes = [
         "NR_Emb_a1t10mStrt.s",
-        "NR_Emb_a1t250r10d.s"
+        #"NR_Emb_a1t250r10d.s"
     ]
     ignore_shapes = ["*Tun*", "*Pnt*", "*Frog*"]
     
@@ -109,7 +109,6 @@ if __name__ == "__main__":
             elif -0.9175 <= distance_from_center <= -0.8175: # Outer left railside.
                 railside_rectangles_left_outer.append(rectangle)
 
-
         # Creation of ATracks-like rail sides.
         # New vertices are added, and at the end their values are changed according to the contents of 'update_vertex_data'.
         # New triangles are added according to the contents of 'new_triangles'. The order of vertices in each 'new_triangles' list item determines direction of the face.
@@ -180,6 +179,8 @@ if __name__ == "__main__":
         
         print("")
 
+        prev_vertices = None
+
         # Inner right railside.
         for idx, (bottom_close, top_close, top_far, bottom_far) in enumerate(railside_rectangles_right_inner):
             print(f"\tProcessing inner right railside {idx + 1} of {len(railside_rectangles_right_inner)}", end='\r')
@@ -243,6 +244,8 @@ if __name__ == "__main__":
         
         print("")
 
+        prev_vertices = None
+
         # Inner left railside.
         for idx, (bottom_close, top_close, top_far, bottom_far) in enumerate(railside_rectangles_left_inner):
             print(f"\tProcessing inner left railside {idx + 1} of {len(railside_rectangles_left_inner)}", end='\r')
@@ -305,6 +308,8 @@ if __name__ == "__main__":
             prev_vertices = (bottom_far, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
         
         print("")
+
+        prev_vertices = None
 
         # Outer left railside.
         for idx, (bottom_close, top_close, top_far, bottom_far) in enumerate(railside_rectangles_left_outer):
