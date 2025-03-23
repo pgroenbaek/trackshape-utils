@@ -1667,7 +1667,7 @@ def distance_between(point1: Point, point2: Point, plane="xz") -> float:
     return distance
 
 
-def distance_along_curve(curve_angle: float, curve_radius: float):
+def distance_along_curve(curve_angle: float, curve_radius: float) -> float:
     angle_radians = math.radians(curve_angle)
     
     distance = radius * angle_radians
