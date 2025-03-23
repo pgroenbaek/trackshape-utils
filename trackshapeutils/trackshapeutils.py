@@ -371,17 +371,18 @@ class Shapefile(File):
 
         return prim_states
     
-    def get_prim_state_by_name(self, prim_state_name: str) -> Optional[PrimState]:
+    def get_prim_states_by_name(self, prim_state_name: str) -> List[PrimState]:
+        prim_states = []
         current_prim_state_idx = 0
 
         for line in self.lines:
             if "prim_state " in line.lower():
                 parts = line.split(' ')
                 if parts[1] == prim_state_name:
-                    return PrimState(current_prim_state_idx, parts[1])
+                    prim_states.append(PrimState(current_prim_state_idx, parts[1]))
                 current_prim_state_idx += 1
 
-        return None
+        return prim_states
     
     def get_prim_state_by_idx(self, prim_state_idx: int) -> Optional[PrimState]:
         current_prim_state_idx = 0
@@ -426,9 +427,9 @@ class Shapefile(File):
             if "point (" in line.lower() and "uv_point (" not in line.lower():
                 if current_point_idx == point_idx:
                     parts = line.split(" ")
-                    parts[2] = str(point.x)
-                    parts[3] = str(point.y)
-                    parts[4] = str(point.z)
+                    parts[2] = str(round(point.x, 4))
+                    parts[3] = str(round(point.y, 4))
+                    parts[4] = str(round(point.z, 4))
                     line = " ".join(parts)
                     self.lines[line_idx] = line
                     return True
@@ -498,8 +499,8 @@ class Shapefile(File):
             if 'uv_point (' in line.lower():
                 if current_uv_point_idx == uv_point_idx:
                     parts = line.split(" ")
-                    parts[2] = str(uv_point.u)
-                    parts[3] = str(uv_point.v)
+                    parts[2] = str(round(uv_point.u, 4))
+                    parts[3] = str(round(uv_point.v, 4))
                     line = " ".join(parts)
                     self.lines[line_idx] = line
                     return True
@@ -587,9 +588,9 @@ class Shapefile(File):
             if 'vector (' in line.lower() and processing_normals:
                 if current_normal_idx == normal_idx:
                     parts = line.split(" ")
-                    parts[2] = str(normal.vec_x)
-                    parts[3] = str(normal.vec_y)
-                    parts[4] = str(normal.vec_z)
+                    parts[2] = str(round(normal.vec_x, 4))
+                    parts[3] = str(round(normal.vec_y, 4))
+                    parts[4] = str(round(normal.vec_z, 4))
                     line = " ".join(parts)
                     self.lines[line_idx] = line
                     return True
@@ -1589,7 +1590,7 @@ def generate_centerpoints_from_tsection(shape_name: str, tsection_file_path: str
 
                         else:
                             raise ValueError(f"""Unable to generate centerpoints: Could not find TrackSection '{tracksection_idx}' defined by TrackShape '{shape_name}'. Instead create 
-                                    the centerpoints manually using the methods 'generate_straight_centerpoints' and 'generate_curve_centerpoints'.""")
+                                the centerpoints manually using the methods 'generate_straight_centerpoints' and 'generate_curve_centerpoints'.""")
                     
                 return trackcenter
 
@@ -1678,27 +1679,34 @@ def distance_along_curve(curve_angle: float, curve_radius: float) -> float:
 def distance_along_nearest_trackcenter(point_along_track: Point, trackcenter: Trackcenter, start_point: Point = Point(0, 0, 0)) -> float:
     point = point_along_track.to_numpy()
     point_xz = point[[0, 2]]
-    
+
     centerpoints = trackcenter.centerpoints
     centerpoints_xz = centerpoints[:, [0, 2]]
-    
-    G = nx.Graph()
-    num_points = len(centerpoints_xz)
-    
-    for i in range(num_points - 1):
-        dist = np.linalg.norm(centerpoints_xz[i + 1] - centerpoints_xz[i])
-        if dist < 2.5:
-            G.add_edge(i, i + 1, weight=dist)
-    
+
     tree = KDTree(centerpoints_xz)
     _, nearest_index = tree.query(point_xz)
     
     start_xz = start_point.to_numpy()[[0, 2]]
     _, start_index = tree.query(start_xz)
+
+    total_distance = 0.0
+    current_index = start_index
     
-    distances = nx.single_source_dijkstra_path_length(G, start_index)
-    
-    return distances.get(nearest_index, float("inf"))
+    while current_index != nearest_index:
+        if current_index < nearest_index:
+            next_index = current_index + 1
+        else:
+            next_index = current_index - 1
+
+        segment_distance = np.linalg.norm(centerpoints_xz[current_index] - centerpoints_xz[next_index])
+        
+        if segment_distance < 2.0:
+            total_distance += segment_distance
+            current_index = next_index
+        else:
+            break
+
+    return total_distance
 
 
 def get_curve_centerpoint_from_angle(curve_radius: float, curve_angle: float, start_angle: float = 0, start_point: Point = Point(0, 0, 0)) -> Point:
