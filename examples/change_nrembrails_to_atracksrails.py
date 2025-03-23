@@ -28,7 +28,8 @@ if __name__ == "__main__":
     ffeditc_path = "./ffeditc_unicode.exe"
     match_shapes = [
         "NR_Emb_a1t10mStrt.s",
-        "NR_Emb_a1t250r10d.s"
+        "NR_Emb_a1t250r10d.s",
+        "NR_Emb_a2dt1000r1d.s"
     ]
     ignore_shapes = ["*Tun*", "*Pnt*", "*Frog*"]
     
@@ -42,7 +43,7 @@ if __name__ == "__main__":
 
         # Process .s file
         new_sfile_name = sfile_name.replace("NR_Emb", "NR_Emb_AT")
-        tsection_sfile_name = sfile_name.replace("NR_Emb_", "")
+        tsection_sfile_name = sfile_name.replace("NR_Emb_", "").replace("a2dt", "a2t")
 
         sfile = tsu.load_shape(sfile_name, shape_load_path)
         new_sfile = sfile.copy(new_filename=new_sfile_name, new_directory=shape_processed_path)
@@ -62,8 +63,14 @@ if __name__ == "__main__":
         railside_indexed_trilist = indexed_trilists[0]
         
         # Identify vertical edges of the rail sides.
-        railside_bottom_vertices = []
-        railside_top_vertices = []
+        railside_right_outer_vertices_top = []
+        railside_right_outer_vertices_bottom = []
+        railside_right_inner_vertices_top = []
+        railside_right_inner_vertices_bottom = []
+        railside_left_inner_vertices_top = []
+        railside_left_inner_vertices_bottom = []
+        railside_left_outer_vertices_top = []
+        railside_left_outer_vertices_bottom = []
 
         for vertex in vertices_in_prim_state:
             if vertex.point.y == 0.2:  # Railside bottom vertices
@@ -73,12 +80,40 @@ if __name__ == "__main__":
                     connected_vertex = vertices_in_subobject[connected_vertex_idx]
 
                     if connected_vertex.point.y == 0.325 and connected_vertex.point.z == vertex.point.z:  # Connected railside top vertices directly over the bottom ones
-                        railside_bottom_vertices.append(vertex)
-                        railside_top_vertices.append(connected_vertex)
+                        closest_centerpoint = tsu.find_closest_centerpoint(vertex.point, trackcenter, plane="xz")
+                        distance_from_center = tsu.signed_distance_between(vertex.point, closest_centerpoint, plane="xz")
 
-        if railside_bottom_vertices:
-            railside_bottom_vertices.sort(key=lambda v: tsu.distance_along_nearest_trackcenter(v.point, trackcenter))
-            railside_top_vertices.sort(key=lambda v: tsu.distance_along_nearest_trackcenter(v.point, trackcenter))
+                        if 0.8175 <= distance_from_center <= 0.9175: # Outer right railside.
+                            railside_right_outer_vertices_bottom.append(vertex)
+                            railside_right_outer_vertices_top.append(connected_vertex)
+
+                        elif 0.6675 <= distance_from_center <= 0.7675: # Inner right railside.
+                            railside_right_inner_vertices_bottom.append(vertex)
+                            railside_right_inner_vertices_top.append(connected_vertex)
+
+                        elif -0.7675 <= distance_from_center <= -0.6675: # Inner left railside.
+                            railside_left_inner_vertices_bottom.append(vertex)
+                            railside_left_inner_vertices_top.append(connected_vertex)
+
+                        elif -0.9175 <= distance_from_center <= -0.8175: # Outer left railside.
+                            railside_left_outer_vertices_bottom.append(vertex)
+                            railside_left_outer_vertices_top.append(connected_vertex)
+                        
+        if railside_right_outer_vertices_top:
+            railside_right_outer_vertices_top.sort(key=lambda v: tsu.distance_along_nearest_trackcenter(v.point, trackcenter))
+            railside_right_outer_vertices_bottom.sort(key=lambda v: tsu.distance_along_nearest_trackcenter(v.point, trackcenter))
+
+        if railside_right_inner_vertices_top:
+            railside_right_inner_vertices_top.sort(key=lambda v: tsu.distance_along_nearest_trackcenter(v.point, trackcenter))
+            railside_right_inner_vertices_bottom.sort(key=lambda v: tsu.distance_along_nearest_trackcenter(v.point, trackcenter))
+            
+        if railside_left_inner_vertices_top:
+            railside_left_inner_vertices_top.sort(key=lambda v: tsu.distance_along_nearest_trackcenter(v.point, trackcenter))
+            railside_left_inner_vertices_bottom.sort(key=lambda v: tsu.distance_along_nearest_trackcenter(v.point, trackcenter))
+            
+        if railside_left_outer_vertices_top:
+            railside_left_outer_vertices_top.sort(key=lambda v: tsu.distance_along_nearest_trackcenter(v.point, trackcenter))
+            railside_left_outer_vertices_bottom.sort(key=lambda v: tsu.distance_along_nearest_trackcenter(v.point, trackcenter))
 
         # Find the rectangles between the vertical edges of the rail sides.
         railside_rectangles_right_outer = []
@@ -86,28 +121,41 @@ if __name__ == "__main__":
         railside_rectangles_left_inner = []
         railside_rectangles_left_outer = []
 
-        for i in range(len(railside_bottom_vertices) - 1):
-            bottom_close = railside_bottom_vertices[i]
-            bottom_far = railside_bottom_vertices[i + 1]
-            top_close = railside_top_vertices[i]
-            top_far = railside_top_vertices[i + 1]
-
-            closest_centerpoint = tsu.find_closest_centerpoint(top_close.point, trackcenter, plane="xz")
-            distance_from_center = tsu.signed_distance_between(top_close.point, closest_centerpoint, plane="xz")
+        for i in range(len(railside_right_outer_vertices_top) - 1):
+            bottom_close = railside_right_outer_vertices_bottom[i]
+            bottom_far = railside_right_outer_vertices_bottom[i + 1]
+            top_close = railside_right_outer_vertices_top[i]
+            top_far = railside_right_outer_vertices_top[i + 1]
 
             rectangle = (bottom_close, top_close, top_far, bottom_far)
+            railside_rectangles_right_outer.append(rectangle)
+        
+        for i in range(len(railside_right_inner_vertices_top) - 1):
+            bottom_close = railside_right_inner_vertices_bottom[i]
+            bottom_far = railside_right_inner_vertices_bottom[i + 1]
+            top_close = railside_right_inner_vertices_top[i]
+            top_far = railside_right_inner_vertices_top[i + 1]
 
-            if 0.8175 <= distance_from_center <= 0.9175: # Outer right railside.
-                railside_rectangles_right_outer.append(rectangle)
+            rectangle = (bottom_close, top_close, top_far, bottom_far)
+            railside_rectangles_right_inner.append(rectangle)
+        
+        for i in range(len(railside_left_inner_vertices_top) - 1):
+            bottom_close = railside_left_inner_vertices_bottom[i]
+            bottom_far = railside_left_inner_vertices_bottom[i + 1]
+            top_close = railside_left_inner_vertices_top[i]
+            top_far = railside_left_inner_vertices_top[i + 1]
 
-            elif 0.6675 <= distance_from_center <= 0.7675: # Inner right railside.
-                railside_rectangles_right_inner.append(rectangle)
+            rectangle = (bottom_close, top_close, top_far, bottom_far)
+            railside_rectangles_left_inner.append(rectangle)
+        
+        for i in range(len(railside_left_outer_vertices_top) - 1):
+            bottom_close = railside_left_outer_vertices_bottom[i]
+            bottom_far = railside_left_outer_vertices_bottom[i + 1]
+            top_close = railside_left_outer_vertices_top[i]
+            top_far = railside_left_outer_vertices_top[i + 1]
 
-            elif -0.7675 <= distance_from_center <= -0.6675: # Inner left railside.
-                railside_rectangles_left_inner.append(rectangle)
-
-            elif -0.9175 <= distance_from_center <= -0.8175: # Outer left railside.
-                railside_rectangles_left_outer.append(rectangle)
+            rectangle = (bottom_close, top_close, top_far, bottom_far)
+            railside_rectangles_left_outer.append(rectangle)
 
         # Creation of ATracks-like rail sides.
         # New vertices are added, and at the end their values are changed according to the contents of 'update_vertex_data'.
@@ -179,8 +227,6 @@ if __name__ == "__main__":
         
         print("")
 
-        prev_vertices = None
-
         # Inner right railside.
         for idx, (bottom_close, top_close, top_far, bottom_far) in enumerate(railside_rectangles_right_inner):
             print(f"\tProcessing inner right railside {idx + 1} of {len(railside_rectangles_right_inner)}", end='\r')
@@ -244,8 +290,6 @@ if __name__ == "__main__":
         
         print("")
 
-        prev_vertices = None
-
         # Inner left railside.
         for idx, (bottom_close, top_close, top_far, bottom_far) in enumerate(railside_rectangles_left_inner):
             print(f"\tProcessing inner left railside {idx + 1} of {len(railside_rectangles_left_inner)}", end='\r')
@@ -308,8 +352,6 @@ if __name__ == "__main__":
             prev_vertices = (bottom_far, railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
         
         print("")
-
-        prev_vertices = None
 
         # Outer left railside.
         for idx, (bottom_close, top_close, top_far, bottom_far) in enumerate(railside_rectangles_left_outer):
