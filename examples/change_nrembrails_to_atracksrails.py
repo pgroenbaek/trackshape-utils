@@ -77,8 +77,8 @@ if __name__ == "__main__":
                         railside_top_vertices.append(connected_vertex)
 
         if railside_bottom_vertices:
-            railside_bottom_vertices.sort(key=lambda v: tsu.signed_distance_between(v.point, tsu.find_closest_centerpoint(v.point, trackcenter, plane="xz"), plane="xz"))
-            railside_top_vertices.sort(key=lambda v: tsu.signed_distance_between(v.point, tsu.find_closest_centerpoint(v.point, trackcenter, plane="xz"), plane="xz"))
+            railside_bottom_vertices.sort(key=lambda v: tsu.distance_along_nearest_trackcenter(v.point, trackcenter))
+            railside_top_vertices.sort(key=lambda v: tsu.distance_along_nearest_trackcenter(v.point, trackcenter))
 
         # Find the rectangles between the vertical edges of the rail sides.
         railside_rectangles_right_outer = []
@@ -120,12 +120,8 @@ if __name__ == "__main__":
         # Outer right railside.
         for idx, (bottom_close, top_close, top_far, bottom_far) in enumerate(railside_rectangles_right_outer):
             print(f"\tProcessing outer right railside {idx + 1} of {len(railside_rectangles_right_outer)}", end='\r')
-            if 'strt' in sfile_name.lower():
-                distance_along_track_close = tsu.distance_along_straight_track(top_close.point, trackcenter)
-                distance_along_track_far = tsu.distance_along_straight_track(top_far.point, trackcenter)
-            else:
-                distance_along_track_close = tsu.distance_along_curved_track(top_close.point, trackcenter, curve_angle=-10, curve_radius=250)
-                distance_along_track_far = tsu.distance_along_curved_track(top_far.point, trackcenter, curve_angle=-10, curve_radius=250)
+            distance_along_track_close = tsu.distance_along_nearest_trackcenter(top_close.point, trackcenter)
+            distance_along_track_far = tsu.distance_along_nearest_trackcenter(top_far.point, trackcenter)
             rails_delta_texcoord = 2
             u_value_close = float(distance_along_track_close * rails_delta_texcoord)
             u_value_far = float(distance_along_track_far * rails_delta_texcoord)
@@ -187,12 +183,8 @@ if __name__ == "__main__":
         # Inner right railside.
         for idx, (bottom_close, top_close, top_far, bottom_far) in enumerate(railside_rectangles_right_inner):
             print(f"\tProcessing inner right railside {idx + 1} of {len(railside_rectangles_right_inner)}", end='\r')
-            if 'strt' in sfile_name.lower():
-                distance_along_track_close = tsu.distance_along_straight_track(top_close.point, trackcenter)
-                distance_along_track_far = tsu.distance_along_straight_track(top_far.point, trackcenter)
-            else:
-                distance_along_track_close = tsu.distance_along_curved_track(top_close.point, trackcenter, curve_angle=-10, curve_radius=250)
-                distance_along_track_far = tsu.distance_along_curved_track(top_far.point, trackcenter, curve_angle=-10, curve_radius=250)
+            distance_along_track_close = tsu.distance_along_nearest_trackcenter(top_close.point, trackcenter)
+            distance_along_track_far = tsu.distance_along_nearest_trackcenter(top_far.point, trackcenter)
             rails_delta_texcoord = 2
             u_value_close = float(distance_along_track_close * rails_delta_texcoord)
             u_value_far = float(distance_along_track_far * rails_delta_texcoord)
@@ -254,12 +246,8 @@ if __name__ == "__main__":
         # Inner left railside.
         for idx, (bottom_close, top_close, top_far, bottom_far) in enumerate(railside_rectangles_left_inner):
             print(f"\tProcessing inner left railside {idx + 1} of {len(railside_rectangles_left_inner)}", end='\r')
-            if 'strt' in sfile_name.lower():
-                distance_along_track_close = tsu.distance_along_straight_track(top_close.point, trackcenter)
-                distance_along_track_far = tsu.distance_along_straight_track(top_far.point, trackcenter)
-            else:
-                distance_along_track_close = tsu.distance_along_curved_track(top_close.point, trackcenter, curve_angle=-10, curve_radius=250)
-                distance_along_track_far = tsu.distance_along_curved_track(top_far.point, trackcenter, curve_angle=-10, curve_radius=250)
+            distance_along_track_close = tsu.distance_along_nearest_trackcenter(top_close.point, trackcenter)
+            distance_along_track_far = tsu.distance_along_nearest_trackcenter(top_far.point, trackcenter)
             rails_delta_texcoord = 2
             u_value_close = float(distance_along_track_close * rails_delta_texcoord)
             u_value_far = float(distance_along_track_far * rails_delta_texcoord)
@@ -321,12 +309,8 @@ if __name__ == "__main__":
         # Outer left railside.
         for idx, (bottom_close, top_close, top_far, bottom_far) in enumerate(railside_rectangles_left_outer):
             print(f"\tProcessing outer left railside {idx + 1} of {len(railside_rectangles_left_outer)}", end='\r')
-            if 'strt' in sfile_name.lower():
-                distance_along_track_close = tsu.distance_along_straight_track(top_close.point, trackcenter)
-                distance_along_track_far = tsu.distance_along_straight_track(top_far.point, trackcenter)
-            else:
-                distance_along_track_close = tsu.distance_along_curved_track(top_close.point, trackcenter, curve_angle=-10, curve_radius=250)
-                distance_along_track_far = tsu.distance_along_curved_track(top_far.point, trackcenter, curve_angle=-10, curve_radius=250)
+            distance_along_track_close = tsu.distance_along_nearest_trackcenter(top_close.point, trackcenter)
+            distance_along_track_far = tsu.distance_along_nearest_trackcenter(top_far.point, trackcenter)
             rails_delta_texcoord = 2
             u_value_close = float(distance_along_track_close * rails_delta_texcoord)
             u_value_far = float(distance_along_track_far * rails_delta_texcoord)

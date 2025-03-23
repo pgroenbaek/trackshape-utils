@@ -7,6 +7,7 @@ setup(
     install_requires=[
         'numpy',
         'scipy',
+        'networkx',
     ],
     package_data={
         'trackshapeutils': ['tsection.dat'],

@@ -26,6 +26,7 @@ import codecs
 import shutil
 import pathlib
 import numpy as np
+import networkx as nx
 from scipy.interpolate import splprep, splev
 from scipy.spatial import KDTree
 from typing import List, Dict, Optional
@@ -1718,6 +1719,32 @@ def distance_along_straight_track(point_along_track: Point, trackcenter: Trackce
     cumulative_distance = np.insert(cumulative_distance, 0, 0)
 
     return cumulative_distance[index]
+
+
+def distance_along_nearest_trackcenter(point_along_track: Point, trackcenter: Trackcenter, start_point: Point = Point(0, 0, 0)) -> float:
+    point = point_along_track.to_numpy()
+    point_xz = point[[0, 2]]
+    
+    centerpoints = trackcenter.centerpoints
+    centerpoints_xz = centerpoints[:, [0, 2]]
+    
+    G = nx.Graph()
+    num_points = len(centerpoints_xz)
+    
+    for i in range(num_points - 1):
+        dist = np.linalg.norm(centerpoints_xz[i + 1] - centerpoints_xz[i])
+        if dist < 2.5:
+            G.add_edge(i, i + 1, weight=dist)
+    
+    tree = KDTree(centerpoints_xz)
+    _, nearest_index = tree.query(point_xz)
+    
+    start_xz = start_point.to_numpy()[[0, 2]]
+    _, start_index = tree.query(start_xz)
+    
+    distances = nx.single_source_dijkstra_path_length(G, start_index)
+    
+    return distances.get(nearest_index, float("inf"))
 
 
 def get_curve_centerpoint_from_angle(curve_radius: float, curve_angle: float, start_angle: float = 0, start_point: Point = Point(0, 0, 0)) -> Point:
