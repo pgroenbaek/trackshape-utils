@@ -28,7 +28,7 @@ if __name__ == "__main__":
     ffeditc_path = "./ffeditc_unicode.exe"
     match_shapes = [
         "NR_Emb_a1t10mStrt.s",
-        #"NR_Emb_a1t250r10d.s"
+        "NR_Emb_a1t250r10d.s"
     ]
     ignore_shapes = ["*Tun*", "*Pnt*", "*Frog*"]
     
