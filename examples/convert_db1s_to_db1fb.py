@@ -13,7 +13,7 @@ if __name__ == "__main__":
     shape_names = tsu.find_directory_files(shape_load_path, match_shapes, ignore_shapes)
 
     for idx, sfile_name in enumerate(shape_names):
-        print(f"Shape {idx} of {len(shape_names)}...")
+        print(f"Shape {idx + 1} of {len(shape_names)}...")
         
         # Convert .s file
         new_sfile_name = sfile_name.replace("DB1s_", "DB1fb_")

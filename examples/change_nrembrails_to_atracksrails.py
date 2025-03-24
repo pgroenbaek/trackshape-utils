@@ -27,10 +27,10 @@ if __name__ == "__main__":
     shape_processed_path = "./examples/data/processed/NREmbAtracksRails"
     ffeditc_path = "./ffeditc_unicode.exe"
     match_shapes = [
-        #"NR_Emb_a1t10mStrt.s",
-        #"NR_Emb_a1t250r10d.s",
+        "NR_Emb_a1t10mStrt.s",
+        "NR_Emb_a1t250r10d.s",
         "NR_Emb_a2t1000r1d.s",
-        #"NR_Emb_a2dt1000r1d.s"
+        "NR_Emb_a2dt1000r1d.s"
     ]
     ignore_shapes = ["*Tun*", "*Pnt*", "*Frog*"]
     
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     shape_names = tsu.find_directory_files(shape_load_path, match_shapes, ignore_shapes)
 
     for idx, sfile_name in enumerate(shape_names):
-        print(f"Shape {idx} of {len(shape_names)}...")
+        print(f"Shape {idx + 1} of {len(shape_names)}...")
         print(f"\tName: {sfile_name}")
 
         # Process .s file

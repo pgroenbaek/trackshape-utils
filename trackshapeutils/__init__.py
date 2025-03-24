@@ -5,18 +5,20 @@ This module provides various utility functions for working with track shape file
 including file handling, shape processing, and geometric calculations for track 
 center points and curves. It includes functions for:
 
-- File operations (reading, writing, ensuring directory existence)
 - Shape file processing (finding track shape files, compression, and decompression)
-- String and text manipulation (case-insensitive replacement)
+- String and text manipulation (case-sensitive and case-insensitive replacement)
 - Geometric calculations for track center points (straight and curved track segments)
+- Configuring track centers based on the global tsection.dat
 - Closest point searches and signed distance calculations
-- Linking points to UV values and prim_state names
-- Modification of UV values
+- Addition and modification of vertices, points, UV points and normals
+- Addition and removal of triangles
 
-This module is intended for use with existing track shapes to adjust them. Points in the
+This module is intended for use with existing track shapes (and shapes in general). Points in the
 shape geometry can be repositioned, for example relative to the track center or along the track
-for both curved and straight track shapes. This code cannot add/remove shape geometry, but you can
-hide things underneath the trackbed. It will also not edit how vertices are connected.
+for both curved and straight track shapes. New vertices and triangles can be added to the shape.
+Triangles can also be removed. Vertices cannot be removed, but the geometry will in effect no longer
+be there once the triangles that connect the vertices are removed. Points, UV points and normals can
+be added and modified, but not removed.
 
 
 Copyright (C) 2025 Peter Grønbæk Andersen <peter@grnbk.io>
