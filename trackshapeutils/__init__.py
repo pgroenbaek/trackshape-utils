@@ -17,7 +17,7 @@ This module is intended for use with existing track shapes (and shapes in genera
 shape geometry can be repositioned, for example relative to the track center or along the track
 for both curved and straight track shapes. New vertices and triangles can be added to the shape.
 Triangles can also be removed. Vertices cannot be removed, but the geometry will in effect no longer
-be there once the triangles that connect the vertices are removed. Points, UV points and normals can
+be visible once the triangles that connect the vertices are removed. Points, UV points and normals can
 be added and modified, but not removed.
 
 
