@@ -760,7 +760,7 @@ class Shapefile(File):
         for prim_state_idx in indexed_trilists:
             for indexed_trilist in indexed_trilists[prim_state_idx]:
                 vertex_idxs_counts.append(len(indexed_trilist.vertex_idxs))
-                normal_idxs_counts.append(len(indexed_trilist.normal_idxs))
+                normal_idxs_counts.append(int(len(indexed_trilist.vertex_idxs) / 3))
 
         for line_idx, line in enumerate(self.lines):
             if "dlevel_selection (" in line.lower():
@@ -783,13 +783,9 @@ class Shapefile(File):
                         parts = line.split(" ")
                         num_primitives = int(parts[2])
                         from_idx = current_prim_total - 1
-                        to_idx = current_prim_total - 1 + num_primitives - 1
-                        if from_idx == to_idx:
-                            parts[3] = str(normal_idxs_counts[from_idx])
-                            parts[4] = str(vertex_idxs_counts[from_idx])
-                        else:
-                            parts[3] = str(sum(normal_idxs_counts[from_idx : to_idx]))
-                            parts[4] = str(sum(vertex_idxs_counts[from_idx : to_idx]))
+                        to_idx = current_prim_total - 1 + num_primitives
+                        parts[3] = str(sum(normal_idxs_counts[from_idx : to_idx]))
+                        parts[4] = str(sum(vertex_idxs_counts[from_idx : to_idx]))
                         self.lines[line_idx] = " ".join(parts)
                         current_prim_total += num_primitives
                         has_updated_cullable_prims = True
@@ -1135,9 +1131,10 @@ class Shapefile(File):
 
         indexed_trilists = self.get_indexed_trilists_in_subobject(lod_dlevel, subobject_idx)
         
+        # Can happen that we insert a new vertex into the middle of the vertex list to get it into the correct vertex set.
+        # So for all trilists, increment any vertex_idxs equal to or greater than 'new_vertex_idx' by 1.
         for prim_state_idx in indexed_trilists:
             for indexed_trilist in indexed_trilists[prim_state_idx]:
-
                 for idx, vertex_idx in enumerate(indexed_trilist.vertex_idxs):
                     if vertex_idx >= new_vertex_idx:
                         indexed_trilist.vertex_idxs[idx] = vertex_idx + 1
@@ -1663,6 +1660,7 @@ def signed_distance_between(point1: Point, point2: Point, plane="xz") -> float:
 
 def distance_between(point1: Point, point2: Point, plane="xz") -> float:
     signed_distance = signed_distance_between(point1, point2, plane=plane)
+    
     distance = abs(signed_distance)
 
     return distance
