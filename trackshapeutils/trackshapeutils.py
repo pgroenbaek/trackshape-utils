@@ -23,13 +23,13 @@ import subprocess
 import re
 import copy
 import codecs
+import heapq
 import shutil
 import pathlib
 import numpy as np
-import networkx as nx
 from scipy.interpolate import splprep, splev
 from scipy.spatial import KDTree
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Callable
 
 
 def _detect_encoding(filepath: str) -> str:
@@ -63,6 +63,14 @@ class PrimState:
     
     def __repr__(self):
         return f"PrimState(idx={self.idx}, name={self.name})"
+    
+    def __eq__(self, other):
+        if isinstance(other, PrimState):
+            return all([
+                self.idx == other.idx,
+                self.name == other.name
+            ])
+        return False
 
 
 class Point:
@@ -73,6 +81,15 @@ class Point:
     
     def __repr__(self):
         return f"Point(x={self.x}, y={self.y}, z={self.z})"
+    
+    def __eq__(self, other):
+        if isinstance(other, Point):
+            return all([
+                self.x == other.x,
+                self.y == other.y,
+                self.z == other.z
+            ])
+        return False
     
     def to_numpy(self) -> np.ndarray:
         return np.array([self.x, self.y, self.z])
@@ -92,6 +109,14 @@ class UVPoint:
     def __repr__(self):
         return f"UVPoint(u={self.u}, v={self.v})"
     
+    def __eq__(self, other):
+        if isinstance(other, UVPoint):
+            return all([
+                self.u == other.u,
+                self.v == other.v
+            ])
+        return False
+    
     def to_numpy(self) -> np.ndarray:
         return np.array([self.u, self.v])
 
@@ -110,6 +135,15 @@ class Normal:
     
     def __repr__(self):
         return f"Normal(vec_x={self.vec_x}, vec_y={self.vec_y}, vec_z={self.vec_z})"
+    
+    def __eq__(self, other):
+        if isinstance(other, Normal):
+            return all([
+                self.vec_x == other.vec_x,
+                self.vec_y == other.vec_y,
+                self.vec_z == other.vec_z
+            ])
+        return False
     
     def to_numpy(self) -> np.ndarray:
         return np.array([self.vec_x, self.vec_y, self.vec_z])
@@ -844,15 +878,16 @@ class Shapefile(File):
                         if adjust_remaining_vertexset_idxs:
                             parts[3] = str(vertexset_count_total)
                             self.lines[line_idx] = " ".join(parts)
-                            vertexset_count_total += vertexset_count
                         
                         if vertexset_idx == vertexset_idx_to_update:
                             new_count = vertexset_count + 1
                             parts[4] = str(new_count)
                             self.lines[line_idx] = " ".join(parts)
-                            vertexset_count_total += new_count
+                            vertexset_count_total += 1
                             new_vertex_idx = vertexset_count
                             adjust_remaining_vertexset_idxs = True
+                        
+                        vertexset_count_total += vertexset_count
                         
         return new_vertex_idx
 
@@ -945,7 +980,7 @@ class Shapefile(File):
             if len(new_flags_trilist) == 0:
                 lines_to_add.append("flags ( 0 )")
             
-            flags_trilist_chunks = [tuple(new_flags_trilist[i : i + 197]) for i in range(0, len(new_flags_trilist), 197)]
+            flags_trilist_chunks = [tuple(new_flags_trilist[i : i + 100]) for i in range(0, len(new_flags_trilist), 100)]
             for index, chunk in enumerate(flags_trilist_chunks):
                 line = "\t\t\t\t\t\t\t\t\t"
                 if len(flags_trilist_chunks) == 1:
@@ -1129,17 +1164,20 @@ class Shapefile(File):
 
         new_vertex_idx = self.increase_vertexset_count(lod_dlevel, subobject_idx, indexed_trilist)
 
-        indexed_trilists = self.get_indexed_trilists_in_subobject(lod_dlevel, subobject_idx)
-        
-        # Can happen that we insert a new vertex into the middle of the vertex list to get it into the correct vertex set.
+        # We might insert a new vertex into the middle of the vertex list to get it into the correct vertex set.
         # So for all trilists, increment any vertex_idxs equal to or greater than 'new_vertex_idx' by 1.
+        for idx, vertex_idx in enumerate(indexed_trilist.vertex_idxs):
+            if vertex_idx >= new_vertex_idx:
+                indexed_trilist.vertex_idxs[idx] = vertex_idx + 1
+        
+        # Also do it for all other trilists in the subobject.
+        indexed_trilists = self.get_indexed_trilists_in_subobject(lod_dlevel, subobject_idx)
         for prim_state_idx in indexed_trilists:
-            for indexed_trilist in indexed_trilists[prim_state_idx]:
-                for idx, vertex_idx in enumerate(indexed_trilist.vertex_idxs):
+            for other_indexed_trilist in indexed_trilists[prim_state_idx]:
+                for idx, vertex_idx in enumerate(other_indexed_trilist.vertex_idxs):
                     if vertex_idx >= new_vertex_idx:
-                        indexed_trilist.vertex_idxs[idx] = vertex_idx + 1
-                
-                self.update_indexed_trilist(indexed_trilist)
+                        other_indexed_trilist.vertex_idxs[idx] = vertex_idx + 1
+                self.update_indexed_trilist(other_indexed_trilist)
 
         new_vertex = Vertex(
             vertex_idx=new_vertex_idx,
@@ -1521,7 +1559,7 @@ def generate_curve_centerpoints(curve_radius: float, curve_angle: float, num_poi
     return Trackcenter(centerpoints)
 
 
-def generate_centerpoints_from_tsection(shape_name: str, tsection_file_path: str = None, num_points_per_path: int = 1000) -> Trackcenter:
+def generate_centerpoints_from_tsection(shape_name: str, tsection_file_path: str = None, num_points_per_path: int = 1000, start_offset=Point(0, 0, 0)) -> Trackcenter:
     if tsection_file_path is None:
         module_directory = pathlib.Path(__file__).parent
         tsection_file_path = f"{module_directory}/tsection.dat"
@@ -1570,7 +1608,7 @@ def generate_centerpoints_from_tsection(shape_name: str, tsection_file_path: str
                             angle = float(tracksection_match.group(6)) if tracksection_match.group(6) else None
 
                             if idx == 0:
-                                current_path_point = Point(start_x, start_y, start_z)
+                                current_path_point = Point(start_x + start_offset.x, start_y + start_offset.y, start_z + start_offset.z)
                                 current_path_angle = start_angle
                             
                             if radius is not None and angle is not None:
@@ -1580,8 +1618,8 @@ def generate_centerpoints_from_tsection(shape_name: str, tsection_file_path: str
                                 section_trackcenter = generate_straight_centerpoints(length=length, start_angle=current_path_angle, start_point=current_path_point, num_points=num_points_per_path)
                             
                             section_endpoint = Point.from_numpy(section_trackcenter.centerpoints[-1])
-                            current_path_point.x += section_endpoint.x
-                            current_path_point.z += section_endpoint.z
+                            current_path_point.x = section_endpoint.x
+                            current_path_point.z = section_endpoint.z
 
                             trackcenter += section_trackcenter
 
@@ -1675,36 +1713,79 @@ def distance_along_curve(curve_angle: float, curve_radius: float) -> float:
 
 
 def distance_along_nearest_trackcenter(point_along_track: Point, trackcenter: Trackcenter, start_point: Point = Point(0, 0, 0)) -> float:
-    point = point_along_track.to_numpy()
-    point_xz = point[[0, 2]]
-
     centerpoints = trackcenter.centerpoints
     centerpoints_xz = centerpoints[:, [0, 2]]
-
+    
     tree = KDTree(centerpoints_xz)
-    _, nearest_index = tree.query(point_xz)
+    start_point_np = start_point.to_numpy()
+    point_along_track_np = point_along_track.to_numpy()
     
-    start_xz = start_point.to_numpy()[[0, 2]]
-    _, start_index = tree.query(start_xz)
+    _, end_idx = tree.query(point_along_track_np[[0, 2]])
 
-    total_distance = 0.0
-    current_index = start_index
+    neighbors = {i: [] for i in range(len(centerpoints_xz))}
+    for i in range(len(centerpoints_xz)):
+        dists, indices = tree.query(centerpoints_xz[i], k=5)
+        for dist, idx in zip(dists, indices):
+            if dist < 1.0 and idx != i:
+                neighbors[i].append(idx)
     
-    while current_index != nearest_index:
-        if current_index < nearest_index:
-            next_index = current_index + 1
-        else:
-            next_index = current_index - 1
-
-        segment_distance = np.linalg.norm(centerpoints_xz[current_index] - centerpoints_xz[next_index])
+    visited = set()
+    queue = [(0.0, end_idx)] # (distance, index) for priority queue
+    best_distance = float("inf")
+    
+    while queue:
+        total_distance, current_index = heapq.heappop(queue)
+        if current_index in visited:
+            continue
+        visited.add(current_index)
         
-        if segment_distance < 2.0:
-            total_distance += segment_distance
-            current_index = next_index
-        else:
-            break
+        current_point = centerpoints_xz[current_index]
+        distance_to_start = np.linalg.norm(current_point - start_point_np[[0, 2]])
 
-    return total_distance
+        is_closest = True
+        for neighbor in neighbors[current_index]:
+            neighbor_point = centerpoints_xz[neighbor]
+            distance_to_neighbor = np.linalg.norm(neighbor_point - start_point_np[[0, 2]])
+            if distance_to_neighbor < distance_to_start:
+                is_closest = False
+                break
+        
+        if is_closest:
+            return total_distance
+        
+        if distance_to_start < best_distance:
+            best_distance = distance_to_start
+        
+        sorted_neighbors = sorted(neighbors[current_index], key=lambda idx: np.linalg.norm(centerpoints_xz[idx] - start_point_np[[0, 2]]))
+
+        for neighbor in sorted_neighbors:
+            if neighbor not in visited:
+                step_distance = np.linalg.norm(centerpoints_xz[current_index] - centerpoints_xz[neighbor])
+                heapq.heappush(queue, (total_distance + step_distance, neighbor))
+    
+    return 0.0
+
+
+def group_vertices_by(vertices: List[Vertex], group_func: Callable[[Vertex, Vertex], bool]) -> List[List[Vertex]]:
+    if not vertices:
+        return []
+
+    groups = []
+
+    for i in range(0, len(vertices)):
+        curr_vertex = vertices[i]
+        added_to_group = False
+        
+        for group in groups:
+            if group_func(group[-1], curr_vertex):
+                group.append(curr_vertex)
+                added_to_group = True
+                break
+        
+        if not added_to_group:
+            groups.append([curr_vertex])
+
+    return groups
 
 
 def get_curve_centerpoint_from_angle(curve_radius: float, curve_angle: float, start_angle: float = 0, start_point: Point = Point(0, 0, 0)) -> Point:

@@ -2,12 +2,11 @@ from setuptools import setup, find_packages
 
 setup(
     name="trackshapeutils",
-    version="0.3.1",
+    version="0.3.2",
     packages=find_packages(),
     install_requires=[
         'numpy',
-        'scipy',
-        'networkx',
+        'scipy'
     ],
     package_data={
         'trackshapeutils': ['tsection.dat'],
