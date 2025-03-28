@@ -34,6 +34,10 @@ if __name__ == "__main__":
         "NR_Emb_a2t1000r1d.s",
         "NR_Emb_a3t1000r1d.s",
         "NR_Emb_a4t1000r1d.s",
+        "NR_EmbBase_a1t10mStrt.s",
+        "NR_Ramp_a1t10mStrt.s",
+        "NR_RWall_a1t10mStrt_lft.s",
+        "NR_WallEmb_a1t10mStrt_lft.s",
 
         # All of the shapes
         #"NR_Emb_*.s",
@@ -55,6 +59,8 @@ if __name__ == "__main__":
         # Process .s file
         new_sfile_name = sfile_name.replace("_a", "_AT_a")
         tsection_sfile_name = sfile_name.replace("a2dt", "a2t")
+        tsection_sfile_name = tsection_sfile_name.replace("_lft", "")
+        tsection_sfile_name = tsection_sfile_name.replace("_rgt", "")
         tsection_sfile_name = tsection_sfile_name.replace("NR_EmbBase_", "")
         tsection_sfile_name = tsection_sfile_name.replace("NR_Ramp_", "")
         tsection_sfile_name = tsection_sfile_name.replace("NR_RWall_", "")
@@ -500,7 +506,7 @@ if __name__ == "__main__":
             print("")
 
         new_sfile.save()
-        #new_sfile.compress(ffeditc_path)
+        new_sfile.compress(ffeditc_path)
 
         # Process .sd file
         sdfile_name = sfile_name.replace(".s", ".sd")
