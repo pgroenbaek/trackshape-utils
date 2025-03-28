@@ -1876,45 +1876,30 @@ def get_new_position_from_trackcenter(new_signed_distance: float, original_point
 
 
 def get_new_position_along_trackcenter(new_distance_along_track: float, original_point: Point, trackcenter: Trackcenter) -> List[Point]:
-    centerpoints = trackcenter.centerpoints
-
     closest_center = find_closest_centerpoint(original_point, trackcenter, plane="xz")
-    closest_center = closest_center.to_numpy()
+    
+    distance_from_start_to_closest_center = distance_along_nearest_trackcenter(closest_center, trackcenter)
 
+    target_distance = distance_from_start_to_closest_center + new_distance_along_track
+
+    centerpoints = trackcenter.centerpoints
     tck, _ = splprep(centerpoints.T, s=0)
     num_samples = 1000
     u_values = np.linspace(0, 1, num_samples)
     spline_points = np.array(splev(u_values, tck)).T
 
-    tree = KDTree(spline_points)
-    _, index = tree.query(closest_center)
+    distances = np.cumsum(np.linalg.norm(np.diff(spline_points, axis=0), axis=1))
+    
+    target_index = np.searchsorted(distances, target_distance)
 
-    if index < len(spline_points) - 1:
-        tangent_vector = spline_points[index + 1] - spline_points[index]
-    else:
-        tangent_vector = spline_points[index] - spline_points[index - 1]
+    if target_index >= len(spline_points):
+        target_index = len(spline_points) - 1
 
-    tangent_vector[1] = 0
-    tangent_vector /= np.linalg.norm(tangent_vector)
+    new_position_on_track = spline_points[target_index]
 
-    new_position = closest_center + new_distance_along_track * tangent_vector
+    lateral_offset = original_point.to_numpy() - closest_center.to_numpy()
+    lateral_offset[1] = 0
 
-    branch_radius = 10
-    nearby_points = []
+    new_position = new_position_on_track + lateral_offset
 
-    for i, centerpoint in enumerate(centerpoints):
-        distance_to_point = np.linalg.norm(new_position - centerpoint)
-        if distance_to_point < branch_radius:
-            nearby_points.append(i)
-
-    new_positions = []
-
-    if len(nearby_points) > 1:
-        for branch_index in nearby_points:
-            branch_point = centerpoints[branch_index]
-            branch_position = branch_point + new_distance_along_track * tangent_vector
-            new_positions.append(Point.from_numpy(branch_position))
-    else:
-        new_positions.append(Point.from_numpy(new_position))
-
-    return new_positions
+    return [Point.from_numpy(new_position)]

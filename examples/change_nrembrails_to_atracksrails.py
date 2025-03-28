@@ -1,50 +1,30 @@
-# Railhead vertices from center to outside:
-#[Vector((-0.7175, 0.2, 0.0))]
-#[Vector((-0.7175, 0.325, 0.0))]
-#[Vector((-0.8675, 0.325, 0.0))]
-#[Vector((-0.8675, 0.2, 0.0))]
-
-# Railhead vertices for ATracks:
-# [Vector((-0.6785, 0.192, 0.0))]
-# [Vector((-0.6785, 0.215, 0.0))]
-# [Vector((-0.7694, 0.2268, 0.0))]
-# [Vector((-0.7175, 0.325, 0.0))]
-# [Vector((-0.7895, 0.325, 0.0))]
-# [Vector((-0.7374, 0.2268, 0.0))]
-# [Vector((-0.8285, 0.215, 0.0))]
-# [Vector((-0.8285, 0.192, 0.0))]
-
-# Points needed for UVPoints:
-# Top of rail base: [Vector((-0.7535000443458557, 0.23000000417232513, 0.0))]
-# Bottom of rail: [Vector((-0.7619999647140503, 0.1899999976158142, 0.0))]
-# Bottom of rail: [Vector((-0.7619999647140503, 0.1899999976158142, 0.0))]
-
 import os
 import trackshapeutils as tsu
 from collections import defaultdict
 
 if __name__ == "__main__":
-    shape_load_path = "./examples/data"
-    shape_processed_path = "./examples/data/processed/NREmbAtracksRails"
+    shape_load_path = "/media/peter/T7 Shield/NR_Bahntrasse_2.1/NR_Bahntrasse_2.1/NR_Emb"
+    shape_processed_path = "/media/peter/T7 Shield/NR_Bahntrasse_2.1/NR_Bahntrasse_2.1/NR_Emb/Processed"
     ffeditc_path = "./ffeditc_unicode.exe"
     match_shapes = [
         # For testing
-        "NR_Emb_a1t10mStrt.s",
-        "NR_Emb_a1t250r10d.s",
-        "NR_Emb_a2t1000r1d.s",
-        "NR_Emb_a3t1000r1d.s",
-        "NR_Emb_a4t1000r1d.s",
-        "NR_EmbBase_a1t10mStrt.s",
-        "NR_Ramp_a1t10mStrt.s",
-        "NR_RWall_a1t10mStrt_lft.s",
-        "NR_WallEmb_a1t10mStrt_lft.s",
+        #"NR_Emb_a1t10mStrt.s",
+        #"NR_Emb_a1t250r10d.s",
+        #"NR_Emb_a2t1000r1d.s",
+        #"NR_Emb_a3t1000r1d.s",
+        #"NR_Emb_a4t1000r1d.s",
+        #"NR_EmbBase_a1t10mStrt.s",
+        #"NR_Ramp_a1t10mStrt.s",
+        #"NR_RWall_a1t10mStrt_lft.s",
+        #"NR_WallEmb_a1t10mStrt_lft.s",
 
         # All of the shapes
+        "NR_Emb_a1t1000r20d.s",
         #"NR_Emb_*.s",
-        #"NR_EmbBase_*.s",
-        #"NR_Ramp_*.s",
-        #"NR_RWall_*.s",
-        #"NR_WallEmb_*.s",
+        "NR_EmbBase_*.s",
+        "NR_Ramp_*.s",
+        "NR_RWall_*.s",
+        "NR_WallEmb_*.s",
     ]
     ignore_shapes = ["*Tun*", "*Pnt*", "*Frog*"]
     
@@ -69,13 +49,10 @@ if __name__ == "__main__":
 
         sfile = tsu.load_shape(sfile_name, shape_load_path)
         new_sfile = sfile.copy(new_filename=new_sfile_name, new_directory=shape_processed_path)
-        new_sfile.decompress(ffeditc_path)
+        #new_sfile.decompress(ffeditc_path)
 
         trackcenter = tsu.generate_centerpoints_from_tsection(shape_name=tsection_sfile_name, num_points_per_path=100)
 
-        # First find the vertices to work on.
-        # The naming right/left refers to which side of the track it is relative to the track center.
-        # The naming close/far refers to distance from the start of the track.
         lod_dlevel = 400
         subobject_idx = 0
         prim_states = new_sfile.get_prim_states_by_name("rail_side")
@@ -92,7 +69,9 @@ if __name__ == "__main__":
 
             railside_indexed_trilist = indexed_trilists[0]
             
-            # Find railside and railtop vertices.
+            # First find the vertices to work on.
+            # The naming right/left refers to which side of the track it is relative to the track center.
+            # The naming close/far refers to distance from the start of the track.
             print(f"\tFinding railside and railtop vertices")
             railtop_vertices_outer = []
             railtop_vertices_inner = []
@@ -156,7 +135,11 @@ if __name__ == "__main__":
                 railside_vertices_bottom[side].sort(key=lambda v: tsu.distance_along_nearest_trackcenter(v.point, trackcenter))
             
             print(f"\tGrouping railside vertices")
-            parallel_tracks = lambda v1, v2: tsu.distance_between(v1.point, v2.point, plane="xz") <= 3.0
+            parallel_tracks = lambda v1, v2: tsu.distance_between(
+                tsu.find_closest_centerpoint(tsu.get_new_position_along_trackcenter(0.0, v1.point, trackcenter)[0], trackcenter, plane="xz"),
+                tsu.find_closest_centerpoint(tsu.get_new_position_along_trackcenter(0.0, v2.point, trackcenter)[0], trackcenter, plane="xz"),
+                plane="x"
+            ) <= 2.5
 
             for side in railside_vertices_top:
                 railside_vertices_top[side] = tsu.group_vertices_by(railside_vertices_top[side], parallel_tracks)
@@ -201,7 +184,7 @@ if __name__ == "__main__":
 
                 # Updated values for existing vertices.
                 update_vertex_data.extend([
-                    (vertex, vertex.point.y, distance_from_center, u_value, -0.77, vertex.normal.vec_x, vertex.normal.vec_y, vertex.normal.vec_z),
+                    (vertex, vertex.point.y, distance_from_center, u_value, -0.77, vertex.normal.vec_x, vertex.normal.vec_y, vertex.normal.vec_z)
                 ])
 
             print("")
@@ -217,7 +200,7 @@ if __name__ == "__main__":
 
                 # Updated values for existing vertices.
                 update_vertex_data.extend([
-                    (vertex, vertex.point.y, distance_from_center, u_value, -0.875, vertex.normal.vec_x, vertex.normal.vec_y, vertex.normal.vec_z),
+                    (vertex, vertex.point.y, distance_from_center, u_value, -0.875, vertex.normal.vec_x, vertex.normal.vec_y, vertex.normal.vec_z)
                 ])
 
             print("")
@@ -506,7 +489,7 @@ if __name__ == "__main__":
             print("")
 
         new_sfile.save()
-        new_sfile.compress(ffeditc_path)
+        #new_sfile.compress(ffeditc_path)
 
         # Process .sd file
         sdfile_name = sfile_name.replace(".s", ".sd")
