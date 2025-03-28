@@ -1319,17 +1319,22 @@ class Shapefile(File):
         new_uv_point = self.calculate_uvpoint_midpoint(vertex1.uv_point, vertex2.uv_point)
         new_normal = Normal(0, 0, 0)
 
-        new_vertex = self.add_vertex_to_subobject(indexed_trilist, new_point, new_uv_point, new_normal)
+        new_vertex = self.add_vertex_to_subobject(lod_dlevel, subobject_idx, indexed_trilist, new_point, new_uv_point, new_normal)
 
         if new_vertex is not None:
             triangles = [tuple(indexed_trilist.vertex_idxs[i : i + 3]) for i in range(0, len(indexed_trilist.vertex_idxs), 3)]
 
             # Remove all affected triangles.
-            for tri_idx, tri in enumerate(triangles):
-                if vertex1._vertex_idx in tri or vertex2._vertex_idx in tri:
-                    del indexed_trilist.vertex_idxs[tri_idx * 3 : tri_idx * 3 + 2]
-                    del indexed_trilist.normal_idxs[tri_idx * 2 : tri_idx * 2 + 1]
-                    del indexed_trilist.flags[tri_idx]
+            delete_idxs = [tri_idx for tri_idx, tri in enumerate(triangles) if vertex1._vertex_idx in tri or vertex2._vertex_idx in tri]
+
+            print(delete_idxs)
+            print(len(triangles))
+            print(len(indexed_trilist.flags))
+
+            for tri_idx in reversed(delete_idxs):
+                del indexed_trilist.vertex_idxs[tri_idx * 3 : tri_idx * 3 + 3]
+                del indexed_trilist.normal_idxs[tri_idx * 2 : tri_idx * 2 + 2]
+                del indexed_trilist.flags[tri_idx]
             
             # Split all affected triangles, re-add them and calculate new face normals.
             for tri_idx, tri in enumerate(triangles):
@@ -1369,7 +1374,7 @@ class Shapefile(File):
             self.update_indexed_trilist(indexed_trilist)
 
             # Recalculate vertex normal.
-            connected_vertex_points = [vertex.point for vertex in self.get_connected_vertex_idxs(indexed_trilist, new_vertex)]
+            connected_vertex_points = [self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, vertex_idx).point for vertex_idx in self.get_connected_vertex_idxs(indexed_trilist, new_vertex)]
             new_vertex_normal = self.calculate_vertex_normal(new_vertex.point, connected_vertex_points)
             self.set_normal_value(new_vertex._normal_idx, new_vertex_normal)
 
@@ -1447,11 +1452,13 @@ class Shapefile(File):
         vertex3_idx = vertex3._vertex_idx
 
         triangles = [tuple(indexed_trilist.vertex_idxs[i : i + 3]) for i in range(0, len(indexed_trilist.vertex_idxs), 3)]
-        for tri_idx, tri in enumerate(triangles):
-            if vertex1_idx in tri and vertex2_idx in tri and vertex3_idx in tri:
-                del indexed_trilist.vertex_idxs[tri_idx * 3 : tri_idx * 3 + 2]
-                del indexed_trilist.normal_idxs[tri_idx * 2 : tri_idx * 2 + 1]
-                del indexed_trilist.flags[tri_idx]
+        
+        delete_idxs = [tri_idx for tri_idx, tri in enumerate(triangles) if vertex1_idx in tri and vertex2_idx in tri and vertex3_idx in tri]
+
+        for tri_idx in reversed(delete_idxs):
+            del indexed_trilist.vertex_idxs[tri_idx * 3 : tri_idx * 3 + 3]
+            del indexed_trilist.normal_idxs[tri_idx * 2 : tri_idx * 2 + 2]
+            del indexed_trilist.flags[tri_idx]
         
         has_updated_trilist = self.update_indexed_trilist(indexed_trilist)
 
@@ -1466,11 +1473,13 @@ class Shapefile(File):
         vertex_idx = vertex._vertex_idx
 
         triangles = [tuple(indexed_trilist.vertex_idxs[i : i + 3]) for i in range(0, len(indexed_trilist.vertex_idxs), 3)]
-        for tri_idx, tri in enumerate(triangles):
-            if vertex_idx in tri:
-                del indexed_trilist.vertex_idxs[tri_idx * 3 : tri_idx * 3 + 2]
-                del indexed_trilist.normal_idxs[tri_idx * 2 : tri_idx * 2 + 1]
-                del indexed_trilist.flags[tri_idx]
+
+        delete_idxs = [tri_idx for tri_idx, tri in enumerate(triangles) if vertex_idx in tri]
+
+        for tri_idx in reversed(delete_idxs):
+            del indexed_trilist.vertex_idxs[tri_idx * 3 : tri_idx * 3 + 3]
+            del indexed_trilist.normal_idxs[tri_idx * 2 : tri_idx * 2 + 2]
+            del indexed_trilist.flags[tri_idx]
         
         has_updated_trilist = self.update_indexed_trilist(indexed_trilist)
 
