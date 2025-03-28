@@ -1327,10 +1327,6 @@ class Shapefile(File):
             # Remove all affected triangles.
             delete_idxs = [tri_idx for tri_idx, tri in enumerate(triangles) if vertex1._vertex_idx in tri or vertex2._vertex_idx in tri]
 
-            print(delete_idxs)
-            print(len(triangles))
-            print(len(indexed_trilist.flags))
-
             for tri_idx in reversed(delete_idxs):
                 del indexed_trilist.vertex_idxs[tri_idx * 3 : tri_idx * 3 + 3]
                 del indexed_trilist.normal_idxs[tri_idx * 2 : tri_idx * 2 + 2]
