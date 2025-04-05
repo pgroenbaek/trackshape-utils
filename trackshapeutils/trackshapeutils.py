@@ -21,6 +21,7 @@ import os
 import fnmatch
 import subprocess
 import re
+import math
 import copy
 import codecs
 import heapq
@@ -1550,21 +1551,20 @@ def generate_straight_centerpoints(length: float, num_points: int = 1000, start_
 
 
 def generate_curve_centerpoints(curve_radius: float, curve_angle: float, num_points: int = 1000, start_angle: float = 0, start_point: Point = Point(0, 0, 0)) -> Trackcenter:
-    theta = np.radians(np.linspace(start_angle, start_angle + abs(curve_angle), num_points))
+    theta = np.radians(np.linspace(np.float64(start_angle), np.float64(start_angle + abs(curve_angle)), num_points, dtype=np.float64))
 
-    z = start_point.z + curve_radius * np.sin(theta)
-    x = start_point.x + curve_radius * (1 - np.cos(theta))
-    y = np.full_like(x, start_point.y)
+    direction = -1 if curve_angle < 0 else 1
 
-    if curve_angle < 0:
-        x = start_point.x - (curve_radius * (1 - np.cos(theta)))
+    z = np.float64(start_point.z) + np.float64(curve_radius) * np.sin(theta, dtype=np.float64)
+    x = np.float64(start_point.x) + direction * np.float64(curve_radius) * (1 - np.cos(theta, dtype=np.float64))
+    y = np.full_like(x, np.float64(start_point.y))
 
-    centerpoints = np.vstack((x, y, z)).T
-    
+    centerpoints = np.vstack((x, y, z)).T.astype(np.float32)
+
     return Trackcenter(centerpoints)
 
 
-def generate_centerpoints_from_tsection(shape_name: str, tsection_file_path: str = None, num_points_per_path: int = 1000, start_offset=Point(0, 0, 0)) -> Trackcenter:
+def generate_centerpoints_from_tsection(shape_name: str, tsection_file_path: str = None, num_points_per_meter: int = 5, start_offset=Point(0, 0, 0)) -> Trackcenter:
     if tsection_file_path is None:
         module_directory = pathlib.Path(__file__).parent
         tsection_file_path = f"{module_directory}/tsection.dat"
@@ -1617,10 +1617,14 @@ def generate_centerpoints_from_tsection(shape_name: str, tsection_file_path: str
                                 current_path_angle = start_angle
                             
                             if radius is not None and angle is not None:
-                                section_trackcenter = generate_curve_centerpoints(curve_radius=radius, curve_angle=angle, start_angle=current_path_angle, start_point=current_path_point, num_points=num_points_per_path)
+                                num_points = int(distance_along_curve(curve_angle=angle, curve_radius=radius) * num_points_per_meter)
+                                num_points = max(num_points, 10)
+                                section_trackcenter = generate_curve_centerpoints(curve_radius=radius, curve_angle=angle, start_angle=current_path_angle, start_point=current_path_point, num_points=num_points)
                                 current_path_angle += angle
                             else:
-                                section_trackcenter = generate_straight_centerpoints(length=length, start_angle=current_path_angle, start_point=current_path_point, num_points=num_points_per_path)
+                                num_points = int(length * num_points_per_meter)
+                                num_points = max(num_points, 10)
+                                section_trackcenter = generate_straight_centerpoints(length=length, start_angle=current_path_angle, start_point=current_path_point, num_points=num_points)
                             
                             section_endpoint = Point.from_numpy(section_trackcenter.centerpoints[-1])
                             current_path_point.x = section_endpoint.x
@@ -1712,62 +1716,46 @@ def distance_between(point1: Point, point2: Point, plane="xz") -> float:
 def distance_along_curve(curve_angle: float, curve_radius: float) -> float:
     angle_radians = math.radians(curve_angle)
     
-    distance = radius * angle_radians
+    distance = curve_radius * angle_radians
+    distance = abs(distance)
     
     return distance
 
 
-def distance_along_nearest_trackcenter(point_along_track: Point, trackcenter: Trackcenter, start_point: Point = Point(0, 0, 0)) -> float:
+def distance_along_nearest_trackcenter(point_along_track: Point, trackcenter: Trackcenter, start_point: Point = Point(0, 0, 0), max_neighbor_dist: float = 0.2) -> float:
     centerpoints = trackcenter.centerpoints
     centerpoints_xz = centerpoints[:, [0, 2]]
-    
-    tree = KDTree(centerpoints_xz)
-    start_point_np = start_point.to_numpy()
-    point_along_track_np = point_along_track.to_numpy()
-    
-    _, end_idx = tree.query(point_along_track_np[[0, 2]])
 
-    neighbors = {i: [] for i in range(len(centerpoints_xz))}
-    for i in range(len(centerpoints_xz)):
-        dists, indices = tree.query(centerpoints_xz[i], k=5)
-        for dist, idx in zip(dists, indices):
-            if dist < 1.0 and idx != i:
-                neighbors[i].append(idx)
+    tree = KDTree(centerpoints_xz)
+    start_point_np = start_point.to_numpy()[[0, 2]]
+    point_along_track_np = point_along_track.to_numpy()[[0, 2]]
+
+    _, end_idx = tree.query(point_along_track_np)
+
+    neighbor_dict = {i: tree.query_ball_point(centerpoints_xz[i], r=max_neighbor_dist) for i in range(len(centerpoints_xz))}
     
+    distances_to_start = np.linalg.norm(centerpoints_xz - start_point_np, axis=1)
+
+    queue = [(0.0, end_idx)]
     visited = set()
-    queue = [(0.0, end_idx)] # (distance, index) for priority queue
-    best_distance = float("inf")
-    
+
     while queue:
         total_distance, current_index = heapq.heappop(queue)
         if current_index in visited:
             continue
         visited.add(current_index)
-        
-        current_point = centerpoints_xz[current_index]
-        distance_to_start = np.linalg.norm(current_point - start_point_np[[0, 2]])
 
-        is_closest = True
-        for neighbor in neighbors[current_index]:
-            neighbor_point = centerpoints_xz[neighbor]
-            distance_to_neighbor = np.linalg.norm(neighbor_point - start_point_np[[0, 2]])
-            if distance_to_neighbor < distance_to_start:
-                is_closest = False
-                break
-        
-        if is_closest:
+        distance_to_start = distances_to_start[current_index]
+
+        if all(distances_to_start[neighbor] >= distance_to_start for neighbor in neighbor_dict[current_index]):
+            print(total_distance)
             return total_distance
-        
-        if distance_to_start < best_distance:
-            best_distance = distance_to_start
-        
-        sorted_neighbors = sorted(neighbors[current_index], key=lambda idx: np.linalg.norm(centerpoints_xz[idx] - start_point_np[[0, 2]]))
 
-        for neighbor in sorted_neighbors:
+        for neighbor in neighbor_dict[current_index]:
             if neighbor not in visited:
                 step_distance = np.linalg.norm(centerpoints_xz[current_index] - centerpoints_xz[neighbor])
                 heapq.heappush(queue, (total_distance + step_distance, neighbor))
-    
+
     return 0.0
 
 
@@ -1875,46 +1863,31 @@ def get_new_position_from_trackcenter(new_signed_distance: float, original_point
     return Point.from_numpy(new_position)
 
 
-def get_new_position_along_trackcenter(new_distance_along_track: float, original_point: Point, trackcenter: Trackcenter) -> List[Point]:
-    centerpoints = trackcenter.centerpoints
-
+def get_new_position_along_trackcenter(new_distance_along_track: float, original_point: Point, trackcenter: Trackcenter, max_neighbor_dist: float = 0.2) -> List[Point]:
     closest_center = find_closest_centerpoint(original_point, trackcenter, plane="xz")
-    closest_center = closest_center.to_numpy()
+    
+    distance_from_start_to_closest_center = distance_along_nearest_trackcenter(closest_center, trackcenter, max_neighbor_dist=max_neighbor_dist)
 
+    target_distance = distance_from_start_to_closest_center + new_distance_along_track
+
+    centerpoints = trackcenter.centerpoints
     tck, _ = splprep(centerpoints.T, s=0)
     num_samples = 1000
     u_values = np.linspace(0, 1, num_samples)
     spline_points = np.array(splev(u_values, tck)).T
 
-    tree = KDTree(spline_points)
-    _, index = tree.query(closest_center)
+    distances = np.cumsum(np.linalg.norm(np.diff(spline_points, axis=0), axis=1))
+    
+    target_index = np.searchsorted(distances, target_distance)
 
-    if index < len(spline_points) - 1:
-        tangent_vector = spline_points[index + 1] - spline_points[index]
-    else:
-        tangent_vector = spline_points[index] - spline_points[index - 1]
+    if target_index >= len(spline_points):
+        target_index = len(spline_points) - 1
 
-    tangent_vector[1] = 0
-    tangent_vector /= np.linalg.norm(tangent_vector)
+    new_position_on_track = spline_points[target_index]
 
-    new_position = closest_center + new_distance_along_track * tangent_vector
+    lateral_offset = original_point.to_numpy() - closest_center.to_numpy()
+    lateral_offset[1] = 0
 
-    branch_radius = 10
-    nearby_points = []
+    new_position = new_position_on_track + lateral_offset
 
-    for i, centerpoint in enumerate(centerpoints):
-        distance_to_point = np.linalg.norm(new_position - centerpoint)
-        if distance_to_point < branch_radius:
-            nearby_points.append(i)
-
-    new_positions = []
-
-    if len(nearby_points) > 1:
-        for branch_index in nearby_points:
-            branch_point = centerpoints[branch_index]
-            branch_position = branch_point + new_distance_along_track * tangent_vector
-            new_positions.append(Point.from_numpy(branch_position))
-    else:
-        new_positions.append(Point.from_numpy(new_position))
-
-    return new_positions
+    return [Point.from_numpy(new_position)]

@@ -1,50 +1,30 @@
-# Railhead vertices from center to outside:
-#[Vector((-0.7175, 0.2, 0.0))]
-#[Vector((-0.7175, 0.325, 0.0))]
-#[Vector((-0.8675, 0.325, 0.0))]
-#[Vector((-0.8675, 0.2, 0.0))]
-
-# Railhead vertices for ATracks:
-# [Vector((-0.6785, 0.192, 0.0))]
-# [Vector((-0.6785, 0.215, 0.0))]
-# [Vector((-0.7694, 0.2268, 0.0))]
-# [Vector((-0.7175, 0.325, 0.0))]
-# [Vector((-0.7895, 0.325, 0.0))]
-# [Vector((-0.7374, 0.2268, 0.0))]
-# [Vector((-0.8285, 0.215, 0.0))]
-# [Vector((-0.8285, 0.192, 0.0))]
-
-# Points needed for UVPoints:
-# Top of rail base: [Vector((-0.7535000443458557, 0.23000000417232513, 0.0))]
-# Bottom of rail: [Vector((-0.7619999647140503, 0.1899999976158142, 0.0))]
-# Bottom of rail: [Vector((-0.7619999647140503, 0.1899999976158142, 0.0))]
-
 import os
 import trackshapeutils as tsu
 from collections import defaultdict
 
 if __name__ == "__main__":
-    shape_load_path = "./examples/data"
-    shape_processed_path = "./examples/data/processed/NREmbAtracksRails"
+    shape_load_path = "E:/NR_Bahntrasse_2.1/NR_Bahntrasse_2.1/NR_Emb"
+    shape_processed_path = "E:/NR_Bahntrasse_2.1/NR_Bahntrasse_2.1/NR_Emb/Processed"
     ffeditc_path = "./ffeditc_unicode.exe"
     match_shapes = [
         # For testing
-        "NR_Emb_a1t10mStrt.s",
-        "NR_Emb_a1t250r10d.s",
-        "NR_Emb_a2t1000r1d.s",
-        "NR_Emb_a3t1000r1d.s",
-        "NR_Emb_a4t1000r1d.s",
-        "NR_EmbBase_a1t10mStrt.s",
-        "NR_Ramp_a1t10mStrt.s",
-        "NR_RWall_a1t10mStrt_lft.s",
-        "NR_WallEmb_a1t10mStrt_lft.s",
+        # "NR_Emb_a1t10mStrt.s",
+        # "NR_Emb_a1t250r10d.s",
+        # "NR_Emb_a2t1000r1d.s",
+        # "NR_Emb_a3t1000r1d.s",
+        # "NR_Emb_a4t1000r1d.s",
+        # "NR_EmbBase_a1t10mStrt.s",
+        # "NR_Ramp_a1t10mStrt.s",
+        # "NR_RWall_a1t10mStrt_lft.s",
+        # "NR_WallEmb_a1t10mStrt_lft.s",
 
         # All of the shapes
+        "NR_Emb_a1t2000r20d.s",
         #"NR_Emb_*.s",
-        #"NR_EmbBase_*.s",
-        #"NR_Ramp_*.s",
-        #"NR_RWall_*.s",
-        #"NR_WallEmb_*.s",
+        "NR_EmbBase_*.s",
+        "NR_Ramp_*.s",
+        "NR_RWall_*.s",
+        "NR_WallEmb_*.s",
     ]
     ignore_shapes = ["*Tun*", "*Pnt*", "*Frog*"]
     
@@ -69,13 +49,10 @@ if __name__ == "__main__":
 
         sfile = tsu.load_shape(sfile_name, shape_load_path)
         new_sfile = sfile.copy(new_filename=new_sfile_name, new_directory=shape_processed_path)
-        new_sfile.decompress(ffeditc_path)
+        #new_sfile.decompress(ffeditc_path)
 
-        trackcenter = tsu.generate_centerpoints_from_tsection(shape_name=tsection_sfile_name, num_points_per_path=100)
+        trackcenter = tsu.generate_centerpoints_from_tsection(shape_name=tsection_sfile_name, num_points_per_meter=7)
 
-        # First find the vertices to work on.
-        # The naming right/left refers to which side of the track it is relative to the track center.
-        # The naming close/far refers to distance from the start of the track.
         lod_dlevel = 400
         subobject_idx = 0
         prim_states = new_sfile.get_prim_states_by_name("rail_side")
@@ -92,7 +69,9 @@ if __name__ == "__main__":
 
             railside_indexed_trilist = indexed_trilists[0]
             
-            # Find railside and railtop vertices.
+            # First find the vertices to work on.
+            # The naming right/left refers to which side of the track it is relative to the track center.
+            # The naming close/far refers to distance from the start of the track.
             print(f"\tFinding railside and railtop vertices")
             railtop_vertices_outer = []
             railtop_vertices_inner = []
@@ -104,13 +83,15 @@ if __name__ == "__main__":
                     closest_centerpoint = tsu.find_closest_centerpoint(vertex.point, trackcenter, plane="xz")
                     distance_from_center = tsu.signed_distance_between(vertex.point, closest_centerpoint, plane="xz")
                     
-                    if 0.8175 <= distance_from_center <= 0.9175 or -0.9175 <= distance_from_center <= -0.8175: # Outer railtop.
+                    if 0.7975 <= distance_from_center <= 0.9375 or -0.9375 <= distance_from_center <= -0.7975: # Outer railtop.
                         if not any(v.point == vertex.point for v in railtop_vertices_outer):
                             railtop_vertices_outer.append(vertex)
 
-                    elif 0.6675 <= distance_from_center <= 0.7675 or -0.7675 <= distance_from_center <= -0.6675: # Inner railtop.
+                    elif 0.6475 <= distance_from_center <= 0.7875 or -0.7875 <= distance_from_center <= -0.6475: # Inner railtop.
                         if not any(v.point == vertex.point for v in railtop_vertices_inner):
                             railtop_vertices_inner.append(vertex)
+                    else:
+                        raise AssertionError(f"Vertex with distance '{distance_from_center}' not caught, errors will happen during processing.")
 
 
             for vertex in vertices_in_prim_state:
@@ -124,39 +105,79 @@ if __name__ == "__main__":
                             closest_centerpoint = tsu.find_closest_centerpoint(vertex.point, trackcenter, plane="xz")
                             distance_from_center = tsu.signed_distance_between(vertex.point, closest_centerpoint, plane="xz")
 
-                            if 0.8175 <= distance_from_center <= 0.9175: # Outer right railside.
+                            if 0.7975 <= distance_from_center <= 0.9375: # Outer right railside.
                                 if not any(v.point == connected_vertex.point for v in railside_vertices_top["right_outer"]):
                                     railside_vertices_top["right_outer"].append(connected_vertex)
                                 if not any(v.point == vertex.point for v in railside_vertices_bottom["right_outer"]):
                                     railside_vertices_bottom["right_outer"].append(vertex)
 
-                            elif 0.6675 <= distance_from_center <= 0.7675: # Inner right railside.
+                            elif 0.6475 <= distance_from_center <= 0.7875: # Inner right railside.
                                 if not any(v.point == connected_vertex.point for v in railside_vertices_top["right_inner"]):
                                     railside_vertices_top["right_inner"].append(connected_vertex)
                                 if not any(v.point == vertex.point for v in railside_vertices_bottom["right_inner"]):
                                     railside_vertices_bottom["right_inner"].append(vertex)
 
-                            elif -0.7675 <= distance_from_center <= -0.6675: # Inner left railside.
+                            elif -0.7875 <= distance_from_center <= -0.6475: # Inner left railside.
                                 if not any(v.point == connected_vertex.point for v in railside_vertices_top["left_inner"]):
                                     railside_vertices_top["left_inner"].append(connected_vertex)
                                 if not any(v.point == vertex.point for v in railside_vertices_bottom["left_inner"]):
                                     railside_vertices_bottom["left_inner"].append(vertex)
 
-                            elif -0.9175 <= distance_from_center <= -0.8175: # Outer left railside.
+                            elif -0.9375 <= distance_from_center <= -0.7975: # Outer left railside.
                                 if not any(v.point == connected_vertex.point for v in railside_vertices_top["left_outer"]):
                                     railside_vertices_top["left_outer"].append(connected_vertex)
                                 if not any(v.point == vertex.point for v in railside_vertices_bottom["left_outer"]):
                                     railside_vertices_bottom["left_outer"].append(vertex)
+                            else:
+                                raise AssertionError(f"Vertex with distance '{distance_from_center}' not caught, errors will happen during processing.")
+            
+            
+            trackcenter = tsu.generate_centerpoints_from_tsection(shape_name=tsection_sfile_name, num_points_per_meter=2)
             
             print(f"\tSorting railside vertices")
+            distances = {}
+
             for side in railside_vertices_top:
-                railside_vertices_top[side].sort(key=lambda v: tsu.distance_along_nearest_trackcenter(v.point, trackcenter))
-            
+                for v_top, v_bottom in zip(railside_vertices_top[side], railside_vertices_bottom[side]):
+                    distance = tsu.distance_along_nearest_trackcenter(v_top.point, trackcenter, max_neighbor_dist=0.6)
+                    distances[v_top._vertex_idx] = distance
+                    distances[v_bottom._vertex_idx] = distance
+
+            for side in railside_vertices_top:
+                railside_vertices_top[side].sort(key=lambda v: distances[v._vertex_idx])
+
             for side in railside_vertices_bottom:
-                railside_vertices_bottom[side].sort(key=lambda v: tsu.distance_along_nearest_trackcenter(v.point, trackcenter))
+                railside_vertices_bottom[side].sort(key=lambda v: distances[v._vertex_idx])
             
             print(f"\tGrouping railside vertices")
-            parallel_tracks = lambda v1, v2: tsu.distance_between(v1.point, v2.point, plane="xz") <= 3.0
+            closest_centerpoints = {}
+            all_vertices = []
+
+            for side in railside_vertices_top:
+                for v_top, v_bottom in zip(railside_vertices_top[side], railside_vertices_bottom[side]):
+                    new_position = tsu.get_new_position_along_trackcenter(0.0, v_top.point, trackcenter, max_neighbor_dist=0.6)[0]
+                    closest_centerpoint = tsu.find_closest_centerpoint(new_position, trackcenter, plane="xz")
+                    closest_centerpoints[v_top._vertex_idx] = closest_centerpoint
+                    closest_centerpoints[v_bottom._vertex_idx] = closest_centerpoint
+                    all_vertices.append(v_top)
+                    all_vertices.append(v_bottom)
+
+            parallel_tracks_lookup = defaultdict(dict)
+
+            for i, v1 in enumerate(all_vertices):
+                for j in range(i + 1, len(all_vertices)):
+                    v2 = all_vertices[j]
+
+                    is_parallel = tsu.distance_between(
+                        closest_centerpoints[v1._vertex_idx], 
+                        closest_centerpoints[v2._vertex_idx], 
+                        plane="x"
+                    ) <= 2.5
+
+                    parallel_tracks_lookup[v1._vertex_idx][v2._vertex_idx] = is_parallel
+                    parallel_tracks_lookup[v2._vertex_idx][v1._vertex_idx] = is_parallel
+
+            parallel_tracks = lambda v1, v2: parallel_tracks_lookup[v1._vertex_idx][v2._vertex_idx]
 
             for side in railside_vertices_top:
                 railside_vertices_top[side] = tsu.group_vertices_by(railside_vertices_top[side], parallel_tracks)
@@ -182,6 +203,10 @@ if __name__ == "__main__":
                         quad = (bottom_close, top_close, top_far, bottom_far)
                         railside_quads[side][group_idx].append(quad)
 
+            for side in railside_vertices_top:
+                print(f"{side}: {sum(len(group) for group in railside_quads[side])}")
+
+            trackcenter = tsu.generate_centerpoints_from_tsection(shape_name=tsection_sfile_name, num_points_per_meter=7)
 
             # Creation of ATracks-like rail sides and rail tops.
             # New vertices are added, and at the end their values are changed according to the contents of 'update_vertex_data'.
@@ -201,7 +226,7 @@ if __name__ == "__main__":
 
                 # Updated values for existing vertices.
                 update_vertex_data.extend([
-                    (vertex, vertex.point.y, distance_from_center, u_value, -0.77, vertex.normal.vec_x, vertex.normal.vec_y, vertex.normal.vec_z),
+                    (vertex, vertex.point.y, distance_from_center, u_value, -0.77, vertex.normal.vec_x, vertex.normal.vec_y, vertex.normal.vec_z)
                 ])
 
             print("")
@@ -217,7 +242,7 @@ if __name__ == "__main__":
 
                 # Updated values for existing vertices.
                 update_vertex_data.extend([
-                    (vertex, vertex.point.y, distance_from_center, u_value, -0.875, vertex.normal.vec_x, vertex.normal.vec_y, vertex.normal.vec_z),
+                    (vertex, vertex.point.y, distance_from_center, u_value, -0.875, vertex.normal.vec_x, vertex.normal.vec_y, vertex.normal.vec_z)
                 ])
 
             print("")
@@ -225,7 +250,7 @@ if __name__ == "__main__":
             # Outer right railside.
             total_items = sum(len(group) for group in railside_quads["right_outer"])
             processed_items = 0
-            for group_idx in range(len(railside_vertices_top["right_outer"])):
+            for group_idx in range(len(railside_quads["right_outer"])):
                 for idx, (bottom_close, top_close, top_far, bottom_far) in enumerate(railside_quads["right_outer"][group_idx]):
                     processed_items += 1
                     print(f"\tProcessing outer right railside {processed_items} of {total_items}", end='\r')
@@ -290,7 +315,7 @@ if __name__ == "__main__":
             # Inner right railside.
             total_items = sum(len(group) for group in railside_quads["right_inner"])
             processed_items = 0
-            for group_idx in range(len(railside_vertices_top["right_inner"])):
+            for group_idx in range(len(railside_quads["right_inner"])):
                 for idx, (bottom_close, top_close, top_far, bottom_far) in enumerate(railside_quads["right_inner"][group_idx]):
                     processed_items += 1
                     print(f"\tProcessing inner right railside {processed_items} of {total_items}", end='\r')
@@ -355,7 +380,7 @@ if __name__ == "__main__":
             # Inner left railside.
             total_items = sum(len(group) for group in railside_quads["left_inner"])
             processed_items = 0
-            for group_idx in range(len(railside_vertices_top["left_inner"])):
+            for group_idx in range(len(railside_quads["left_inner"])):
                 for idx, (bottom_close, top_close, top_far, bottom_far) in enumerate(railside_quads["left_inner"][group_idx]):
                     processed_items += 1
                     print(f"\tProcessing inner left railside {processed_items} of {total_items}", end='\r')
@@ -420,7 +445,7 @@ if __name__ == "__main__":
             # Outer left railside.
             total_items = sum(len(group) for group in railside_quads["left_outer"])
             processed_items = 0
-            for group_idx in range(len(railside_vertices_top["left_outer"])):
+            for group_idx in range(len(railside_quads["left_outer"])):
                 for idx, (bottom_close, top_close, top_far, bottom_far) in enumerate(railside_quads["left_outer"][group_idx]):
                     processed_items += 1
                     print(f"\tProcessing outer left railside {processed_items} of {total_items}", end='\r')
@@ -506,7 +531,7 @@ if __name__ == "__main__":
             print("")
 
         new_sfile.save()
-        new_sfile.compress(ffeditc_path)
+        #new_sfile.compress(ffeditc_path)
 
         # Process .sd file
         sdfile_name = sfile_name.replace(".s", ".sd")
