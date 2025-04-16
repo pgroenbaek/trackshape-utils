@@ -250,7 +250,7 @@ class IndexedTrilist:
 
 
 class File:
-    def __init__(self, filename: str, directory: str, encoding: str = None, shouldRead: bool = True):
+    def __init__(self, filename: str, directory: str, encoding: str = None, should_read: bool = True):
         self.filename = filename
         self.directory = directory
         self._ensure_exists()
@@ -258,7 +258,7 @@ class File:
             self.encoding = _detect_encoding(self.filepath)
         else:
             self.encoding = encoding
-        if shouldRead:
+        if should_read:
             self._lines = self._read()
 
     def __repr__(self) -> str:
@@ -322,7 +322,7 @@ class File:
 
 class Shapefile(File):
     def __init__(self, filename: str, directory: str, encoding: str = None):
-        super().__init__(filename, directory, encoding=encoding, shouldRead=False)
+        super().__init__(filename, directory, encoding=encoding, should_read=False)
         if not self.is_compressed():
             self._lines = super()._read()
         else:
@@ -1244,60 +1244,6 @@ class Shapefile(File):
                         return True
         
         return False
-
-    def calculate_point_centroid(self, points: List[Point]) -> Point:
-        positions = [p.to_numpy() for p in points]
-
-        centroid = np.mean(positions, axis=0)
-
-        return Point.from_numpy(centroid)
-    
-    def calculate_point_midpoint(self, point1: Point, point2: Point) -> Point:
-        midpoint = (point1.to_numpy() + point2.to_numpy()) / 2
-
-        return Point.from_numpy(midpoint)
-    
-    def calculate_uvpoint_midpoint(self, uv_point1: UVPoint, uv_point2: UVPoint) -> UVPoint:
-        midpoint = (uv_point1.to_numpy() + uv_point2.to_numpy()) / 2
-
-        return UVPoint.from_numpy(midpoint)
-        
-    def calculate_face_normal(self, point1: Point, point2: Point, point3: Point) -> Normal:
-        edge1 = point2.to_numpy() - point1.to_numpy()
-        edge2 = point3.to_numpy() - point1.to_numpy()
-
-        normal = np.cross(edge1, edge2)
-
-        if np.linalg.norm(normal) > 1e-10:
-            normal /= np.linalg.norm(normal)
-        else:
-            normal = np.zeros_like(normal)
-
-        normal = np.round(normal, 4)
-
-        return Normal.from_numpy(normal)
-    
-    def calculate_vertex_normal(self, point: Point, connected_points: List[Point]) -> Normal:
-        vertex_normal_sum = np.zeros(3)
-
-        if len(connected_points) < 2:
-            return Normal(0, 0, 0)
-        
-        for i in range(len(connected_points) - 1):
-            edge1 = connected_points[i].to_numpy() - point.to_numpy()
-            edge2 = connected_points[i + 1].to_numpy() - point.to_numpy()
-
-            normal = np.cross(edge1, edge2)
-
-            if np.linalg.norm(normal) > 1e-10:
-                normal /= np.linalg.norm(normal)
-            else:
-                normal = np.zeros_like(normal)
-
-            normal = np.round(normal, 4)
-            vertex_normal_sum += normal
-        
-        return Normal.from_numpy(vertex_normal_sum)
     
     def insert_vertex_between(self, indexed_trilist: IndexedTrilist, vertex1: Vertex, vertex2: Vertex) -> Optional[Vertex]:
         if vertex1._lod_dlevel != vertex2._lod_dlevel:
@@ -1316,8 +1262,8 @@ class Shapefile(File):
         lod_dlevel = indexed_trilist._lod_dlevel
         subobject_idx = indexed_trilist._subobject_idx
 
-        new_point = self.calculate_point_midpoint(vertex1.point, vertex2.point)
-        new_uv_point = self.calculate_uvpoint_midpoint(vertex1.uv_point, vertex2.uv_point)
+        new_point = calculate_point_midpoint(vertex1.point, vertex2.point)
+        new_uv_point = calculate_uvpoint_midpoint(vertex1.uv_point, vertex2.uv_point)
         new_normal = Normal(0, 0, 0)
 
         new_vertex = self.add_vertex_to_subobject(lod_dlevel, subobject_idx, indexed_trilist, new_point, new_uv_point, new_normal)
@@ -1353,8 +1299,8 @@ class Shapefile(File):
                         new_triangle2_idxs = [new_vertex._vertex_idx, vertex3_idx, vertex2._vertex_idx]
                         new_triangle2_points = [new_vertex.point, vertex3.point, vertex2.point]
 
-                    new_normal1 = self.calculate_face_normal(new_triangle1_points[0], new_triangle1_points[1], new_triangle1_points[2])
-                    new_normal2 = self.calculate_face_normal(new_triangle2_points[0], new_triangle2_points[1], new_triangle2_points[2])
+                    new_normal1 = calculate_face_normal(new_triangle1_points[0], new_triangle1_points[1], new_triangle1_points[2])
+                    new_normal2 = calculate_face_normal(new_triangle2_points[0], new_triangle2_points[1], new_triangle2_points[2])
 
                     new_normal_idx1 = self.add_normal(new_normal1)
                     new_normal_idx2 = self.add_normal(new_normal2)
@@ -1372,7 +1318,7 @@ class Shapefile(File):
 
             # Recalculate vertex normal.
             connected_vertex_points = [self.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, vertex_idx).point for vertex_idx in self.get_connected_vertex_idxs(indexed_trilist, new_vertex)]
-            new_vertex_normal = self.calculate_vertex_normal(new_vertex.point, connected_vertex_points)
+            new_vertex_normal = calculate_vertex_normal(new_vertex.point, connected_vertex_points)
             self.set_normal_value(new_vertex._normal_idx, new_vertex_normal)
 
         return new_vertex
@@ -1403,7 +1349,7 @@ class Shapefile(File):
         if indexed_trilist._subobject_idx != vertex3._subobject_idx:
             raise ValueError("Cannot insert a new triangle between specified vertices: 'vertex3' and 'indexed_trilist' are not in the same subobject.")
 
-        new_normal = self.calculate_face_normal(vertex1.point, vertex2.point, vertex3.point)
+        new_normal = calculate_face_normal(vertex1.point, vertex2.point, vertex3.point)
 
         new_normal_idx = self.add_normal(new_normal)
 
@@ -1501,6 +1447,80 @@ class Trackcenter:
         if isinstance(other, Trackcenter):
             return np.array_equal(self.centerpoints, other.centerpoints)
         return False
+    
+    @classmethod
+    def average(cls, trackcenters: List["Trackcenter"]) -> "Trackcenter":
+        if not trackcenters:
+            raise ValueError("Cannot average an empty list of Trackcenters")
+
+        first_shape = trackcenters[0].centerpoints.shape
+        for tc in trackcenters:
+            if tc.centerpoints.shape != first_shape:
+                raise ValueError("All Trackcenters must have the same shape to average")
+
+        stacked = np.stack([tc.centerpoints for tc in trackcenters])
+        averaged = np.mean(stacked, axis=0)
+
+        return cls(averaged)
+
+
+def calculate_point_centroid(points: List[Point]) -> Point:
+    positions = [p.to_numpy() for p in points]
+
+    centroid = np.mean(positions, axis=0)
+
+    return Point.from_numpy(centroid)
+
+
+def calculate_point_midpoint(point1: Point, point2: Point) -> Point:
+    midpoint = (point1.to_numpy() + point2.to_numpy()) / 2
+
+    return Point.from_numpy(midpoint)
+
+
+def calculate_uvpoint_midpoint(uv_point1: UVPoint, uv_point2: UVPoint) -> UVPoint:
+    midpoint = (uv_point1.to_numpy() + uv_point2.to_numpy()) / 2
+
+    return UVPoint.from_numpy(midpoint)
+    
+
+def calculate_face_normal(point1: Point, point2: Point, point3: Point) -> Normal:
+    edge1 = point2.to_numpy() - point1.to_numpy()
+    edge2 = point3.to_numpy() - point1.to_numpy()
+
+    normal = np.cross(edge1, edge2)
+
+    if np.linalg.norm(normal) > 1e-10:
+        normal /= np.linalg.norm(normal)
+    else:
+        normal = np.zeros_like(normal)
+
+    normal = np.round(normal, 4)
+
+    return Normal.from_numpy(normal)
+
+
+def calculate_vertex_normal(point: Point, connected_points: List[Point]) -> Normal:
+    vertex_normal_sum = np.zeros(3)
+
+    if len(connected_points) < 2:
+        return Normal(0, 0, 0)
+    
+    for i in range(len(connected_points) - 1):
+        edge1 = connected_points[i].to_numpy() - point.to_numpy()
+        edge2 = connected_points[i + 1].to_numpy() - point.to_numpy()
+
+        normal = np.cross(edge1, edge2)
+
+        if np.linalg.norm(normal) > 1e-10:
+            normal /= np.linalg.norm(normal)
+        else:
+            normal = np.zeros_like(normal)
+
+        normal = np.round(normal, 4)
+        vertex_normal_sum += normal
+    
+    return Normal.from_numpy(vertex_normal_sum)
 
 
 def find_directory_files(directory: str, match_files: List[str], ignore_files: List[str]) -> List[str]:
@@ -1564,7 +1584,7 @@ def generate_curve_centerpoints(curve_radius: float, curve_angle: float, num_poi
     return Trackcenter(centerpoints)
 
 
-def generate_centerpoints_from_tsection(shape_name: str, tsection_file_path: str = None, num_points_per_meter: int = 5, start_offset=Point(0, 0, 0)) -> Trackcenter:
+def generate_trackcenters_from_tsection(shape_name: str, tsection_file_path: str = None, num_points_per_meter: int = 5, start_offset=Point(0, 0, 0)) -> List[Trackcenter]:
     if tsection_file_path is None:
         module_directory = pathlib.Path(__file__).parent
         tsection_file_path = f"{module_directory}/tsection.dat"
@@ -1585,12 +1605,14 @@ def generate_centerpoints_from_tsection(shape_name: str, tsection_file_path: str
     
         for trackshape_match in trackshape_matches:
             if re.search(rf'FileName \( {re.escape(shape_name)} \)', trackshape_match, re.IGNORECASE):
-                trackcenter = generate_empty_centerpoints()
+                trackcenters = []
 
                 sectionidx_matches = sectionidx_pattern.findall(trackshape_match)
                 section_idxs = [s.strip() for s in sectionidx_matches]
 
                 for section_idx in section_idxs:
+                    trackcenter = generate_empty_centerpoints()
+
                     values = section_idx.split()
                     num_idxs = int(values[0])
                     start_x, start_y, start_z = map(float, values[1:4])
@@ -1636,10 +1658,28 @@ def generate_centerpoints_from_tsection(shape_name: str, tsection_file_path: str
                             raise ValueError(f"""Unable to generate centerpoints: Could not find TrackSection '{tracksection_idx}' defined by TrackShape '{shape_name}'. Instead create 
                                 the centerpoints manually using the methods 'generate_straight_centerpoints' and 'generate_curve_centerpoints'.""")
                     
-                return trackcenter
+                    trackcenters.append(trackcenter)
+
+                return trackcenters
 
     raise ValueError(f"""Unable to generate centerpoints: Unknown shape '{shape_name}'. Instead create 
         them manually using the methods 'generate_straight_centerpoints' and 'generate_curve_centerpoints'.""")
+
+
+def find_closest_trackcenter(point_along_track: Point, trackcenters: List[Trackcenter], plane='xz') -> Trackcenter:
+    closest_trackcenter = None
+    min_distance = float('inf')
+
+    for tc in trackcenters:
+        closest_centerpoint = find_closest_centerpoint(point_along_track, tc, plane=plane)
+        
+        distance = distance_between(point_along_track, closest_centerpoint, plane=plane)
+
+        if distance < min_distance:
+            min_distance = distance
+            closest_trackcenter = tc
+
+    return closest_trackcenter
 
 
 def find_closest_centerpoint(point_along_track: Point, trackcenter: Trackcenter, plane='xz') -> Point:
@@ -1722,7 +1762,7 @@ def distance_along_curve(curve_angle: float, curve_radius: float) -> float:
     return distance
 
 
-def distance_along_nearest_trackcenter(point_along_track: Point, trackcenter: Trackcenter, start_point: Point = Point(0, 0, 0), max_neighbor_dist: float = 0.2) -> float:
+def distance_along_trackcenter(point_along_track: Point, trackcenter: Trackcenter, start_point: Point = Point(0, 0, 0), max_neighbor_dist: float = 0.2) -> float:
     centerpoints = trackcenter.centerpoints
     centerpoints_xz = centerpoints[:, [0, 2]]
 
@@ -1748,7 +1788,6 @@ def distance_along_nearest_trackcenter(point_along_track: Point, trackcenter: Tr
         distance_to_start = distances_to_start[current_index]
 
         if all(distances_to_start[neighbor] >= distance_to_start for neighbor in neighbor_dict[current_index]):
-            print(total_distance)
             return total_distance
 
         for neighbor in neighbor_dict[current_index]:
@@ -1866,7 +1905,7 @@ def get_new_position_from_trackcenter(new_signed_distance: float, original_point
 def get_new_position_along_trackcenter(new_distance_along_track: float, original_point: Point, trackcenter: Trackcenter, max_neighbor_dist: float = 0.2) -> List[Point]:
     closest_center = find_closest_centerpoint(original_point, trackcenter, plane="xz")
     
-    distance_from_start_to_closest_center = distance_along_nearest_trackcenter(closest_center, trackcenter, max_neighbor_dist=max_neighbor_dist)
+    distance_from_start_to_closest_center = distance_along_trackcenter(closest_center, trackcenter, max_neighbor_dist=max_neighbor_dist)
 
     target_distance = distance_from_start_to_closest_center + new_distance_along_track
 

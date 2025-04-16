@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "trackshapeutils"
-version = "0.3.3"
+version = "0.3.5"
 description = "Collection of experimental utilities to modify existing MSTS/ORTS track shapes."
 readme = "README.md"
 authors = [{name = "Peter Grønbæk Andersen", email = "peter@grnbk.io"}]
