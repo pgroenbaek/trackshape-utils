@@ -1441,6 +1441,9 @@ class Trackcenter:
             raise TypeError(f"Cannot add Trackcenter with {type(other).__name__}")
         
         combined_centerpoints = np.vstack((self.centerpoints, other.centerpoints))
+        combined_centerpoints, idx = np.unique(combined_centerpoints, axis=0, return_index=True)
+        combined_centerpoints = combined_centerpoints[np.argsort(idx)]
+
         return Trackcenter(combined_centerpoints)
     
     def __eq__(self, other):
@@ -1464,7 +1467,10 @@ class Trackcenter:
         return cls(averaged)
 
 
-def calculate_point_centroid(points: List[Point]) -> Point:
+def calculate_point_centroid(
+    points: List[Point]
+) -> Point:
+
     positions = [p.to_numpy() for p in points]
 
     centroid = np.mean(positions, axis=0)
@@ -1472,19 +1478,32 @@ def calculate_point_centroid(points: List[Point]) -> Point:
     return Point.from_numpy(centroid)
 
 
-def calculate_point_midpoint(point1: Point, point2: Point) -> Point:
+def calculate_point_midpoint(
+    point1: Point,
+    point2: Point
+) -> Point:
+
     midpoint = (point1.to_numpy() + point2.to_numpy()) / 2
 
     return Point.from_numpy(midpoint)
 
 
-def calculate_uvpoint_midpoint(uv_point1: UVPoint, uv_point2: UVPoint) -> UVPoint:
+def calculate_uvpoint_midpoint(
+    uv_point1: UVPoint,
+    uv_point2: UVPoint
+) -> UVPoint:
+
     midpoint = (uv_point1.to_numpy() + uv_point2.to_numpy()) / 2
 
     return UVPoint.from_numpy(midpoint)
     
 
-def calculate_face_normal(point1: Point, point2: Point, point3: Point) -> Normal:
+def calculate_face_normal(
+    point1: Point,
+    point2: Point,
+    point3: Point
+) -> Normal:
+
     edge1 = point2.to_numpy() - point1.to_numpy()
     edge2 = point3.to_numpy() - point1.to_numpy()
 
@@ -1500,7 +1519,11 @@ def calculate_face_normal(point1: Point, point2: Point, point3: Point) -> Normal
     return Normal.from_numpy(normal)
 
 
-def calculate_vertex_normal(point: Point, connected_points: List[Point]) -> Normal:
+def calculate_vertex_normal(
+    point: Point,
+    connected_points: List[Point]
+) -> Normal:
+
     vertex_normal_sum = np.zeros(3)
 
     if len(connected_points) < 2:
@@ -1523,7 +1546,12 @@ def calculate_vertex_normal(point: Point, connected_points: List[Point]) -> Norm
     return Normal.from_numpy(vertex_normal_sum)
 
 
-def find_directory_files(directory: str, match_files: List[str], ignore_files: List[str]) -> List[str]:
+def find_directory_files(
+    directory: str,
+    match_files: List[str],
+    ignore_files: List[str]
+) -> List[str]:
+
     files = []
 
     for file_name in os.listdir(directory):
@@ -1535,14 +1563,24 @@ def find_directory_files(directory: str, match_files: List[str], ignore_files: L
     return files
 
 
-def load_file(filename: str, directory: str, encoding: str = None) -> File:
+def load_file(
+    filename: str,
+    directory: str,
+    encoding: str = None
+) -> File:
+
     if filename.endswith(".s"):
         raise ValueError("Please use the method 'load_shape(filename: str, directory: str) when loading a shapefile.'")
     
     return File(filename, directory, encoding=encoding)
 
 
-def load_shape(filename: str, directory: str, encoding: str = None) -> Shapefile:
+def load_shape(
+    filename: str,
+    directory: str,
+    encoding: str = None
+) -> Shapefile:
+
     if not filename.endswith(".s"):
         raise ValueError("Please use the method 'load_file(filename: str, directory: str) when loading a file that is not a shapefile.'")
     
@@ -1550,41 +1588,76 @@ def load_shape(filename: str, directory: str, encoding: str = None) -> Shapefile
 
 
 def generate_empty_centerpoints() -> Trackcenter:
+
     centerpoints = np.empty((0, 3))
 
     return Trackcenter(centerpoints)
 
 
-def generate_straight_centerpoints(length: float, num_points: int = 1000, start_angle: float = 0, start_point: Point = Point(0, 0, 0)) -> Trackcenter:
+def generate_straight_centerpoints(
+    length: float,
+    num_points: int = 1000,
+    start_angle: float = 0,
+    start_point: Point = Point(0, 0, 0)
+) -> Trackcenter:
+
     angle_rad = np.radians(start_angle)
-    
-    z = np.linspace(start_point.z, start_point.z + length, num_points)
-    x = np.full_like(z, start_point.x)
-    y = np.full_like(z, start_point.y)
 
-    x_rotated = start_point.x + x * np.cos(angle_rad) - z * np.sin(angle_rad)
-    z_rotated = start_point.z + x * np.sin(angle_rad) + z * np.cos(angle_rad)
+    local_z = np.linspace(0, length, num_points)
+    local_x = np.zeros_like(local_z)
+    local_y = np.zeros_like(local_z)
 
-    centerpoints = np.vstack((x_rotated, y, z_rotated)).T
+    x_rotated = local_x * np.cos(angle_rad) - local_z * np.sin(angle_rad)
+    z_rotated = local_x * np.sin(angle_rad) + local_z * np.cos(angle_rad)
+    y_rotated = local_y
+
+    x_final = x_rotated + start_point.x
+    y_final = y_rotated + start_point.y
+    z_final = z_rotated + start_point.z
+
+    centerpoints = np.vstack((x_final, y_final, z_final)).T
 
     return Trackcenter(centerpoints)
 
 
-def generate_curve_centerpoints(curve_radius: float, curve_angle: float, num_points: int = 1000, start_angle: float = 0, start_point: Point = Point(0, 0, 0)) -> Trackcenter:
-    theta = np.radians(np.linspace(np.float64(start_angle), np.float64(start_angle + abs(curve_angle)), num_points, dtype=np.float64))
-
+def generate_curve_centerpoints(
+    curve_radius: float,
+    curve_angle: float,
+    num_points: int = 1000,
+    start_angle: float = 0,
+    start_point: Point = Point(0, 0, 0)
+) -> Trackcenter:
+    
+    theta = np.radians(np.linspace(0, abs(curve_angle), num_points))
     direction = -1 if curve_angle < 0 else 1
 
-    z = np.float64(start_point.z) + np.float64(curve_radius) * np.sin(theta, dtype=np.float64)
-    x = np.float64(start_point.x) + direction * np.float64(curve_radius) * (1 - np.cos(theta, dtype=np.float64))
-    y = np.full_like(x, np.float64(start_point.y))
+    local_x = direction * curve_radius * (1 - np.cos(theta))
+    local_z = curve_radius * np.sin(theta)
+    local_y = np.zeros_like(local_x)
 
-    centerpoints = np.vstack((x, y, z)).T.astype(np.float32)
+    angle_rad = np.radians(start_angle) * direction
+    cos_a = np.cos(angle_rad)
+    sin_a = np.sin(angle_rad)
 
+    x_rot = cos_a * local_x - sin_a * local_z
+    z_rot = sin_a * local_x + cos_a * local_z
+
+    x_final = x_rot + start_point.x
+    y_final = local_y + start_point.y
+    z_final = z_rot + start_point.z
+
+    centerpoints = np.vstack((x_final, y_final, z_final)).T.astype(np.float32)
+    
     return Trackcenter(centerpoints)
 
 
-def generate_trackcenters_from_tsection(shape_name: str, tsection_file_path: str = None, num_points_per_meter: int = 5, start_offset=Point(0, 0, 0)) -> List[Trackcenter]:
+def generate_trackcenters_from_tsection(
+    shape_name: str,
+    tsection_file_path: str = None,
+    num_points_per_meter: int = 5,
+    start_offset: Point = Point(0, 0, 0)
+) -> List[Trackcenter]:
+
     if tsection_file_path is None:
         module_directory = pathlib.Path(__file__).parent
         tsection_file_path = f"{module_directory}/tsection.dat"
@@ -1666,7 +1739,12 @@ def generate_trackcenters_from_tsection(shape_name: str, tsection_file_path: str
         them manually using the methods 'generate_straight_centerpoints' and 'generate_curve_centerpoints'.""")
 
 
-def find_closest_trackcenter(point_along_track: Point, trackcenters: List[Trackcenter], plane='xz') -> Trackcenter:
+def find_closest_trackcenter(
+    point_along_track: Point,
+    trackcenters: List[Trackcenter],
+    plane: str = "xz"
+) -> Trackcenter:
+
     closest_trackcenter = None
     min_distance = float('inf')
 
@@ -1682,7 +1760,12 @@ def find_closest_trackcenter(point_along_track: Point, trackcenters: List[Trackc
     return closest_trackcenter
 
 
-def find_closest_centerpoint(point_along_track: Point, trackcenter: Trackcenter, plane='xz') -> Point:
+def find_closest_centerpoint(
+    point_along_track: Point,
+    trackcenter: Trackcenter,
+    plane: str = "xz"
+) -> Point:
+
     point = point_along_track.to_numpy()
     centerpoints = trackcenter.centerpoints
 
@@ -1701,7 +1784,12 @@ def find_closest_centerpoint(point_along_track: Point, trackcenter: Trackcenter,
     return Point.from_numpy(trackcenter.centerpoints[closest_index])
 
 
-def signed_distance_between(point1: Point, point2: Point, plane="xz") -> float:
+def signed_distance_between(
+    point1: Point,
+    point2: Point,
+    plane: str = "xz"
+) -> float:
+
     point1 = point1.to_numpy()
     point2 = point2.to_numpy()
 
@@ -1745,7 +1833,12 @@ def signed_distance_between(point1: Point, point2: Point, plane="xz") -> float:
     return signed_distance
 
 
-def distance_between(point1: Point, point2: Point, plane="xz") -> float:
+def distance_between(
+    point1: Point,
+    point2: Point,
+    plane: str = "xz"
+) -> float:
+
     signed_distance = signed_distance_between(point1, point2, plane=plane)
     
     distance = abs(signed_distance)
@@ -1753,7 +1846,11 @@ def distance_between(point1: Point, point2: Point, plane="xz") -> float:
     return distance
 
 
-def distance_along_curve(curve_angle: float, curve_radius: float) -> float:
+def distance_along_curve(
+    curve_angle: float,
+    curve_radius: float
+) -> float:
+
     angle_radians = math.radians(curve_angle)
     
     distance = curve_radius * angle_radians
@@ -1762,7 +1859,13 @@ def distance_along_curve(curve_angle: float, curve_radius: float) -> float:
     return distance
 
 
-def distance_along_trackcenter(point_along_track: Point, trackcenter: Trackcenter, start_point: Point = Point(0, 0, 0), max_neighbor_dist: float = 0.2) -> float:
+def distance_along_trackcenter(
+    point_along_track: Point,
+    trackcenter: Trackcenter,
+    start_point: Point = Point(0, 0, 0),
+    max_neighbor_dist: float = 0.2
+) -> float:
+
     centerpoints = trackcenter.centerpoints
     centerpoints_xz = centerpoints[:, [0, 2]]
 
@@ -1798,7 +1901,11 @@ def distance_along_trackcenter(point_along_track: Point, trackcenter: Trackcente
     return 0.0
 
 
-def group_vertices_by(vertices: List[Vertex], group_func: Callable[[Vertex, Vertex], bool]) -> List[List[Vertex]]:
+def group_vertices_by(
+    vertices: List[Vertex],
+    group_func: Callable[[Vertex, Vertex], bool]
+) -> List[List[Vertex]]:
+
     if not vertices:
         return []
 
@@ -1820,7 +1927,13 @@ def group_vertices_by(vertices: List[Vertex], group_func: Callable[[Vertex, Vert
     return groups
 
 
-def get_curve_centerpoint_from_angle(curve_radius: float, curve_angle: float, start_angle: float = 0, start_point: Point = Point(0, 0, 0)) -> Point:
+def get_curve_centerpoint_from_angle(
+    curve_radius: float,
+    curve_angle: float,
+    start_angle: float = 0,
+    start_point: Point = Point(0, 0, 0)
+) -> Point:
+
     theta = np.radians(abs(curve_angle))
     
     local_z = curve_radius * np.sin(theta)
@@ -1837,7 +1950,12 @@ def get_curve_centerpoint_from_angle(curve_radius: float, curve_angle: float, st
     return Point.from_numpy(np.array([x, y, z]))
 
 
-def get_straight_centerpoint_from_length(length: float, start_angle: float = 0, start_point: Point = Point(0, 0, 0)) -> Point:
+def get_straight_centerpoint_from_length(
+    length: float,
+    start_angle: float = 0,
+    start_point: Point = Point(0, 0, 0)
+) -> Point:
+
     theta = np.radians(start_angle)
 
     x = start_point.x + length * np.cos(theta)
@@ -1847,7 +1965,15 @@ def get_straight_centerpoint_from_length(length: float, start_angle: float = 0, 
     return Point.from_numpy(np.array([x, y, z]))
 
 
-def get_new_position_from_angle(new_curve_radius: float, new_curve_angle: float, original_point: Point, trackcenter: Trackcenter, start_angle: float = 0, start_point: Point = Point(0, 0, 0)) -> Point:
+def get_new_position_from_angle(
+    new_curve_radius: float,
+    new_curve_angle: float,
+    original_point: Point,
+    trackcenter: Trackcenter,
+    start_angle: float = 0,
+    start_point: Point = Point(0, 0, 0)
+) -> Point:
+
     closest_center = find_closest_centerpoint(original_point, trackcenter, plane='xz')
     offset = original_point.to_numpy() - closest_center.to_numpy()
 
@@ -1861,7 +1987,14 @@ def get_new_position_from_angle(new_curve_radius: float, new_curve_angle: float,
     return Point.from_numpy(new_position)
 
 
-def get_new_position_from_length(new_length: float, original_point: Point, trackcenter: Trackcenter, start_angle: float = 0, start_point: Point = Point(0, 0, 0)) -> Point:
+def get_new_position_from_length(
+    new_length: float,
+    original_point: Point,
+    trackcenter: Trackcenter,
+    start_angle: float = 0,
+    start_point: Point = Point(0, 0, 0)
+) -> Point:
+
     closest_center = find_closest_centerpoint(original_point, trackcenter, plane='xz')
     offset = original_point.to_numpy() - closest_center.to_numpy()
 
@@ -1875,7 +2008,12 @@ def get_new_position_from_length(new_length: float, original_point: Point, track
     return Point.from_numpy(new_position)
 
 
-def get_new_position_from_trackcenter(new_signed_distance: float, original_point: Point, trackcenter: Trackcenter) -> Point:
+def get_new_position_from_trackcenter(
+    new_signed_distance: float,
+    original_point: Point,
+    trackcenter: Trackcenter
+) -> Point:
+
     centerpoints = trackcenter.centerpoints
     closest_center = find_closest_centerpoint(original_point, trackcenter, plane="xz")
     closest_center = closest_center.to_numpy()
@@ -1902,7 +2040,13 @@ def get_new_position_from_trackcenter(new_signed_distance: float, original_point
     return Point.from_numpy(new_position)
 
 
-def get_new_position_along_trackcenter(new_distance_along_track: float, original_point: Point, trackcenter: Trackcenter, max_neighbor_dist: float = 0.2) -> List[Point]:
+def get_new_position_along_trackcenter(
+    new_distance_along_track: float,
+    original_point: Point,
+    trackcenter: Trackcenter,
+    max_neighbor_dist: float = 0.2
+) -> List[Point]:
+
     closest_center = find_closest_centerpoint(original_point, trackcenter, plane="xz")
     
     distance_from_start_to_closest_center = distance_along_trackcenter(closest_center, trackcenter, max_neighbor_dist=max_neighbor_dist)

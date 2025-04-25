@@ -3,8 +3,8 @@ import trackshapeutils as tsu
 from collections import defaultdict
 
 if __name__ == "__main__":
-    shape_load_path = "E:/NR_Bahntrasse_2.1/NR_Bahntrasse_2.1/NR_Emb"
-    shape_processed_path = "E:/NR_Bahntrasse_2.1/NR_Bahntrasse_2.1/NR_Emb/Processed"
+    shape_load_path = "/media/peter/T7 Shield/NR_Bahntrasse_2.1/NR_Bahntrasse_2.1/NR_Emb"
+    shape_processed_path = "/media/peter/T7 Shield/NR_Bahntrasse_2.1/NR_Bahntrasse_2.1/NR_Emb/Processed"
     ffeditc_path = "./ffeditc_unicode.exe"
     match_shapes = [
         # For testing
@@ -51,7 +51,7 @@ if __name__ == "__main__":
         new_sfile = sfile.copy(new_filename=new_sfile_name, new_directory=shape_processed_path)
         #new_sfile.decompress(ffeditc_path)
 
-        trackcenters = tsu.generate_trackcenters_from_tsection(shape_name=tsection_sfile_name, num_points_per_meter=7)
+        trackcenters = tsu.generate_trackcenters_from_tsection(shape_name=tsection_sfile_name, num_points_per_meter=12)
 
         lod_dlevel = 400
         subobject_idx = 0
@@ -92,7 +92,8 @@ if __name__ == "__main__":
                         if not any(v.point == vertex.point for v in railtop_vertices_inner):
                             railtop_vertices_inner.append(vertex)
                     else:
-                        raise AssertionError(f"Vertex with distance '{distance_from_center}' not caught, errors will happen during processing.")
+                        with open('warnings.txt', 'a') as f:
+                            f.write(f'Railtops: {sfile_name} (distance_from_center = {distance_from_center})\n')
 
             for vertex in vertices_in_prim_state:
                 if vertex.point.y == 0.2: # Railside bottom vertices
@@ -130,7 +131,8 @@ if __name__ == "__main__":
                                 if not any(v.point == vertex.point for v in railside_vertices_bottom["left_outer"]):
                                     railside_vertices_bottom["left_outer"].append(vertex)
                             else:
-                                raise AssertionError(f"Vertex with distance '{distance_from_center}' not caught, errors will happen during processing.")
+                                with open('warnings.txt', 'a') as f:
+                                    f.write(f'Railsides: {sfile_name} (distance_from_center = {distance_from_center})\n')
             
             trackcenters = tsu.generate_trackcenters_from_tsection(shape_name=tsection_sfile_name, num_points_per_meter=2)
             
