@@ -3,10 +3,10 @@ import trackshapeutils as tsu
 from collections import defaultdict
 
 if __name__ == "__main__":
-    shape_load_path = "/media/peter/T7 Shield/NR_Bahntrasse_2.1/NR_Bahntrasse_2.1/NR_Emb"
-    shape_processed_path = "/media/peter/T7 Shield/NR_Bahntrasse_2.1/NR_Bahntrasse_2.1/NR_Emb/Processed"
+    shape_load_path = "./examples/data/"
+    shape_processed_path = "./examples/data/processed/NREmbAtracksRails"
     ffeditc_path = "./ffeditc_unicode.exe"
-    match_shapes = [
+    match_files = [
         # For testing
         #"NR_Emb_a1t10mStrt.s",
         #"NR_Emb_a1t250r10d.s",
@@ -26,11 +26,11 @@ if __name__ == "__main__":
         "NR_RWall_*.s",
         "NR_WallEmb_*.s",
     ]
-    ignore_shapes = ["*Tun*", "*Pnt*", "*Frog*", "*.sd"]
+    ignore_files = ["*.sd"]
     
     os.makedirs(shape_processed_path, exist_ok=True)
 
-    shape_names = tsu.find_directory_files(shape_load_path, match_shapes, ignore_shapes)
+    shape_names = tsu.find_directory_files(shape_load_path, match_files, ignore_files)
 
     for idx, sfile_name in enumerate(shape_names):
         print(f"Shape {idx + 1} of {len(shape_names)}...")
@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
         sfile = tsu.load_shape(sfile_name, shape_load_path)
         new_sfile = sfile.copy(new_filename=new_sfile_name, new_directory=shape_processed_path)
-        #new_sfile.decompress(ffeditc_path)
+        new_sfile.decompress(ffeditc_path)
 
         trackcenters = tsu.generate_trackcenters_from_tsection(shape_name=tsection_sfile_name, num_points_per_meter=12)
 
@@ -520,7 +520,7 @@ if __name__ == "__main__":
             print("")
 
         new_sfile.save()
-        #new_sfile.compress(ffeditc_path)
+        new_sfile.compress(ffeditc_path)
 
         # Process .sd file
         sdfile_name = sfile_name.replace(".s", ".sd")

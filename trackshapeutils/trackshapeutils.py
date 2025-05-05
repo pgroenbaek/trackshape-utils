@@ -405,7 +405,7 @@ class Shapefile(File):
                 current_prim_state_idx += 1
 
         return prim_states
-    
+
     def get_prim_states_by_name(self, prim_state_name: str) -> List[PrimState]:
         prim_states = []
         current_prim_state_idx = 0
@@ -1646,7 +1646,7 @@ def generate_curve_centerpoints(
     y_final = local_y + start_point.y
     z_final = z_rot + start_point.z
 
-    centerpoints = np.vstack((x_final, y_final, z_final)).T.astype(np.float32)
+    centerpoints = np.vstack((x_final, y_final, z_final)).T
     
     return Trackcenter(centerpoints)
 
@@ -1712,7 +1712,8 @@ def generate_trackcenters_from_tsection(
                                 current_path_angle = start_angle
                             
                             if radius is not None and angle is not None:
-                                num_points = int(distance_along_curve(curve_angle=angle, curve_radius=radius) * num_points_per_meter)
+                                curve_length = distance_along_curve(curve_angle=angle, curve_radius=radius)
+                                num_points = int(curve_length * num_points_per_meter)
                                 num_points = max(num_points, 10)
                                 section_trackcenter = generate_curve_centerpoints(curve_radius=radius, curve_angle=angle, start_angle=current_path_angle, start_point=current_path_point, num_points=num_points)
                                 current_path_angle += angle
