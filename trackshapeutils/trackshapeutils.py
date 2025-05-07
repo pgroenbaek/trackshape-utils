@@ -706,67 +706,71 @@ class Shapefile(File):
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
-            if current_dlevel == lod_dlevel:
-                if "sub_object (" in line:
-                    current_subobject_idx += 1
+            if current_dlevel != lod_dlevel:
+                continue
+            
+            if "sub_object (" in line:
+                current_subobject_idx += 1
+            
+            if current_subobject_idx != subobject_idx:
+                continue
+            
+            if 'prim_state_idx (' in line:
+                parts = line.split(' ')
+                current_prim_state_idx = int(parts[2])
+
+            if 'indexed_trilist (' in line:
+                processing_trilist = True
+
+            if 'vertex_idxs (' in line or collecting_vertex_idxs:
+                parts = line.replace('vertex_idxs', '').replace('(', '').replace(')', '').split()
+                if parts:
+                    if not collecting_vertex_idxs:
+                        parts = parts[1:]
+                    vertex_idxs = list(map(int, parts))
+                    vertex_idxs_in_trilist.extend(vertex_idxs)
+                collecting_vertex_idxs = not line.endswith(')')
+
+            if 'normal_idxs (' in line or collecting_normal_idxs:
+                parts = line.replace('normal_idxs', '').replace('(', '').replace(')', '').split()
+                if parts:
+                    if not collecting_normal_idxs:
+                        parts = parts[1:]
+                    normal_idxs = list(map(int, parts))
+                    normal_idxs_in_trilist.extend(normal_idxs)
+                collecting_normal_idxs = not line.endswith(')')
+
+            if 'flags (' in line or collecting_flags:
+                parts = line.replace('flags', '').replace('(', '').replace(')', '').split()
+                if parts:
+                    if not collecting_flags:
+                        parts = parts[1:]
+                    flags = list(map(str, parts))
+                    flags_in_trilist.extend(flags)
+                collecting_flags = not line.endswith(')')
+
+            if processing_trilist and '\t)' in line:
+                processing_trilist = False
+
+                indexed_trilist = IndexedTrilist(
+                    trilist_idx=current_trilist_idx,
+                    vertex_idxs=vertex_idxs_in_trilist,
+                    normal_idxs=normal_idxs_in_trilist,
+                    flags=flags_in_trilist,
+                    lod_dlevel=current_dlevel,
+                    subobject_idx=current_subobject_idx,
+                    prim_state_idx=current_prim_state_idx
+                )
+
+                if current_prim_state_idx not in indexed_trilists:
+                    indexed_trilists[current_prim_state_idx] = [indexed_trilist]
+                else:
+                    indexed_trilists[current_prim_state_idx].append(indexed_trilist)
                 
-                if current_subobject_idx == subobject_idx:
-                    if 'prim_state_idx (' in line:
-                        parts = line.split(' ')
-                        current_prim_state_idx = int(parts[2])
-
-                    if 'indexed_trilist (' in line:
-                        processing_trilist = True
-
-                    if 'vertex_idxs (' in line or collecting_vertex_idxs:
-                        parts = line.replace('vertex_idxs', '').replace('(', '').replace(')', '').split()
-                        if parts:
-                            if not collecting_vertex_idxs:
-                                parts = parts[1:]
-                            vertex_idxs = list(map(int, parts))
-                            vertex_idxs_in_trilist.extend(vertex_idxs)
-                        collecting_vertex_idxs = not line.endswith(')')
-
-                    if 'normal_idxs (' in line or collecting_normal_idxs:
-                        parts = line.replace('normal_idxs', '').replace('(', '').replace(')', '').split()
-                        if parts:
-                            if not collecting_normal_idxs:
-                                parts = parts[1:]
-                            normal_idxs = list(map(int, parts))
-                            normal_idxs_in_trilist.extend(normal_idxs)
-                        collecting_normal_idxs = not line.endswith(')')
-
-                    if 'flags (' in line or collecting_flags:
-                        parts = line.replace('flags', '').replace('(', '').replace(')', '').split()
-                        if parts:
-                            if not collecting_flags:
-                                parts = parts[1:]
-                            flags = list(map(str, parts))
-                            flags_in_trilist.extend(flags)
-                        collecting_flags = not line.endswith(')')
-
-                    if processing_trilist and '\t)' in line:
-                        processing_trilist = False
-
-                        indexed_trilist = IndexedTrilist(
-                            trilist_idx=current_trilist_idx,
-                            vertex_idxs=vertex_idxs_in_trilist,
-                            normal_idxs=normal_idxs_in_trilist,
-                            flags=flags_in_trilist,
-                            lod_dlevel=current_dlevel,
-                            subobject_idx=current_subobject_idx,
-                            prim_state_idx=current_prim_state_idx
-                        )
-
-                        if current_prim_state_idx not in indexed_trilists:
-                            indexed_trilists[current_prim_state_idx] = [indexed_trilist]
-                        else:
-                            indexed_trilists[current_prim_state_idx].append(indexed_trilist)
-                        
-                        current_trilist_idx += 1
-                        vertex_idxs_in_trilist = []
-                        normal_idxs_in_trilist = []
-                        flags_in_trilist = []
+                current_trilist_idx += 1
+                vertex_idxs_in_trilist = []
+                normal_idxs_in_trilist = []
+                flags_in_trilist = []
 
         return indexed_trilists
 
@@ -802,28 +806,32 @@ class Shapefile(File):
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
-            if current_dlevel == lod_dlevel:
-                if "sub_object (" in line:
-                    current_subobject_idx += 1
-                
-                if current_subobject_idx == subobject_idx:
-                    if "geometry_info (" in line:
-                        parts = line.split(" ")
-                        parts[2] = str(sum(normal_idxs_counts))
-                        parts[5] = str(sum(vertex_idxs_counts))
-                        self.lines[line_idx] = " ".join(parts)
-                        has_updated_geometry_info = True
+            if current_dlevel != lod_dlevel:
+                continue
 
-                    if "cullable_prims (" in line:
-                        parts = line.split(" ")
-                        num_primitives = int(parts[2])
-                        from_idx = current_prim_total - 1
-                        to_idx = current_prim_total - 1 + num_primitives
-                        parts[3] = str(sum(normal_idxs_counts[from_idx : to_idx]))
-                        parts[4] = str(sum(vertex_idxs_counts[from_idx : to_idx]))
-                        self.lines[line_idx] = " ".join(parts)
-                        current_prim_total += num_primitives
-                        has_updated_cullable_prims = True
+            if "sub_object (" in line:
+                current_subobject_idx += 1
+            
+            if current_subobject_idx != subobject_idx:
+                continue
+            
+            if "geometry_info (" in line:
+                parts = line.split(" ")
+                parts[2] = str(sum(normal_idxs_counts))
+                parts[5] = str(sum(vertex_idxs_counts))
+                self.lines[line_idx] = " ".join(parts)
+                has_updated_geometry_info = True
+
+            if "cullable_prims (" in line:
+                parts = line.split(" ")
+                num_primitives = int(parts[2])
+                from_idx = current_prim_total - 1
+                to_idx = current_prim_total - 1 + num_primitives
+                parts[3] = str(sum(normal_idxs_counts[from_idx : to_idx]))
+                parts[4] = str(sum(vertex_idxs_counts[from_idx : to_idx]))
+                self.lines[line_idx] = " ".join(parts)
+                current_prim_total += num_primitives
+                has_updated_cullable_prims = True
         
         return has_updated_geometry_info and has_updated_cullable_prims
         
@@ -839,20 +847,24 @@ class Shapefile(File):
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
-            if current_dlevel == lod_dlevel:
-                if "sub_object (" in line:
-                    current_subobject_idx += 1
-                
-                if current_subobject_idx == subobject_idx:
-                    if "geometry_node (" in line:
-                        current_geometry_node_idx += 1
+            if current_dlevel != lod_dlevel:
+                continue
+            
+            if "sub_object (" in line:
+                current_subobject_idx += 1
+            
+            if current_subobject_idx != subobject_idx:
+                continue
+            
+            if "geometry_node (" in line:
+                current_geometry_node_idx += 1
 
-                    if "cullable_prims (" in line:
-                        parts = line.split()
-                        current_prim_total += int(parts[2])
-                        if current_prim_total > indexed_trilist._trilist_idx:
-                            vertexset_idx_to_update = current_geometry_node_idx
-                            break
+            if "cullable_prims (" in line:
+                parts = line.split()
+                current_prim_total += int(parts[2])
+                if current_prim_total > indexed_trilist._trilist_idx:
+                    vertexset_idx_to_update = current_geometry_node_idx
+                    break
         
         current_dlevel = -1
         current_subobject_idx = -1
@@ -865,30 +877,34 @@ class Shapefile(File):
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
-            if current_dlevel == lod_dlevel:
-                if "sub_object (" in line:
-                    current_subobject_idx += 1
-                
-                if current_subobject_idx == subobject_idx:
-                    if "vertex_set (" in line:
-                        parts = line.split(" ")
-                        vertexset_idx = int(parts[2])
-                        vertexset_startidx = int(parts[3])
-                        vertexset_count = int(parts[4])
+            if current_dlevel != lod_dlevel:
+                continue
+            
+            if "sub_object (" in line:
+                current_subobject_idx += 1
+            
+            if current_subobject_idx != subobject_idx:
+                continue
+            
+            if "vertex_set (" in line:
+                parts = line.split(" ")
+                vertexset_idx = int(parts[2])
+                vertexset_startidx = int(parts[3])
+                vertexset_count = int(parts[4])
 
-                        if adjust_remaining_vertexset_idxs:
-                            parts[3] = str(vertexset_count_total)
-                            self.lines[line_idx] = " ".join(parts)
-                        
-                        if vertexset_idx == vertexset_idx_to_update:
-                            new_count = vertexset_count + 1
-                            parts[4] = str(new_count)
-                            self.lines[line_idx] = " ".join(parts)
-                            vertexset_count_total += 1
-                            new_vertex_idx = vertexset_count
-                            adjust_remaining_vertexset_idxs = True
-                        
-                        vertexset_count_total += vertexset_count
+                if adjust_remaining_vertexset_idxs:
+                    parts[3] = str(vertexset_count_total)
+                    self.lines[line_idx] = " ".join(parts)
+                
+                if vertexset_idx == vertexset_idx_to_update:
+                    new_count = vertexset_count + 1
+                    parts[4] = str(new_count)
+                    self.lines[line_idx] = " ".join(parts)
+                    vertexset_count_total += 1
+                    new_vertex_idx = vertexset_count
+                    adjust_remaining_vertexset_idxs = True
+                
+                vertexset_count_total += vertexset_count
                         
         return new_vertex_idx
 
@@ -908,34 +924,38 @@ class Shapefile(File):
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
-            if current_dlevel == indexed_trilist._lod_dlevel:
-                if "sub_object (" in line:
-                    current_subobject_idx += 1
-                
-                if current_subobject_idx == indexed_trilist._subobject_idx:
-                    if 'prim_state_idx (' in line:
-                        parts = line.split(' ')
-                        current_prim_state_idx = int(parts[2])
+            if current_dlevel != indexed_trilist._lod_dlevel:
+                continue
 
-                    if 'indexed_trilist (' in line:
-                        processing_trilist = True
-                        current_trilist_idx += 1
-                    
-                    if current_trilist_idx == indexed_trilist._trilist_idx:
-                        if 'vertex_idxs (' in line or collecting_vertex_idxs:
-                            lines_to_remove.append(line_idx)
-                            collecting_vertex_idxs = not line.endswith(')')
+            if "sub_object (" in line:
+                current_subobject_idx += 1
+            
+            if current_subobject_idx != indexed_trilist._subobject_idx:
+                continue
+            
+            if 'prim_state_idx (' in line:
+                parts = line.split(' ')
+                current_prim_state_idx = int(parts[2])
 
-                        if 'normal_idxs (' in line or collecting_normal_idxs:
-                            lines_to_remove.append(line_idx)
-                            collecting_normal_idxs = not line.endswith(')')
+            if 'indexed_trilist (' in line:
+                processing_trilist = True
+                current_trilist_idx += 1
+            
+            if current_trilist_idx == indexed_trilist._trilist_idx:
+                if 'vertex_idxs (' in line or collecting_vertex_idxs:
+                    lines_to_remove.append(line_idx)
+                    collecting_vertex_idxs = not line.endswith(')')
 
-                        if 'flags (' in line or collecting_flags:
-                            lines_to_remove.append(line_idx)
-                            collecting_flags = not line.endswith(')')
+                if 'normal_idxs (' in line or collecting_normal_idxs:
+                    lines_to_remove.append(line_idx)
+                    collecting_normal_idxs = not line.endswith(')')
 
-                        if processing_trilist and '\t)' in line:
-                            processing_trilist = False
+                if 'flags (' in line or collecting_flags:
+                    lines_to_remove.append(line_idx)
+                    collecting_flags = not line.endswith(')')
+
+                if processing_trilist and '\t)' in line:
+                    processing_trilist = False
 
         if lines_to_remove:
             new_vertex_trilist = indexed_trilist.vertex_idxs
@@ -1016,27 +1036,31 @@ class Shapefile(File):
                 parts = line.split()
                 current_dlevel = int(parts[2])
 
-            if current_dlevel == lod_dlevel:
-                if "sub_object (" in line:
-                    current_subobject_idx += 1
-                    current_vertex_idx = 0
-                
-                if current_subobject_idx == subobject_idx:
-                    if "vertex (" in line:
-                        parts = ' '.join(self.lines[line_idx : line_idx + 2]).split(' ')
-                        vertex = Vertex(
-                            vertex_idx=current_vertex_idx,
-                            point=points[int(parts[3])],
-                            uv_point=uv_points[int(parts[10])],
-                            normal=normals[int(parts[4])],
-                            point_idx=int(parts[3]),
-                            uv_point_idx=int(parts[10]),
-                            normal_idx=int(parts[4]),
-                            lod_dlevel=current_dlevel,
-                            subobject_idx=current_subobject_idx
-                        )
-                        vertices_in_subobject.append(vertex)
-                        current_vertex_idx += 1
+            if current_dlevel != lod_dlevel:
+                continue
+            
+            if "sub_object (" in line:
+                current_subobject_idx += 1
+                current_vertex_idx = 0
+            
+            if current_subobject_idx != subobject_idx:
+                continue
+            
+            if "vertex (" in line:
+                parts = ' '.join(self.lines[line_idx : line_idx + 2]).split(' ')
+                vertex = Vertex(
+                    vertex_idx=current_vertex_idx,
+                    point=points[int(parts[3])],
+                    uv_point=uv_points[int(parts[10])],
+                    normal=normals[int(parts[4])],
+                    point_idx=int(parts[3]),
+                    uv_point_idx=int(parts[10]),
+                    normal_idx=int(parts[4]),
+                    lod_dlevel=current_dlevel,
+                    subobject_idx=current_subobject_idx
+                )
+                vertices_in_subobject.append(vertex)
+                current_vertex_idx += 1
 
         return vertices_in_subobject
 
@@ -1049,14 +1073,18 @@ class Shapefile(File):
                 parts = line.split()
                 current_dlevel = int(parts[2])
 
-            if current_dlevel == lod_dlevel:
-                if "sub_object (" in line:
-                    current_subobject_idx += 1
-                
-                if current_subobject_idx == subobject_idx:
-                    if "vertices (" in line:
-                        parts = line.split(' ')
-                        return int(parts[2])
+            if current_dlevel != lod_dlevel:
+                continue
+
+            if "sub_object (" in line:
+                current_subobject_idx += 1
+            
+            if current_subobject_idx != subobject_idx:
+                continue
+            
+            if "vertices (" in line:
+                parts = line.split(' ')
+                return int(parts[2])
 
         return None
 
@@ -1089,29 +1117,33 @@ class Shapefile(File):
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
-            if current_dlevel == lod_dlevel:
-                if "sub_object (" in line:
-                    current_subobject_idx += 1
-                    current_vertex_idx = 0
-                
-                if current_subobject_idx == subobject_idx:
-                    if "vertex (" in line:
-                        if current_vertex_idx == vertex_idx:
-                            parts = ' '.join(self.lines[line_idx : line_idx + 2]).split(' ')
-                            vertex = Vertex(
-                                vertex_idx=current_vertex_idx,
-                                point=points[int(parts[3])],
-                                uv_point=uv_points[int(parts[10])],
-                                normal=normals[int(parts[4])],
-                                point_idx=int(parts[3]),
-                                uv_point_idx=int(parts[10]),
-                                normal_idx=int(parts[4]),
-                                lod_dlevel=current_dlevel,
-                                subobject_idx=current_subobject_idx
-                            )
-                            return vertex
-                    
-                        current_vertex_idx += 1
+            if current_dlevel != lod_dlevel:
+                continue
+
+            if "sub_object (" in line:
+                current_subobject_idx += 1
+                current_vertex_idx = 0
+            
+            if current_subobject_idx != subobject_idx:
+                continue
+            
+            if "vertex (" in line:
+                if current_vertex_idx == vertex_idx:
+                    parts = ' '.join(self.lines[line_idx : line_idx + 2]).split(' ')
+                    vertex = Vertex(
+                        vertex_idx=current_vertex_idx,
+                        point=points[int(parts[3])],
+                        uv_point=uv_points[int(parts[10])],
+                        normal=normals[int(parts[4])],
+                        point_idx=int(parts[3]),
+                        uv_point_idx=int(parts[10]),
+                        normal_idx=int(parts[4]),
+                        lod_dlevel=current_dlevel,
+                        subobject_idx=current_subobject_idx
+                    )
+                    return vertex
+            
+                current_vertex_idx += 1
 
         return None
 
@@ -1197,28 +1229,32 @@ class Shapefile(File):
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
-            if current_dlevel == lod_dlevel:
-                if "sub_object (" in line:
-                    current_subobject_idx += 1
-                
-                if current_subobject_idx == subobject_idx:
-                    if 'vertices (' in line:
-                        processing_vertices = True
+            if current_dlevel != lod_dlevel:
+                continue
+            
+            if "sub_object (" in line:
+                current_subobject_idx += 1
+            
+            if current_subobject_idx != subobject_idx:
+                continue
+            
+            if 'vertices (' in line:
+                processing_vertices = True
 
-                    if processing_vertices and ')' in line:
-                        if current_vertex_idx == new_vertex_idx or 'vert' not in self.lines[line_idx - 1].lower():
-                            processing_vertices = False
-                            new_count = self.get_vertices_count(lod_dlevel, subobject_idx) + 1
-                            self.lines[line_idx + 2 : line_idx + 2] = [
-                                f"\t\t\t\t\t\t\t\tvertex ( 00000000 {new_vertex._point_idx} {new_vertex._normal_idx} ff969696 ff808080",
-                                f"\t\t\t\t\t\t\t\t\tvertex_uvs ( 1 {new_vertex._uv_point_idx} )",
-                                "\t\t\t\t\t\t\t\t)"
-                            ]
-                            self.set_vertices_count(lod_dlevel, subobject_idx, new_count)
-                            return new_vertex
-                    
-                    if processing_vertices and 'vertex (' in line:
-                        current_vertex_idx += 1
+            if processing_vertices and ')' in line:
+                if current_vertex_idx == new_vertex_idx or 'vert' not in self.lines[line_idx - 1].lower():
+                    processing_vertices = False
+                    new_count = self.get_vertices_count(lod_dlevel, subobject_idx) + 1
+                    self.lines[line_idx + 2 : line_idx + 2] = [
+                        f"\t\t\t\t\t\t\t\tvertex ( 00000000 {new_vertex._point_idx} {new_vertex._normal_idx} ff969696 ff808080",
+                        f"\t\t\t\t\t\t\t\t\tvertex_uvs ( 1 {new_vertex._uv_point_idx} )",
+                        "\t\t\t\t\t\t\t\t)"
+                    ]
+                    self.set_vertices_count(lod_dlevel, subobject_idx, new_count)
+                    return new_vertex
+            
+            if processing_vertices and 'vertex (' in line:
+                current_vertex_idx += 1
 
         return None
     
@@ -1231,17 +1267,21 @@ class Shapefile(File):
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
-            if current_dlevel == lod_dlevel:
-                if "sub_object (" in line:
-                    current_subobject_idx += 1
-                
-                if current_subobject_idx == subobject_idx:
-                    if "vertices (" in line:
-                        parts = line.split(" ")
-                        parts[2] = str(vertices_count)
-                        line = " ".join(parts)
-                        self.lines[line_idx] = line
-                        return True
+            if current_dlevel != lod_dlevel:
+                continue
+            
+            if "sub_object (" in line:
+                current_subobject_idx += 1
+            
+            if current_subobject_idx != subobject_idx:
+                continue
+            
+            if "vertices (" in line:
+                parts = line.split(" ")
+                parts[2] = str(vertices_count)
+                line = " ".join(parts)
+                self.lines[line_idx] = line
+                return True
         
         return False
     
