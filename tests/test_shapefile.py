@@ -83,9 +83,10 @@ def test_get_prim_states(global_storage):
 
 def test_get_prim_state_by_name(global_storage):
     shape = global_storage["shape"]
-    prim_state = shape.get_prim_state_by_name("DB_Track2sw_top")
-    assert prim_state.name == "DB_Track2sw_top"
-    assert prim_state.idx == 6
+    prim_states = shape.get_prim_states_by_name("DB_Track2sw_top")
+    assert len(prim_states) == 1
+    assert prim_states[0].name == "DB_Track2sw_top"
+    assert prim_states[0].idx == 6
 
 def test_get_prim_state_by_idx(global_storage):
     shape = global_storage["shape"]

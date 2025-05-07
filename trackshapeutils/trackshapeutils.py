@@ -388,7 +388,7 @@ class Shapefile(File):
         lod_dlevels = []
 
         for line in self.lines:
-            if "dlevel_selection (" in line.lower():
+            if "dlevel_selection (" in line:
                 parts = line.split(' ')
                 lod_dlevels.append(int(parts[2]))
 
@@ -399,7 +399,7 @@ class Shapefile(File):
         prim_states = {}
 
         for line in self.lines:
-            if "prim_state " in line.lower():
+            if "prim_state " in line:
                 parts = line.split(' ')
                 prim_states[current_prim_state_idx] = PrimState(current_prim_state_idx, parts[1])
                 current_prim_state_idx += 1
@@ -411,7 +411,7 @@ class Shapefile(File):
         current_prim_state_idx = 0
 
         for line in self.lines:
-            if "prim_state " in line.lower():
+            if "prim_state " in line:
                 parts = line.split(' ')
                 if parts[1] == prim_state_name:
                     prim_states.append(PrimState(current_prim_state_idx, parts[1]))
@@ -423,7 +423,7 @@ class Shapefile(File):
         current_prim_state_idx = 0
 
         for line in self.lines:
-            if "prim_state " in line.lower():
+            if "prim_state " in line:
                 parts = line.split(' ')
                 if current_prim_state_idx == prim_state_idx:
                     return PrimState(current_prim_state_idx, parts[1])
@@ -436,7 +436,7 @@ class Shapefile(File):
         points = {}
 
         for line in self.lines:
-            if "point (" in line.lower() and "uv_point (" not in line.lower():
+            if "point (" in line and "uv_point (" not in line:
                 parts = line.split(' ')
                 points[current_point_idx] = Point(float(parts[2]), float(parts[3]), float(parts[4]))
                 current_point_idx += 1
@@ -447,7 +447,7 @@ class Shapefile(File):
         current_point_idx = 0
 
         for line in self.lines:
-            if "point (" in line.lower() and "uv_point (" not in line.lower():
+            if "point (" in line and "uv_point (" not in line:
                 parts = line.split(' ')
                 if current_point_idx == point_idx:
                     return Point(float(parts[2]), float(parts[3]), float(parts[4]))
@@ -459,7 +459,7 @@ class Shapefile(File):
         current_point_idx = 0
 
         for line_idx, line in enumerate(self.lines):
-            if "point (" in line.lower() and "uv_point (" not in line.lower():
+            if "point (" in line and "uv_point (" not in line:
                 if current_point_idx == point_idx:
                     parts = line.split(" ")
                     parts[2] = str(round(point.x, 4))
@@ -475,7 +475,7 @@ class Shapefile(File):
 
     def set_point_count(self, point_count: int) -> bool:
         for line_idx, line in enumerate(self.lines):
-            if "points (" in line.lower():
+            if "points (" in line:
                 parts = line.split(" ")
                 parts[2] = str(point_count)
                 line = " ".join(parts)
@@ -489,16 +489,16 @@ class Shapefile(File):
         processing_points = False
 
         for line_idx, line in enumerate(self.lines):
-            if 'points (' in line.lower():
+            if 'points (' in line:
                 processing_points = True
 
-            if processing_points and ')' in line.lower() and 'point (' not in line.lower():
+            if processing_points and ')' in line and 'point (' not in line:
                 processing_points = False
                 self.lines[line_idx : line_idx] = [f"\t\tpoint ( {round(point.x, 4)} {round(point.y, 4)} {round(point.z, 4)} )"]
                 self.set_point_count(current_point_idx + 1)
                 return current_point_idx
 
-            if processing_points and 'point (' in line.lower():
+            if processing_points and 'point (' in line:
                 current_point_idx += 1
 
         return None
@@ -508,7 +508,7 @@ class Shapefile(File):
         uv_points = {}
 
         for line in self.lines:
-            if "uv_point (" in line.lower():
+            if "uv_point (" in line:
                 parts = line.split(' ')
                 uv_points[current_uv_point_idx] = UVPoint(float(parts[2]), float(parts[3]))
                 current_uv_point_idx += 1
@@ -519,7 +519,7 @@ class Shapefile(File):
         current_uv_point_idx = 0
 
         for line in self.lines:
-            if "uv_point (" in line.lower():
+            if "uv_point (" in line:
                 parts = line.split(' ')
                 if current_uv_point_idx == uv_point_idx:
                     return UVPoint(float(parts[2]), float(parts[3]))
@@ -531,7 +531,7 @@ class Shapefile(File):
         current_uv_point_idx = 0
 
         for line_idx, line in enumerate(self.lines):
-            if 'uv_point (' in line.lower():
+            if 'uv_point (' in line:
                 if current_uv_point_idx == uv_point_idx:
                     parts = line.split(" ")
                     parts[2] = str(round(uv_point.u, 4))
@@ -546,7 +546,7 @@ class Shapefile(File):
 
     def set_uvpoint_count(self, uv_point_count: int) -> bool:
         for line_idx, line in enumerate(self.lines):
-            if "uv_points (" in line.lower():
+            if "uv_points (" in line:
                 parts = line.split(" ")
                 parts[2] = str(uv_point_count)
                 line = " ".join(parts)
@@ -560,16 +560,16 @@ class Shapefile(File):
         processing_uv_points = False
 
         for line_idx, line in enumerate(self.lines):
-            if 'uv_points (' in line.lower():
+            if 'uv_points (' in line:
                 processing_uv_points = True
 
-            if processing_uv_points and ')' in line.lower() and 'uv_point (' not in line.lower():
+            if processing_uv_points and ')' in line and 'uv_point (' not in line:
                 processing_uv_points = False
                 self.lines[line_idx : line_idx] = [f"\t\tuv_point ( {round(uv_point.u, 4)} {round(uv_point.v, 4)} )"]
                 self.set_uvpoint_count(current_uv_point_idx + 1)
                 return current_uv_point_idx
 
-            if processing_uv_points and 'uv_point (' in line.lower():
+            if processing_uv_points and 'uv_point (' in line:
                 current_uv_point_idx += 1
 
         return None
@@ -580,15 +580,15 @@ class Shapefile(File):
         normals = {}
 
         for line in self.lines:
-            if 'normals (' in line.lower():
+            if 'normals (' in line:
                 processing_normals = True
 
-            if 'vector (' in line.lower() and processing_normals:
+            if 'vector (' in line and processing_normals:
                 parts = line.split(' ')
                 normals[current_normals_idx] = Normal(float(parts[2]), float(parts[3]), float(parts[4]))
                 current_normals_idx += 1
 
-            if processing_normals and ')' in line.lower() and 'vector (' not in line.lower():
+            if processing_normals and ')' in line and 'vector (' not in line:
                 processing_normals = False
 
         return normals
@@ -598,16 +598,16 @@ class Shapefile(File):
         processing_normals = False
 
         for line in self.lines:
-            if 'normals (' in line.lower():
+            if 'normals (' in line:
                 processing_normals = True
 
-            if 'vector (' in line.lower() and processing_normals:
+            if 'vector (' in line and processing_normals:
                 parts = line.split(' ')
                 if current_normals_idx == normal_idx:
                     return Normal(float(parts[2]), float(parts[3]), float(parts[4]))
                 current_normals_idx += 1
 
-            if processing_normals and ')' in line.lower() and 'vector (' not in line.lower():
+            if processing_normals and ')' in line and 'vector (' not in line:
                 processing_normals = False
 
         return None
@@ -617,10 +617,10 @@ class Shapefile(File):
         processing_normals = False
 
         for line_idx, line in enumerate(self.lines):
-            if 'normals (' in line.lower():
+            if 'normals (' in line:
                 processing_normals = True
 
-            if 'vector (' in line.lower() and processing_normals:
+            if 'vector (' in line and processing_normals:
                 if current_normal_idx == normal_idx:
                     parts = line.split(" ")
                     parts[2] = str(round(normal.vec_x, 4))
@@ -632,14 +632,14 @@ class Shapefile(File):
                 
                 current_normal_idx += 1
 
-            if processing_normals and ')' in line.lower() and len(line.lower()) < 6:
+            if processing_normals and ')' in line and len(line) < 6:
                 processing_normals = False
         
         return False
 
     def set_normal_count(self, normals_count: int) -> bool:
         for line_idx, line in enumerate(self.lines):
-            if "normals (" in line.lower():
+            if "normals (" in line:
                 parts = line.split(" ")
                 parts[2] = str(normals_count)
                 line = " ".join(parts)
@@ -653,16 +653,16 @@ class Shapefile(File):
         processing_normals = False
 
         for line_idx, line in enumerate(self.lines):
-            if 'normals (' in line.lower():
+            if 'normals (' in line:
                 processing_normals = True
 
-            if processing_normals and ')' in line.lower() and len(line.lower()) < 6:
+            if processing_normals and ')' in line and len(line) < 6:
                 processing_normals = False
                 self.lines[line_idx : line_idx] = [f"\t\tvector ( {round(normal.vec_x, 4)} {round(normal.vec_y, 4)} {round(normal.vec_z, 4)} )"]
                 self.set_normal_count(current_normal_idx + 1)
                 return current_normal_idx
 
-            if processing_normals and 'vector (' in line.lower():
+            if processing_normals and 'vector (' in line:
                 current_normal_idx += 1
 
         return None
@@ -673,11 +673,11 @@ class Shapefile(File):
         current_dlevel = -1
 
         for line_idx, line in enumerate(self.lines):
-            if "dlevel_selection (" in line.lower():
+            if "dlevel_selection (" in line:
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
-            if "sub_object (" in line.lower() and current_dlevel == lod_dlevel:
+            if "sub_object (" in line and current_dlevel == lod_dlevel:
                 subobject_idxs.append(current_subobject_idx)
                 current_subobject_idx += 1
 
@@ -702,23 +702,23 @@ class Shapefile(File):
         flags_in_trilist = []
 
         for line_idx, line in enumerate(self.lines):
-            if "dlevel_selection (" in line.lower():
+            if "dlevel_selection (" in line:
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
             if current_dlevel == lod_dlevel:
-                if "sub_object (" in line.lower():
+                if "sub_object (" in line:
                     current_subobject_idx += 1
                 
                 if current_subobject_idx == subobject_idx:
-                    if 'prim_state_idx (' in line.lower():
+                    if 'prim_state_idx (' in line:
                         parts = line.split(' ')
                         current_prim_state_idx = int(parts[2])
 
-                    if 'indexed_trilist (' in line.lower():
+                    if 'indexed_trilist (' in line:
                         processing_trilist = True
 
-                    if 'vertex_idxs (' in line.lower() or collecting_vertex_idxs:
+                    if 'vertex_idxs (' in line or collecting_vertex_idxs:
                         parts = line.replace('vertex_idxs', '').replace('(', '').replace(')', '').split()
                         if parts:
                             if not collecting_vertex_idxs:
@@ -727,7 +727,7 @@ class Shapefile(File):
                             vertex_idxs_in_trilist.extend(vertex_idxs)
                         collecting_vertex_idxs = not line.endswith(')')
 
-                    if 'normal_idxs (' in line.lower() or collecting_normal_idxs:
+                    if 'normal_idxs (' in line or collecting_normal_idxs:
                         parts = line.replace('normal_idxs', '').replace('(', '').replace(')', '').split()
                         if parts:
                             if not collecting_normal_idxs:
@@ -736,7 +736,7 @@ class Shapefile(File):
                             normal_idxs_in_trilist.extend(normal_idxs)
                         collecting_normal_idxs = not line.endswith(')')
 
-                    if 'flags (' in line.lower() or collecting_flags:
+                    if 'flags (' in line or collecting_flags:
                         parts = line.replace('flags', '').replace('(', '').replace(')', '').split()
                         if parts:
                             if not collecting_flags:
@@ -745,7 +745,7 @@ class Shapefile(File):
                             flags_in_trilist.extend(flags)
                         collecting_flags = not line.endswith(')')
 
-                    if processing_trilist and '\t)' in line.lower():
+                    if processing_trilist and '\t)' in line:
                         processing_trilist = False
 
                         indexed_trilist = IndexedTrilist(
@@ -798,23 +798,23 @@ class Shapefile(File):
                 normal_idxs_counts.append(int(len(indexed_trilist.vertex_idxs) / 3))
 
         for line_idx, line in enumerate(self.lines):
-            if "dlevel_selection (" in line.lower():
+            if "dlevel_selection (" in line:
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
             if current_dlevel == lod_dlevel:
-                if "sub_object (" in line.lower():
+                if "sub_object (" in line:
                     current_subobject_idx += 1
                 
                 if current_subobject_idx == subobject_idx:
-                    if "geometry_info (" in line.lower():
+                    if "geometry_info (" in line:
                         parts = line.split(" ")
                         parts[2] = str(sum(normal_idxs_counts))
                         parts[5] = str(sum(vertex_idxs_counts))
                         self.lines[line_idx] = " ".join(parts)
                         has_updated_geometry_info = True
 
-                    if "cullable_prims (" in line.lower():
+                    if "cullable_prims (" in line:
                         parts = line.split(" ")
                         num_primitives = int(parts[2])
                         from_idx = current_prim_total - 1
@@ -835,19 +835,19 @@ class Shapefile(File):
         vertexset_idx_to_update = -1
 
         for line_idx, line in enumerate(self.lines):
-            if "dlevel_selection (" in line.lower():
+            if "dlevel_selection (" in line:
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
             if current_dlevel == lod_dlevel:
-                if "sub_object (" in line.lower():
+                if "sub_object (" in line:
                     current_subobject_idx += 1
                 
                 if current_subobject_idx == subobject_idx:
-                    if "geometry_node (" in line.lower():
+                    if "geometry_node (" in line:
                         current_geometry_node_idx += 1
 
-                    if "cullable_prims (" in line.lower():
+                    if "cullable_prims (" in line:
                         parts = line.split()
                         current_prim_total += int(parts[2])
                         if current_prim_total > indexed_trilist._trilist_idx:
@@ -861,16 +861,16 @@ class Shapefile(File):
         vertexset_count_total = 0
 
         for line_idx, line in enumerate(self.lines):
-            if "dlevel_selection (" in line.lower():
+            if "dlevel_selection (" in line:
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
             if current_dlevel == lod_dlevel:
-                if "sub_object (" in line.lower():
+                if "sub_object (" in line:
                     current_subobject_idx += 1
                 
                 if current_subobject_idx == subobject_idx:
-                    if "vertex_set (" in line.lower():
+                    if "vertex_set (" in line:
                         parts = line.split(" ")
                         vertexset_idx = int(parts[2])
                         vertexset_startidx = int(parts[3])
@@ -904,37 +904,37 @@ class Shapefile(File):
         lines_to_remove = []
 
         for line_idx, line in enumerate(self.lines):
-            if "dlevel_selection (" in line.lower():
+            if "dlevel_selection (" in line:
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
             if current_dlevel == indexed_trilist._lod_dlevel:
-                if "sub_object (" in line.lower():
+                if "sub_object (" in line:
                     current_subobject_idx += 1
                 
                 if current_subobject_idx == indexed_trilist._subobject_idx:
-                    if 'prim_state_idx (' in line.lower():
+                    if 'prim_state_idx (' in line:
                         parts = line.split(' ')
                         current_prim_state_idx = int(parts[2])
 
-                    if 'indexed_trilist (' in line.lower():
+                    if 'indexed_trilist (' in line:
                         processing_trilist = True
                         current_trilist_idx += 1
                     
                     if current_trilist_idx == indexed_trilist._trilist_idx:
-                        if 'vertex_idxs (' in line.lower() or collecting_vertex_idxs:
+                        if 'vertex_idxs (' in line or collecting_vertex_idxs:
                             lines_to_remove.append(line_idx)
                             collecting_vertex_idxs = not line.endswith(')')
 
-                        if 'normal_idxs (' in line.lower() or collecting_normal_idxs:
+                        if 'normal_idxs (' in line or collecting_normal_idxs:
                             lines_to_remove.append(line_idx)
                             collecting_normal_idxs = not line.endswith(')')
 
-                        if 'flags (' in line.lower() or collecting_flags:
+                        if 'flags (' in line or collecting_flags:
                             lines_to_remove.append(line_idx)
                             collecting_flags = not line.endswith(')')
 
-                        if processing_trilist and '\t)' in line.lower():
+                        if processing_trilist and '\t)' in line:
                             processing_trilist = False
 
         if lines_to_remove:
@@ -1012,17 +1012,17 @@ class Shapefile(File):
         normals = self.get_normals()
 
         for line_idx, line in enumerate(self.lines):
-            if "dlevel_selection (" in line.lower():
+            if "dlevel_selection (" in line:
                 parts = line.split()
                 current_dlevel = int(parts[2])
 
             if current_dlevel == lod_dlevel:
-                if "sub_object (" in line.lower():
+                if "sub_object (" in line:
                     current_subobject_idx += 1
                     current_vertex_idx = 0
                 
                 if current_subobject_idx == subobject_idx:
-                    if "vertex (" in line.lower():
+                    if "vertex (" in line:
                         parts = ' '.join(self.lines[line_idx : line_idx + 2]).split(' ')
                         vertex = Vertex(
                             vertex_idx=current_vertex_idx,
@@ -1045,16 +1045,16 @@ class Shapefile(File):
         current_subobject_idx = -1
 
         for line_idx, line in enumerate(self.lines):
-            if "dlevel_selection (" in line.lower():
+            if "dlevel_selection (" in line:
                 parts = line.split()
                 current_dlevel = int(parts[2])
 
             if current_dlevel == lod_dlevel:
-                if "sub_object (" in line.lower():
+                if "sub_object (" in line:
                     current_subobject_idx += 1
                 
                 if current_subobject_idx == subobject_idx:
-                    if "vertices (" in line.lower():
+                    if "vertices (" in line:
                         parts = line.split(' ')
                         return int(parts[2])
 
@@ -1085,17 +1085,17 @@ class Shapefile(File):
         normals = self.get_normals()
 
         for line_idx, line in enumerate(self.lines):
-            if "dlevel_selection (" in line.lower():
+            if "dlevel_selection (" in line:
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
             if current_dlevel == lod_dlevel:
-                if "sub_object (" in line.lower():
+                if "sub_object (" in line:
                     current_subobject_idx += 1
                     current_vertex_idx = 0
                 
                 if current_subobject_idx == subobject_idx:
-                    if "vertex (" in line.lower():
+                    if "vertex (" in line:
                         if current_vertex_idx == vertex_idx:
                             parts = ' '.join(self.lines[line_idx : line_idx + 2]).split(' ')
                             vertex = Vertex(
@@ -1193,19 +1193,19 @@ class Shapefile(File):
         )
 
         for line_idx, line in enumerate(self.lines):
-            if "dlevel_selection (" in line.lower():
+            if "dlevel_selection (" in line:
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
             if current_dlevel == lod_dlevel:
-                if "sub_object (" in line.lower():
+                if "sub_object (" in line:
                     current_subobject_idx += 1
                 
                 if current_subobject_idx == subobject_idx:
-                    if 'vertices (' in line.lower():
+                    if 'vertices (' in line:
                         processing_vertices = True
 
-                    if processing_vertices and ')' in line.lower():
+                    if processing_vertices and ')' in line:
                         if current_vertex_idx == new_vertex_idx or 'vert' not in self.lines[line_idx - 1].lower():
                             processing_vertices = False
                             new_count = self.get_vertices_count(lod_dlevel, subobject_idx) + 1
@@ -1217,7 +1217,7 @@ class Shapefile(File):
                             self.set_vertices_count(lod_dlevel, subobject_idx, new_count)
                             return new_vertex
                     
-                    if processing_vertices and 'vertex (' in line.lower():
+                    if processing_vertices and 'vertex (' in line:
                         current_vertex_idx += 1
 
         return None
@@ -1227,16 +1227,16 @@ class Shapefile(File):
         current_subobject_idx = -1
 
         for line_idx, line in enumerate(self.lines):
-            if "dlevel_selection (" in line.lower():
+            if "dlevel_selection (" in line:
                 parts = line.split(' ')
                 current_dlevel = int(parts[2])
 
             if current_dlevel == lod_dlevel:
-                if "sub_object (" in line.lower():
+                if "sub_object (" in line:
                     current_subobject_idx += 1
                 
                 if current_subobject_idx == subobject_idx:
-                    if "vertices (" in line.lower():
+                    if "vertices (" in line:
                         parts = line.split(" ")
                         parts[2] = str(vertices_count)
                         line = " ".join(parts)
