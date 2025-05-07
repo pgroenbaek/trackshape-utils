@@ -28,6 +28,7 @@ import heapq
 import shutil
 import pathlib
 import numpy as np
+from collections import defaultdict
 from scipy.interpolate import splprep, splev
 from scipy.spatial import KDTree
 from typing import List, Dict, Optional, Callable
@@ -688,17 +689,19 @@ class Shapefile(File):
         raise NotImplementedError()
 
     def get_indexed_trilists_in_subobject(self, lod_dlevel: int, subobject_idx: int) -> Dict[int, List[IndexedTrilist]]:
-        indexed_trilists = {}
+        indexed_trilists = defaultdict(list)
         current_dlevel = -1
         current_subobject_idx = -1
         current_trilist_idx = 0
         current_prim_state_idx = 0
+        
         processing_trilist = False
         collecting_vertex_idxs = False
-        vertex_idxs_in_trilist = []
         collecting_normal_idxs = False
-        normal_idxs_in_trilist = []
         collecting_flags = False
+
+        vertex_idxs_in_trilist = []
+        normal_idxs_in_trilist = []
         flags_in_trilist = []
 
         for line_idx, line in enumerate(self.lines):
@@ -762,10 +765,7 @@ class Shapefile(File):
                     prim_state_idx=current_prim_state_idx
                 )
 
-                if current_prim_state_idx not in indexed_trilists:
-                    indexed_trilists[current_prim_state_idx] = [indexed_trilist]
-                else:
-                    indexed_trilists[current_prim_state_idx].append(indexed_trilist)
+                indexed_trilists[current_prim_state_idx].append(indexed_trilist)
                 
                 current_trilist_idx += 1
                 vertex_idxs_in_trilist = []
@@ -788,6 +788,7 @@ class Shapefile(File):
         current_geometry_node_idx = -1
         current_prim_total = 1
         vertexset_idx_to_update = -1
+
         has_updated_geometry_info = False
         has_updated_cullable_prims = False
 
@@ -913,10 +914,12 @@ class Shapefile(File):
         current_subobject_idx = -1
         current_trilist_idx = -1
         current_prim_state_idx = -1
+        
         processing_trilist = False
         collecting_vertex_idxs = False
         collecting_normal_idxs = False
         collecting_flags = False
+
         lines_to_remove = []
 
         for line_idx, line in enumerate(self.lines):
