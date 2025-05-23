@@ -51,7 +51,7 @@ if __name__ == "__main__":
         new_sfile = sfile.copy(new_filename=new_sfile_name, new_directory=shape_processed_path)
         new_sfile.decompress(ffeditc_path)
 
-        trackcenters = tsu.generate_trackcenters_from_tsection(shape_name=tsection_sfile_name, num_points_per_meter=12)
+        trackcenters = tsu.generate_trackcenters_from_global_tsection(shape_name=tsection_sfile_name, num_points_per_meter=12)
 
         lod_dlevel = 400
         subobject_idx = 0
@@ -134,7 +134,7 @@ if __name__ == "__main__":
                                 with open('warnings.txt', 'a') as f:
                                     f.write(f'Railsides: {sfile_name} (distance_from_center = {distance_from_center})\n')
             
-            trackcenters = tsu.generate_trackcenters_from_tsection(shape_name=tsection_sfile_name, num_points_per_meter=2)
+            trackcenters = tsu.generate_trackcenters_from_global_tsection(shape_name=tsection_sfile_name, num_points_per_meter=2)
             
             print(f"\tSorting railside vertices")
             distances = {}
@@ -188,7 +188,7 @@ if __name__ == "__main__":
                         quad = (bottom_close, top_close, top_far, bottom_far)
                         railside_quads[side][group_idx].append(quad)
 
-            trackcenters = tsu.generate_trackcenters_from_tsection(shape_name=tsection_sfile_name, num_points_per_meter=7)
+            trackcenters = tsu.generate_trackcenters_from_global_tsection(shape_name=tsection_sfile_name, num_points_per_meter=7)
 
             # Creation of ATracks-like rail sides and rail tops.
             # New vertices are added, and at the end their values are changed according to the contents of 'update_vertex_data'.
