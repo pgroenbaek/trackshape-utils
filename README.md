@@ -9,7 +9,7 @@ The Python module doesn’t offer much handholding, so expect things to break if
 
 Although the module is named trackshape-utils, it has the capability to edit, remove, and build new geometry in any kind of MSTS/ORTS shape file - not just track shapes.
 
-The module is named as such because it includes utility functions that make working with track shapes, in particular, especially easy.
+The module is named as such because it includes utility functions that make working with track shapes especially easy.
 
 ## Installation
 
@@ -44,7 +44,7 @@ To match shapes or files in a directory, you can use the `find_directory_files` 
 
 The `load_shape` and `load_file` functions allow you to load shapes and other types of files, respectively. The file handle object returned by `load_file` only supports replacing text, copying, and saving the file. In contrast, the object returned by `load_shape` allows you to perform many additional operations specific to shape files.
 
-No changes made to files are saved to disk until `save` is called.
+No changes made are saved to disk until `save` is called.
 
 ```python
 import trackshapeutils as tsu
@@ -71,11 +71,11 @@ for shape_name in shape_names:
 
 ### Compressing/decompressing shapes
 
-Shape files are very commonly compressed. This requires the use of the **ffeditc\_unicode.exe** binary to decompress them before any modifications can be made. If you attempt to modify a compressed shape file, the Python module will notify you.
+Shape files loaded are typically compressed. Decompressing them requires the use of the **ffeditc\_unicode.exe** binary. This must be done before any modifications can be made. You will get an error if you attempt to modify a compressed shape file.
 
-The **ffeditc\_unicode.exe** binary can be found in the UTILS folder of an MSTS installation. If you do not have an MSTS CD, you can instead use the [FFEDIT\_Sub v1.2 utility](https://www.trainsim.com/forums/filelib/search-fileid?fid=87969) by Ged Saunders to manually compress or decompress the shape, rather than using the `compress` and `decompress` functions provided in this Python module.
+The **ffeditc\_unicode.exe** binary can be found in the UTILS folder of an MSTS installation. If you do not have an MSTS CD, you can instead use the [FFEDIT\_Sub v1.2 utility](https://www.trainsim.com/forums/filelib/search-fileid?fid=87969) by Ged Saunders to manually compress or decompress the shape before loading the shape, instead of using the `compress` and `decompress` functions provided in this Python module.
 
-Because the `compress` function uses the external **ffeditc\_unicode.exe** binary, you will need to use the `save` function to write any modifications made to the shape to disk beforehand. Attempting to save the file after compression will result in an error.
+Because the `compress` function uses the external **ffeditc\_unicode.exe** binary, you will need to use the `save` function to write any modifications made to the shape to disk before compressing it. Otherwise the non-modified shape stored on disk will be compressed, and attempting to save the changed shape after compression will result in an error.
 
 ```python
 import trackshapeutils as tsu
@@ -146,11 +146,11 @@ new_sfile.save()
 
 ### Modification of vertices
 
-Working with vertices using this Python module requires that you first obtain them through the shape file handle returned by `load_shape`.
+Working with vertices requires that you first obtain them through the shape file handle returned by `load_shape`.
 
 There are two ways to do this. You can use `get_vertices_in_subobject`, which requires the LOD distance level and subobject index, or you can use `get_vertices_by_prim_state`, which requires the LOD distance level and a prim state.
 
-The exact values for the LOD distance level, subobject index, and prim state name vary depending on the shape. You will need to inspect the shape file in a text editor to find the values manually.
+The exact values for the LOD distance level, subobject index, and prim state vary depending on the shape. You will need to inspect the shape file in a text editor to find the values manually.
 
 Once you have made modifications to a vertex, you can apply the changes by using the `update_vertex` function.
 
@@ -189,9 +189,9 @@ new_sfile.save()
 
 ### Addition of new vertices and triangles
 
-New vertices can be added using the `add_vertex_to_subobject` function. You are required to supply an indexed trilist to this function. These can be obtained from either `get_indexed_trilists_in_subobject` or `get_indexed_trilists_in_subobject_by_prim_state`. You will need to determine which trilist is appropriate beforehand, as the texture used for the new vertices is determined by the prim state index the trilist is linked to.
+New vertices can be added using the `add_vertex_to_subobject` function. You are required to supply an indexed trilist to this function to associate the vertices with it. The trilist objects can be obtained from either `get_indexed_trilists_in_subobject` or `get_indexed_trilists_in_subobject_by_prim_state`. The texture used for the new vertices is determined by the prim state index the trilist is linked to.
 
-Triangles can be added between vertices using the `insert_triangle_between` function. This function also requires an indexed trilist, along with three vertices. All the vertices must be part of that trilist in order to connect them with a triangle.
+Triangles can be added between vertices using the `insert_triangle_between` function. This function also requires an indexed trilist, along with three vertices. All the vertices must be associated with that trilist in order to connect them with a triangle.
 
 ```python
 import trackshapeutils as tsu
@@ -274,13 +274,13 @@ Trackcenters make it easy to work with track shapes using the same generalized s
 
 The trackcenters can be loaded using the `generate_trackcenters_from_global_tsection` function, either from the global *tsection.dat* Build \#60 included with the Python module or from a file you provide. The function returns a list of trackcenters, each corresponding to a parallel track. For single-track sections, there will be only one item in the list.
 
-You can also use `generate_trackcenters_from_local_tsection` to load data from a local *tsection.dat* file if you want to modify dynamic track section shapes generated with DynaTrax.
+You can also use `generate_trackcenters_from_local_tsection` to load data from a local *tsection.dat* file if you want to for example modify dynamic track section shapes generated with DynaTrax.
 
 If needed, trackcenters can also be created manually using `generate_curve_centerpoints` and `generate_straight_centerpoints`. The functions that load from *tsection.dat* files use these internally.
 
 The example below shows how to use `find_closest_trackcenter`, `find_closest_centerpoint`, and `signed_distance_between` to calculate the distance from a vertex to the nearest trackcenter. This is essential for generalizing your scripting logic. By using the distance from the center, you can easily determine which part of the track a vertex belongs to, regardless of whether the track section is curved, straight, or has multiple parallel tracks.
 
-To calculate new vertex positions relative to the trackcenter, you can use `get_new_position_from_trackcenter` to adjust the distance from the center, and `get_new_position_along_trackcenter` to adjust the position along the track.
+To calculate new vertex positions relative to the trackcenter, you can use `get_new_position_from_trackcenter` to adjust the distance from the center, and `get_new_position_along_trackcenter` to adjust the position along the trackcenter.
 
 
 ```python
