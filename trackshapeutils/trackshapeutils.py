@@ -683,10 +683,6 @@ class Shapefile(File):
                 current_subobject_idx += 1
 
         return subobject_idxs
-    
-    def get_prim_states_in_subobject(self, lod_dlevel: int, subobject_idx: int) -> List[PrimState]:
-        # TODO implement
-        raise NotImplementedError()
 
     def get_indexed_trilists_in_subobject(self, lod_dlevel: int, subobject_idx: int) -> Dict[int, List[IndexedTrilist]]:
         indexed_trilists = defaultdict(list)
@@ -1149,12 +1145,6 @@ class Shapefile(File):
                 current_vertex_idx += 1
 
         return None
-
-    def get_prim_states_for_vertex(self, vertex: Vertex):
-        prim_states = self.get_prim_states()
-        indexed_trilists = self.get_indexed_trilists_in_subobject(find_vertex_dlevel, find_vertex_subobject_idx)
-        # TODO implement
-        raise NotImplementedError()
 
     def get_connected_vertex_idxs(self, indexed_trilist: IndexedTrilist, vertex: Vertex) -> List[int]:
         find_vertex_idx = vertex._vertex_idx

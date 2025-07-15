@@ -2,8 +2,8 @@ import os
 import trackshapeutils as tsu
 
 if __name__ == "__main__":
-    shape_load_path = "E:/NR_Bahntrasse_2.1/NR_Bahntrasse_2.1/NR_WallEmb/Processed"
-    shape_processed_path = "E:/NR_Bahntrasse_2.1/NR_Bahntrasse_2.1/NR_WallEmb/Processed"
+    shape_load_path = "./examples/data/"
+    shape_processed_path = "./examples/data/"
     ffeditc_path = "./ffeditc_unicode.exe"
     match_files = ["*.s"]
     ignore_files = ["*.sd"]
