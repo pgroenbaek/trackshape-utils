@@ -73,7 +73,7 @@ for shape_name in shape_names:
 
 Shape files that are loaded are typically compressed. Decompressing them requires the use of the **ffeditc\_unicode.exe** binary. This must be done before any modifications can be made. You will receive an error if you attempt to modify a compressed shape file.
 
-The **ffeditc\_unicode.exe** binary can be found in the UTILS folder of an MSTS installation. If you do not have an MSTS CD, you can instead use the [FFEDIT\_Sub v1.2 utility](https://www.trainsim.com/forums/filelib/search-fileid?fid=87969) by Ged Saunders to manually decompress the shape before loading it, instead of using the `decompress` function provided in this Python module.
+The **ffeditc\_unicode.exe** binary can be found in the UTILS folder of an MSTS installation. If you do not have an MSTS CD to make an installation, you can instead use the [FFEDIT\_Sub v1.2 utility](https://www.trainsim.com/forums/filelib/search-fileid?fid=87969) by Ged Saunders to manually decompress the shape before loading it, instead of using the `decompress` function provided in this Python module.
 
 Because the `compress` function uses the external **ffeditc\_unicode.exe** binary, you will need to use the `save` function to write any modifications to disk before compressing the shape. Otherwise, the unmodified version stored on disk will be compressed, and attempting to save changes after compression will result in an error.
 
@@ -189,7 +189,9 @@ new_sfile.save()
 
 ### Addition of new vertices and triangles
 
-New vertices can be added using the `add_vertex_to_subobject` function. You are required to supply an indexed trilist to this function to associate the vertices with it. The trilist objects can be obtained from either `get_indexed_trilists_in_subobject` or `get_indexed_trilists_in_subobject_by_prim_state`. The texture used for the new vertices is determined by the prim state index the trilist is linked to.
+New vertices can be added using the `add_vertex_to_subobject` function. You are required to supply an indexed trilist to this function to associate the vertices with it.
+
+The trilist objects can be obtained from either `get_indexed_trilists_in_subobject` or `get_indexed_trilists_in_subobject_by_prim_state`. The texture used for the new vertices is determined by the prim state index the trilist is linked to.
 
 Triangles can be added between vertices using the `insert_triangle_between` function. This function also requires an indexed trilist, along with three vertices. All the vertices must be associated with that trilist in order to connect them with a triangle.
 
@@ -274,11 +276,13 @@ Trackcenters make it easy to work with track shapes using the same generalized s
 
 The trackcenters can be loaded using the `generate_trackcenters_from_global_tsection` function, either from the global *tsection.dat* Build \#60 included with the Python module or from a file you provide. The function returns a list of trackcenters, each corresponding to a parallel track. For single-track sections, there will be only one item in the list.
 
-You can also use `generate_trackcenters_from_local_tsection` to load data from a local *tsection.dat* file if you want to for example modify dynamic track section shapes generated with DynaTrax.
+You can also use `generate_trackcenters_from_local_tsection` to load data from a local *tsection.dat* file if you want to, for example, modify dynamic track section shapes generated with DynaTrax.
 
 If needed, trackcenters can also be created manually using `generate_curve_centerpoints` and `generate_straight_centerpoints`. The functions that load from *tsection.dat* files use these internally.
 
-The example below shows how to use `find_closest_trackcenter`, `find_closest_centerpoint`, and `signed_distance_between` to calculate the distance from a vertex to the nearest trackcenter. This is essential for generalizing your scripting logic. By using the distance from the center, you can easily determine which part of the track a vertex belongs to, regardless of whether the track section is curved, straight, or has multiple parallel tracks.
+The example below shows how to use `find_closest_trackcenter`, `find_closest_centerpoint`, and `signed_distance_between` to calculate the distance from a vertex to the nearest trackcenter. This is essential for generalizing your scripting logic. 
+
+By using the distance from the center, you can easily determine which part of the track a vertex belongs to, regardless of whether the track section is curved, straight, or has multiple parallel tracks.
 
 To calculate new vertex positions relative to the trackcenter, you can use `get_new_position_from_trackcenter` to adjust the distance from the center, and `get_new_position_along_trackcenter` to adjust the position along the trackcenter.
 
