@@ -376,7 +376,7 @@ This script adjusts the XTracks-style railheads in the NR_Emb shapes to match th
 
 <!-- ![Before and after running the script](./examples/images/change_nrembrails_to_atracksrails.png) -->
 
-The edited shapes are available for download at [trainsim.com](https://www.trainsim.com/forums/filelib/search-fileid?fid=90029).
+The edited NR_Emb shapes are available for download at [trainsim.com](https://www.trainsim.com/forums/filelib/search-fileid?fid=90029).
 
 ### Copying overhead wire from one shape to another ([script](./examples/make_ohw_dblslip7_5d.py))
 
@@ -390,7 +390,7 @@ The script handles remapping the points and normals to align with the internal c
 
 <!-- ![Before and after running the script](./examples/images/make_ohw_dblslip7_5d.png) -->
 
-The edited shapes are available for download at [the-train.de](https://the-train.de/downloads/entry/11283-dbtracks-doppelte-kreuzungsweiche-dkw-7-5/).
+The edited DblSlip7\_5d shapes are available for download at [the-train.de](https://the-train.de/downloads/entry/11283-dbtracks-doppelte-kreuzungsweiche-dkw-7-5/).
 
 ### Additional examples
 
