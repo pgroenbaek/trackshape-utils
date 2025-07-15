@@ -313,7 +313,7 @@ for subobject_idx in subobject_idxs:
 
     for vertex in vertices_in_subobject:
         # Calculate distance from the closest track center to the vertex point in the xz-plane.
-        closest_tratrackckcenter = tsu.find_closest_trackcenter(vertex.point, trackcenters, plane="xz")
+        closest_trackckcenter = tsu.find_closest_trackcenter(vertex.point, trackcenters, plane="xz")
         closest_centerpoint = tsu.find_closest_centerpoint(vertex.point, closest_trackcenter, plane="xz")
         distance_from_center = tsu.signed_distance_between(vertex.point, closest_centerpoint, plane="xz")
 
