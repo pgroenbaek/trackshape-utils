@@ -71,11 +71,11 @@ for shape_name in shape_names:
 
 ### Compressing/decompressing shapes
 
-Shape files loaded are typically compressed. Decompressing them requires the use of the **ffeditc\_unicode.exe** binary. This must be done before any modifications can be made. You will get an error if you attempt to modify a compressed shape file.
+Shape files that are loaded are typically compressed. Decompressing them requires the use of the **ffeditc\_unicode.exe** binary. This must be done before any modifications can be made. You will receive an error if you attempt to modify a compressed shape file.
 
-The **ffeditc\_unicode.exe** binary can be found in the UTILS folder of an MSTS installation. If you do not have an MSTS CD, you can instead use the [FFEDIT\_Sub v1.2 utility](https://www.trainsim.com/forums/filelib/search-fileid?fid=87969) by Ged Saunders to manually compress or decompress the shape before loading the shape, instead of using the `compress` and `decompress` functions provided in this Python module.
+The **ffeditc\_unicode.exe** binary can be found in the UTILS folder of an MSTS installation. If you do not have an MSTS CD, you can instead use the [FFEDIT\_Sub v1.2 utility](https://www.trainsim.com/forums/filelib/search-fileid?fid=87969) by Ged Saunders to manually decompress the shape before loading it, instead of using the `decompress` function provided in this Python module.
 
-Because the `compress` function uses the external **ffeditc\_unicode.exe** binary, you will need to use the `save` function to write any modifications made to the shape to disk before compressing it. Otherwise the non-modified shape stored on disk will be compressed, and attempting to save the changed shape after compression will result in an error.
+Because the `compress` function uses the external **ffeditc\_unicode.exe** binary, you will need to use the `save` function to write any modifications to disk before compressing the shape. Otherwise, the unmodified version stored on disk will be compressed, and attempting to save changes after compression will result in an error.
 
 ```python
 import trackshapeutils as tsu
