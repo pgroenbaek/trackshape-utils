@@ -87,7 +87,7 @@ for shape_name in shape_names:
 
 Shape files that are loaded are typically compressed. Decompressing them requires the use of the **ffeditc\_unicode.exe** binary. This must be done before any modifications can be made. You will receive an error if you attempt to modify a compressed shape file.
 
-The **ffeditc\_unicode.exe** binary can be found in the UTILS folder of an MSTS installation. If you do not have an MSTS CD to make an installation, you can instead use the [FFEDIT\_Sub v1.2 utility](https://www.trainsim.com/forums/filelib/search-fileid?fid=87969) by Ged Saunders to manually decompress the shape before loading it, instead of using the `decompress` function provided in this Python module.
+The **ffeditc\_unicode.exe** binary can be found in the UTILS folder of an MSTS installation. If you do not have an MSTS CD to make an installation, you can instead use the [FFEDIT\_Sub v1.2 utility](https://www.trainsim.com/forums/filelib/search-fileid?fid=87969) by Ged Saunders to manually decompress the shape before loading it, rather than using the `decompress` function provided in this Python module.
 
 Because the `compress` function uses the external **ffeditc\_unicode.exe** binary, you will need to use the `save` function to write any modifications to disk before compressing the shape. Otherwise, the unmodified version stored on disk will be compressed, and attempting to save changes after compression will result in an error.
 
