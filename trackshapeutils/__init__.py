@@ -5,7 +5,7 @@ This module provides various utility functions for working with track shape file
 including file handling, shape processing, and geometric calculations for track 
 center points and curves. It includes functions for:
 
-- Shape file processing (finding track shape files, compression, and decompression)
+- Shape file processing (finding shape files, compression, and decompression)
 - String and text manipulation (case-sensitive and case-insensitive replacement)
 - Geometric calculations for track center points (straight and curved track segments)
 - Configuring track centers based on the global/local tsection.dat

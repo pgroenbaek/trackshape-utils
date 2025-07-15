@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="trackshapeutils",
-    version="0.3.5",
+    version="0.4.0",
     packages=find_packages(),
     install_requires=[
         'numpy',
@@ -13,7 +13,7 @@ setup(
     },
     author="Peter Grønbæk Andersen",
     author_email="peter@grnbk.io",
-    description="Collection of utilities to modify existing MSTS/ORTS track shapes",
+    description="A collection of experimental utilities for modifying existing MSTS/ORTS shapes.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/pgroenbaek/trackshape-utils",
