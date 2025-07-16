@@ -33,7 +33,7 @@ pip install path/to/trackshape_utils‑<version>‑py3‑none‑any.whl
 Replace `<version>` with the actual version number in the filename. For example:
 
 ```sh
-pip install dist/trackshape_utils-0.4.0-py3-none-any.whl
+pip install dist/trackshape_utils-0.4.0b0-py3-none-any.whl
 ```
 
 ## Usage
