@@ -37,7 +37,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-__version__ = '0.4.0'
+__version__ = '0.4.0b0'
 __all__ = [
     'find_directory_files', 'load_file', 'load_shape',
     'generate_empty_centerpoints', 'generate_straight_centerpoints', 'generate_curve_centerpoints',
