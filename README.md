@@ -446,6 +446,13 @@ commands = pytest
 
 Modify `envlist` to match the Python versions you want to support.
 
+## Roadmap
+
+There will not be any additional features added to the module in its current form.
+
+First, a proper method for reading shapes to and from a Python data structure needs to be fully implemented. This will also significantly improve performance compared to the current implementation.
+
+Once that is complete, new features such as adding textures and other advanced operations can be introduced, as they require changes in many parts of the shape file.
 
 ## License
 
