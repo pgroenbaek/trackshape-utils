@@ -148,8 +148,8 @@ def generate_trackcenters_from_global_tsection(
     with open(tsection_file_path, "r", encoding=_detect_encoding(tsection_file_path)) as f:
         tsection_text = f.read()
 
-        trackshape_pattern = re.compile(r"TrackShape \( \d+\n(.*?)\n\)", re.DOTALL)
-        sectionidx_pattern = re.compile(r"SectionIdx \( ([^)]*) \)")
+        trackshape_pattern = re.compile(r"TrackShape\s*\(\s*\d+\s*\n(.*?)\n\s*\)", re.DOTALL)
+        sectionidx_pattern = re.compile(r"SectionIdx\s*\(\s*([^\)]*?)\s*\)")
 
         trackshape_matches = trackshape_pattern.findall(tsection_text)
     
