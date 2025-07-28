@@ -4,22 +4,18 @@
 [![Python 3.6+](https://img.shields.io/badge/Python-3.6%2B-blue?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![License GNU GPL v3](https://img.shields.io/badge/License-%20%20GNU%20GPL%20v3%20-lightgrey?style=flat&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NDAgNTEyIj4KICA8IS0tIEZvbnQgQXdlc29tZSBGcmVlIDYuNy4yIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlL2ZyZWUgQ29weXJpZ2h0IDIwMjUgRm9udGljb25zLCBJbmMuIC0tPgogIDxwYXRoIGZpbGw9IndoaXRlIiBkPSJNMzg0IDMybDEyOCAwYzE3LjcgMCAzMiAxNC4zIDMyIDMycy0xNC4zIDMyLTMyIDMyTDM5OC40IDk2Yy01LjIgMjUuOC0yMi45IDQ3LjEtNDYuNCA1Ny4zTDM1MiA0NDhsMTYwIDBjMTcuNyAwIDMyIDE0LjMgMzIgMzJzLTE0LjMgMzItMzIgMzJsLTE5MiAwLTE5MiAwYy0xNy43IDAtMzItMTQuMy0zMi0zMnMxNC4zLTMyIDMyLTMybDE2MCAwIDAtMjk0LjdjLTIzLjUtMTAuMy00MS4yLTMxLjYtNDYuNC01Ny4zTDEyOCA5NmMtMTcuNyAwLTMyLTE0LjMtMzItMzJzMTQuMy0zMiAzMi0zMmwxMjggMGMxNC42LTE5LjQgMzcuOC0zMiA2NC0zMnM0OS40IDEyLjYgNjQgMzJ6bTU1LjYgMjg4bDE0NC45IDBMNTEyIDE5NS44IDQzOS42IDMyMHpNNTEyIDQxNmMtNjIuOSAwLTExNS4yLTM0LTEyNi03OC45Yy0yLjYtMTEgMS0yMi4zIDYuNy0zMi4xbDk1LjItMTYzLjJjNS04LjYgMTQuMi0xMy44IDI0LjEtMTMuOHMxOS4xIDUuMyAyNC4xIDEzLjhsOTUuMiAxNjMuMmM1LjcgOS44IDkuMyAyMS4xIDYuNyAzMi4xQzYyNy4yIDM4MiA1NzQuOSA0MTYgNTEyIDQxNnpNMTI2LjggMTk1LjhMNTQuNCAzMjBsMTQ0LjkgMEwxMjYuOCAxOTUuOHpNLjkgMzM3LjFjLTIuNi0xMSAxLTIyLjMgNi43LTMyLjFsOTUuMi0xNjMuMmM1LTguNiAxNC4yLTEzLjggMjQuMS0xMy44czE5LjEgNS4zIDI0LjEgMTMuOGw5NS4yIDE2My4yYzUuNyA5LjggOS4zIDIxLjEgNi43IDMyLjFDMjQyIDM4MiAxODkuNyA0MTYgMTI2LjggNDE2UzExLjcgMzgyIC45IDMzNy4xeiIvPgo8L3N2Zz4=&logoColor=%23ffffff)](/LICENSE)
 
-A collection of experimental utilities for modifying existing MSTS/ORTS shapes. Things are subject to change and may not always work as expected.
+A collection of utilities for modifying existing MSTS/ORTS track shapes. 
 
-The Python module doesn’t offer much handholding, so expect things to break if you're unfamiliar with the shape format or unsure of what you're doing. Be sure to keep backups of whatever you're working on.
-
-Although the module is named trackshape-utils, it has the capability to edit, remove, and build new geometry in any kind of MSTS/ORTS shape file - not just track shapes.
-
-The module is named as such because it includes utility functions that make working with track shapes especially easy.
+See also:
+- [shapeio](https://github.com/pgroenbaek/shapeio) - provides functions to decode shapes from text files into Python objects and to encode them back into text file format.
+- [shapemod](https://github.com/pgroenbaek/shapemod) - provides functions for modifying shapes while keeping them error-free and usable in MSTS/ORTS.
 
 ## Installation
 
-### Install from source
+### Install from PyPI
 
 ```sh
-git clone https://github.com/pgroenbaek/trackshape-utils.git
-cd trackshape-utils
-pip install --upgrade .
+pip install --upgrade trackshapeutils
 ```
 
 ### Install from wheel
@@ -33,257 +29,48 @@ pip install path/to/trackshape_utils‑<version>‑py3‑none‑any.whl
 Replace `<version>` with the actual version number in the filename. For example:
 
 ```sh
-pip install dist/trackshape_utils-0.4.0b0-py3-none-any.whl
+pip install dist/trackshape_utils-0.5.0b0-py3-none-any.whl
+```
+
+### Install from source
+
+```sh
+git clone https://github.com/pgroenbaek/trackshape-utils.git
+pip install --upgrade ./trackshape-utils
 ```
 
 ## Usage
 
-This is how you import the Python module in a script after it has been installed on your system.
+See shapeio for loading shapes into Python
 
-```python
-import trackshapeutils as tsu
-```
+### Loading trackcenters
 
-To list the functions and classes available in the module:
+#### From the included global tsection.dat
 
-```python
-print(f"Available functions and classes:")
-for item in tsu.__all__:
-    if callable(getattr(tsu, item)) and not item.startswith("_"):
-        print(f"- {item}")
-```
+#### From your own global tsection.dat
 
-### Matching shapes/files in a directory
+#### From a local tsection.dat
 
-To match shapes or files in a directory, you can use the `find_directory_files` function. It takes the directory to search, along with two lists of strings used for matches and ignores, respectively. Both lists support the use of wildcards.
 
-The `load_shape` and `load_file` functions allow you to load shapes and other types of files, respectively. The file handle object returned by `load_file` only supports replacing text, copying, and saving the file. In contrast, the object returned by `load_shape` allows you to perform many additional operations specific to shape files.
+### Manual creation of trackcenters
 
-No changes made are saved to disk until `save` is called.
 
-```python
-import trackshapeutils as tsu
 
-shape_load_path = "./examples/data"
-match_shapes = ["DB1s_*.s"]
-ignore_shapes = ["*Tun*", "*Pnt*", "*Frog*"]
+### Combining trackcenters
 
-shape_names = tsu.find_directory_files(shape_load_path, match_shapes, ignore_shapes)
-for shape_name in shape_names:
-    sfile = tsu.load_shape(shape_name, shape_load_path)
 
-    # Do stuff to the shape.
+### Calculating distance to trackcenter
 
-    sfile.save()
 
-    sdfile_name = shape_name.replace(".s", ".sd")
-    sdfile = tsu.load_file(sdfile_name, file_load_path)
+### Calculating new positions
 
-    # Do stuff to the .sd file.
+#### Perpendicular to a trackcenter
 
-    sdfile.save()
-```
+#### Along the length of a trackcenter
 
-### Compressing/decompressing shapes
 
-Shape files that are loaded are typically compressed. Decompressing them requires the use of the **ffeditc\_unicode.exe** binary. This must be done before any modifications can be made. You will receive an error if you attempt to modify a compressed shape file.
 
-The **ffeditc\_unicode.exe** binary can be found in the UTILS folder of an MSTS installation. If you do not have an MSTS CD to make an installation, you can instead use the [FFEDIT\_Sub v1.2 utility](https://www.trainsim.com/forums/filelib/search-fileid?fid=87969) by Ged Saunders to manually decompress the shape before loading it, rather than using the `decompress` function provided in this Python module.
 
-Because the `compress` function uses the external **ffeditc\_unicode.exe** binary, you will need to use the `save` function to write any modifications to disk before compressing the shape. Otherwise, the unmodified version stored on disk will be compressed, and attempting to save changes after compression will result in an error.
-
-```python
-import trackshapeutils as tsu
-
-ffeditc_path = "./ffeditc_unicode.exe"
-shape_load_path = "./examples/data"
-
-sfile_name = 'DB1s_a2t500r20d.s'
-
-sfile = tsu.load_shape(sfile_name, shape_load_path)
-sfile.decompress(ffeditc_path)
-
-# Do stuff.
-
-sfile.save()
-sfile.compress(ffeditc_path)
-```
-
-### Copying shapes/files on disk
-
-Copies can be made of both shape files and other files using the `copy` function. You must provide either a new filename, a new directory, or both.
-
-Using the `copy` function creates a new copy of the file on disk and also returns a new file handle object for the copied file.
-
-```python
-import trackshapeutils as tsu
-
-shape_load_path = "./examples/data"
-shape_processed_path = "./examples/data/processed"
-
-sfile_name = 'DB1s_a2t500r20d.s'
-new_sfile_name = 'DB1s_a2t500r20d_copied.s'
-
-sfile = tsu.load_shape(sfile_name, shape_load_path)
-new_sfile = sfile.copy(new_filename=new_sfile_name, new_directory=shape_processed_path)
-
-# Do stuff with the copied shape file.
-
-new_sfile.save()
-```
-
-### Changing textures
-
-Text can be replaced in both shape files and other types of files. This is very useful, for example, when changing textures in a shape or editing the shape name in `.sd` files.
-
-Two functions are available for replacing text. The `replace` function performs case-sensitive matching, while `replace_ignorecase` ignores case when matching. For the latter, if a texture is defined as **DB\_Track1.ACE**, using **DB\_Track1.ace** as the match will still result in a successful match.
-
-```python
-import trackshapeutils as tsu
-
-shape_load_path = "./examples/data"
-shape_processed_path = "./examples/data/processed"
-
-sfile_name = 'DB1s_a2t500r20d.s'
-new_sfile_name = 'DB1s_a2t500r20d_modified.s'
-
-sfile = tsu.load_shape(sfile_name, shape_load_path)
-new_sfile = sfile.copy(new_filename=new_sfile_name, new_directory=shape_processed_path)
-
-# Change textures.
-new_sfile.replace_ignorecase("DB_Track1.ace", "DB_Track2.ace")
-new_sfile.replace_ignorecase("DB_Track1s.ace", "DB_Track2s.ace")
-new_sfile.replace_ignorecase("DB_Track1w.ace", "DB_Track2w.ace")
-new_sfile.replace_ignorecase("DB_Track1sw.ace", "DB_Track2sw.ace")
-
-new_sfile.save()
-```
-
-### Modification of vertices
-
-Working with vertices requires that you first obtain them through the shape file handle returned by `load_shape`.
-
-There are two ways to do this. You can use `get_vertices_in_subobject`, which requires the LOD distance level and subobject index, or you can use `get_vertices_by_prim_state`, which requires the LOD distance level and a prim state.
-
-The exact values for the LOD distance level, subobject index, and prim state vary depending on the shape. You will need to inspect the shape file in a text editor to find the values manually.
-
-Once you have made modifications to a vertex, you can apply the changes by using the `update_vertex` function.
-
-```python
-import trackshapeutils as tsu
-
-shape_load_path = "./examples/data"
-shape_processed_path = "./examples/data/processed"
-
-sfile_name = 'DB1s_a2t500r20d.s'
-new_sfile_name = 'DB1s_a2t500r20d_modified.s'
-
-sfile = tsu.load_shape(sfile_name, shape_load_path)
-new_sfile = sfile.copy(new_filename=new_sfile_name, new_directory=shape_processed_path)
-
-# Set all vertex point, uv_point and normal values to 0.0 in lod_dlevel 500.
-lod_dlevel = 500
-subobject_idxs = new_sfile.get_subobject_idxs_in_lod_dlevel(lod_dlevel)
-
-for subobject_idx in subobject_idxs:
-    vertices_in_subobject = new_sfile.get_vertices_in_subobject(lod_dlevel, subobject_idx)
-
-    for vertex in vertices_in_subobject:
-        vertex.point.x = 0.0
-        vertex.point.y = 0.0
-        vertex.point.z = 0.0
-        vertex.uv_point.u = 0.0
-        vertex.uv_point.v = 0.0
-        vertex.normal.vec_x = 0.0
-        vertex.normal.vec_y = 0.0
-        vertex.normal.vec_z = 0.0
-        new_sfile.update_vertex(vertex)
-
-new_sfile.save()
-```
-
-### Addition of new vertices and triangles
-
-New vertices can be added using the `add_vertex_to_subobject` function. You are required to supply an indexed trilist to this function to associate the vertices with it.
-
-The trilist objects can be obtained from either `get_indexed_trilists_in_subobject` or `get_indexed_trilists_in_subobject_by_prim_state`. The texture used for the new vertices is determined by the prim state index the trilist is linked to.
-
-Triangles can be added between vertices using the `insert_triangle_between` function. This function also requires an indexed trilist, along with three vertices. All the vertices must be associated with that trilist in order to connect them with a triangle.
-
-```python
-import trackshapeutils as tsu
-
-shape_load_path = "./examples/data"
-shape_processed_path = "./examples/data/processed"
-
-sfile_name = 'DB1s_a2t500r20d.s'
-new_sfile_name = 'DB1s_a2t500r20d_modified.s'
-
-sfile = tsu.load_shape(sfile_name, shape_load_path)
-new_sfile = sfile.copy(new_filename=new_sfile_name, new_directory=shape_processed_path)
-
-# Add three new vertices and connect them with a triangle for each prim_state named 'rail_side'
-# in subobject 0 and lod_dlevel 500.
-lod_dlevel = 500
-subobject_idx = 0
-prim_states = new_sfile.get_prim_states_by_name("rail_side")
-
-for prim_state in prim_states:
-    railside_indexed_trilists = new_sfile.get_indexed_trilists_in_subobject_by_prim_state(lod_dlevel, subobject_idx, prim_state)
-
-    for railside_indexed_trilist in railside_indexed_trilists:
-        new_point = tsu.Point(0.0, 0.0, 0.0)
-        new_uv_point = tsu.UVPoint(0.0, 0.0)
-        new_normal = tsu.Normal(0.0, 0.0, 0.0)
-        vertex1 = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, new_point, new_uv_point, new_normal)
-        vertex2 = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, new_point, new_uv_point, new_normal)
-        vertex3 = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, new_point, new_uv_point, new_normal)
-        new_sfile.insert_triangle_between(railside_indexed_trilist, vertex1, vertex2, vertex3)
-
-new_sfile.save()
-```
-
-### Removal of triangles
-
-Triangles can be removed in two ways. You can use the `remove_triangle_between` function to remove a specific triangle formed by three vertices. Alternatively, you can use `remove_triangles_connected_to_vertex` to remove all triangles connected to a given vertex.
-
-Removing triangles results in the visible deletion of geometry, even though the vertices and their associated data still exist in the shape file.
-
-```python
-import trackshapeutils as tsu
-
-shape_load_path = "./examples/data"
-shape_processed_path = "./examples/data/processed"
-
-sfile_name = 'DB1s_a2t500r20d.s'
-new_sfile_name = 'DB1s_a2t500r20d_modified.s'
-
-sfile = tsu.load_shape(sfile_name, shape_load_path)
-new_sfile = sfile.copy(new_filename=new_sfile_name, new_directory=shape_processed_path)
-
-# Get the triangle lists for each prim_state named 'rail_side' in lod_dlevel 500 and subobject_idx 0.
-lod_dlevel = 500
-subobject_idx = 0
-prim_states = new_sfile.get_prim_states_by_name("rail_side")
-
-for prim_state in prim_states:
-    railside_indexed_trilists = new_sfile.get_indexed_trilists_in_subobject_by_prim_state(lod_dlevel, subobject_idx, prim_state)
-
-    for railside_indexed_trilist in railside_indexed_trilists:
-        # Remove the first triangle in the trilist.
-        first_triangle_vertex_idxs = railside_indexed_trilist.vertex_idxs[0:3]
-        vertex1 = new_sfile.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, first_triangle_vertex_idxs[0])
-        vertex2 = new_sfile.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, first_triangle_vertex_idxs[1])
-        vertex3 = new_sfile.get_vertex_in_subobject_by_idx(lod_dlevel, subobject_idx, first_triangle_vertex_idxs[2])
-        new_sfile.remove_triangle_between(railside_indexed_trilist, vertex1, vertex2, vertex3)
-
-        # Remove any other triangles connected to the vertices in the first triangle.
-        new_sfile.remove_triangles_connected_to_vertex(railside_indexed_trilist, vertex1)
-        new_sfile.remove_triangles_connected_to_vertex(railside_indexed_trilist, vertex2)
-        new_sfile.remove_triangles_connected_to_vertex(railside_indexed_trilist, vertex3)
-
-new_sfile.save()
-```
 
 ### Working with trackcenters
 
