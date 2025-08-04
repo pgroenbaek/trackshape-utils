@@ -8,7 +8,7 @@ setup(
         'numpy',
         'scipy',
         "shapeio==0.5.0b0",
-        "shapemod==0.5.0b0"
+        "shapeedit==0.5.0b0"
     ],
     package_data={
         'trackshapeutils': ['tsection.dat'],

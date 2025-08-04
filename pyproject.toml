@@ -13,7 +13,7 @@ dependencies = [
     "numpy",
     "scipy",
     "shapeio==0.5.0b0",
-    "shapemod==0.5.0b0"
+    "shapeedit==0.5.0b0"
 ]
 requires-python = ">=3.6"
 classifiers = [
