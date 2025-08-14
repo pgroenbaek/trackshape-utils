@@ -6,9 +6,9 @@
 
 A collection of utilities for working with MSTS/ORTS track shapes. 
 
-See also:
-- [shapeio](https://github.com/pgroenbaek/shapeio) - offers functions to decode shapes from structured text format into Python objects and encode them back.
-- [shapeedit](https://github.com/pgroenbaek/shapeedit) - provides experimental functions for modifying shapes.
+List of companion modules:
+- [shapeio](https://github.com/pgroenbaek/shapeio) - offers functions to convert shapes between structured text format and Python objects.
+- [shapeedit](https://github.com/pgroenbaek/shapeedit) - provides a wrapper for modifying the shape data structure safely.
 
 ## Installation
 

@@ -132,7 +132,7 @@ def generate_curve_centerpoints(
     return Trackcenter(centerpoints)
 
 
-def generate_trackcenters_from_global_tsection(
+def trackcenters_from_global_tsection(
     shape_name: str,
     tsection_file_path: str = None,
     num_points_per_meter: int = 5,
@@ -219,7 +219,7 @@ def generate_trackcenters_from_global_tsection(
         'generate_straight_centerpoints' and 'generate_curve_centerpoints'.""")
 
 
-def generate_trackcenters_from_local_tsection(
+def trackcenters_from_local_tsection(
     trackpath_idx: int,
     tsection_file_path: str,
     num_points_per_meter: int = 5,
