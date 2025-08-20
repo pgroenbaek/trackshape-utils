@@ -45,7 +45,7 @@ pip install --upgrade ./trackshape-utils
 
 ## Usage
 
-See [shapeio](https://github.com/pgroenbaek/shapeio) for loading shapes into Python. See [shapeedit](https://github.com/pgroenbaek/shapeedit) for functions to modify shapes while keeping them error-free and usable in MSTS/ORTS.
+<!-- See [shapeio](https://github.com/pgroenbaek/shapeio) for loading shapes into Python. See [shapeedit](https://github.com/pgroenbaek/shapeedit) for functions to modify shapes while keeping them error-free and usable in MSTS/ORTS. -->
 
 TODO
 
