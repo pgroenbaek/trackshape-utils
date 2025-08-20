@@ -16,7 +16,7 @@ List of companion modules:
 
 ## Installation
 
-### Install from PyPI
+<!-- ### Install from PyPI
 
 ```sh
 pip install --upgrade trackshapeutils
@@ -34,7 +34,7 @@ Replace `<version>` with the actual version number in the filename. For example:
 
 ```sh
 pip install path/to/trackshapeutils-0.5.0b0-py3-none-any.whl
-```
+``` -->
 
 ### Install from source
 
