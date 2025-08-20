@@ -243,4 +243,4 @@ Modify `envlist` to match the Python versions you want to support.
 
 This Python module was created by Peter Grønbæk Andersen and is licensed under [GNU GPL v3](/LICENSE).
 
-The module includes the standardized [global tsection.dat build #60](https://www.trainsim.com/forums/filelib-search-fileid?fid=88841) by Derek Morton, which is also distributed under the GNU General Public License.
+The module includes the standardized [global tsection.dat build #60](https://www.trainsim.com/forums/filelib-search-fileid?fid=88841) by Derek Morton. This file is also distributed under the GNU General Public License.
