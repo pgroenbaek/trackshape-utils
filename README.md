@@ -45,9 +45,11 @@ pip install --upgrade ./trackshape-utils
 
 ## Usage
 
-See [shapeio](https://github.com/pgroenbaek/shapeio) for loading shapes into Python. See [shapeedit](https://github.com/pgroenbaek/shapeedit) for functions to modify shapes while keeping them error-free and usable in MSTS/ORTS. 
+See [shapeio](https://github.com/pgroenbaek/shapeio) for loading shapes into Python. See [shapeedit](https://github.com/pgroenbaek/shapeedit) for functions to modify shapes while keeping them error-free and usable in MSTS/ORTS.
 
-### Loading trackcenters
+TODO
+
+<!-- ### Loading trackcenters
 
 #### From the included global tsection.dat
 
@@ -150,25 +152,25 @@ The DBTracks track system includes many track variants, such as with different t
 
 However, DB1fb sections can easily be created from DB1s sections by changing the textures and removing the LZB cable.
 
-That is exactly what this simple script does for both curved and straight track. The script was created before the functionality to remove triangles was added, so the LZB cable is hidden by moving it below the track bed.
+That is exactly what this simple script does for both curved and straight track. The script was created before the functionality to remove triangles was added, so the LZB cable is hidden by moving it below the track bed. -->
 
 <!-- Image showing a shape before and after running the script: -->
 
 <!-- ![Before and after running the script](./examples/images/convert_db1s_to_db1fb.png) -->
 
-### Creating ATracks railheads from NR_Emb railheads ([script](./examples/change_nrembrails_to_atracksrails.py))
+<!-- ### Creating ATracks railheads from NR_Emb railheads ([script](./examples/change_nrembrails_to_atracksrails.py))
 
 The old XTracks track system was created in the early 2000s and features completely square railheads. More modern track systems, such as ATracks, do not. The difference is very noticeable if you try to combine the two.
 
 Norbert Rieger's old NR_Emb shapes with integrated railheads have railhead geometry that matches that of XTracks, making those shapes visually incompatible with ATracks.
 
-This script adjusts the XTracks-style railheads in the NR_Emb shapes to match the geometry of ATracks. The script is fairly advanced and supports both straight and curved track sections, as well as multiple parallel tracks. Within the script, new geometry is quite literally being built and appended to the existing railheads.
+This script adjusts the XTracks-style railheads in the NR_Emb shapes to match the geometry of ATracks. The script is fairly advanced and supports both straight and curved track sections, as well as multiple parallel tracks. Within the script, new geometry is quite literally being built and appended to the existing railheads. -->
 
 <!-- Image showing a shape before and after running the script: -->
 
 <!-- ![Before and after running the script](./examples/images/change_nrembrails_to_atracksrails.png) -->
 
-The edited NR_Emb shapes are available for download at [trainsim.com](https://www.trainsim.com/forums/filelib/search-fileid?fid=90029).
+<!-- The edited NR_Emb shapes are available for download at [trainsim.com](https://www.trainsim.com/forums/filelib/search-fileid?fid=90029).
 
 ### Copying overhead wire from one shape to another ([script](./examples/make_ohw_dblslip7_5d.py))
 
@@ -182,11 +184,11 @@ The script handles remapping the points and normals to align with the internal c
 
 <!-- ![Before and after running the script](./examples/images/make_ohw_dblslip7_5d.png) -->
 
-The edited DblSlip7\_5d shapes are available for download at [the-train.de](https://the-train.de/downloads/entry/11283-dbtracks-doppelte-kreuzungsweiche-dkw-7-5/).
+<!-- The edited DblSlip7\_5d shapes are available for download at [the-train.de](https://the-train.de/downloads/entry/11283-dbtracks-doppelte-kreuzungsweiche-dkw-7-5/).
 
 ### Additional examples
 
-There are further example scripts available in [this repository](https://github.com/pgroenbaek/openrails-route-dk24-objects/tree/master/Scripts/DBTracks).
+There are further example scripts available in [this repository](https://github.com/pgroenbaek/openrails-route-dk24-objects/tree/master/Scripts/DBTracks). -->
 
 
 ## Running Tests
