@@ -7,8 +7,7 @@ setup(
     install_requires=[
         'numpy',
         'scipy',
-        "shapeio==0.5.0b0",
-        "shapeedit==0.5.0b0"
+        "shapeio==0.5.0b0"
     ],
     package_data={
         'trackshapeutils': ['tsection.dat'],
@@ -18,7 +17,11 @@ setup(
     description="A collection of utilities for modifying existing MSTS/ORTS track shapes.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/pgroenbaek/trackshape-utils",
+    project_urls={
+        "Homepage": "https://github.com/pgroenbaek/trackshape-utils",
+        "Issues": "https://github.com/pgroenbaek/trackshape-utils/issues",
+        "Source": "https://github.com/pgroenbaek/trackshape-utils",
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
