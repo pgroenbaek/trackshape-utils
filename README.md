@@ -12,6 +12,7 @@ A collection of utilities for working with MSTS/ORTS track shapes.
 
 List of companion modules:
 - [shapeio](https://github.com/pgroenbaek/shapeio) - offers functions to convert shapes between structured text format and Python objects.
+- [shapecomp](https://github.com/pgroenbaek/shapecomp) - handles compression and decompression of shape files through the `TK.MSTS.Tokens.dll` library by Okrasa Ghia.
 - [shapeedit](https://github.com/pgroenbaek/shapeedit) - provides a wrapper for modifying the shape data structure safely.
 
 ## Installation
@@ -243,4 +244,4 @@ Modify `envlist` to match the Python versions you want to support.
 
 This Python module was created by Peter Grønbæk Andersen and is licensed under [GNU GPL v3](/LICENSE).
 
-The module includes the standardized [global tsection.dat build #60](https://www.trainsim.com/forums/filelib-search-fileid?fid=88841) by Derek Morton. This file is also distributed under the GNU General Public License.
+The module includes the standardized global [tsection.dat build #60](https://www.trainsim.com/forums/filelib-search-fileid?fid=88841) by Derek Morton. This file is also distributed under the GNU General Public License.
