@@ -12,7 +12,7 @@ A collection of utilities for working with MSTS/ORTS track shapes.
 
 List of companion modules:
 - [shapeio](https://github.com/pgroenbaek/shapeio) - offers functions to convert shapes between structured text format and Python objects.
-- [shapecomp](https://github.com/pgroenbaek/shapecomp) - handles compression and decompression of shape files through the `TK.MSTS.Tokens.dll` library by Okrasa Ghia.
+- [shapecompress](https://github.com/pgroenbaek/shapecompress) - handles compression and decompression of shape files through the `TK.MSTS.Tokens.dll` library by Okrasa Ghia.
 - [shapeedit](https://github.com/pgroenbaek/shapeedit) - provides a wrapper for modifying the shape data structure safely.
 
 ## Installation
