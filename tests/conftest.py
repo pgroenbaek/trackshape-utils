@@ -23,6 +23,7 @@ import pytest
 @pytest.fixture(scope="session")
 def global_storage():
     data = {
+        "doesnotexist_path": "./tests/data/doesnotexist.dat",
         "global_tsection_extension_path": "./tests/data/global_tsection_extension.dat",
         "local_tsection_path": "./tests/data/local_tsection.dat"
     }
