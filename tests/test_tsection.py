@@ -120,7 +120,5 @@ def test_trackcenter_from_local_tsection(global_storage):
     )
     assert trackcenter.centerpoints.shape == (257, 3)
     assert trackcenter.centerpoints.size == 771
-    print(trackcenter.centerpoints[0])
-    print(trackcenter.centerpoints[-1])
     assert np.array_equal(trackcenter.centerpoints[0], np.array([0, 0, 0]))
     np.testing.assert_allclose(trackcenter.centerpoints[-1], np.array([0.03248401, 0, 25.89449892]), atol=1e-6)
