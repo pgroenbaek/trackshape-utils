@@ -88,6 +88,15 @@ class Trackcenter:
         self.centerpoints = centerpoints
 
     def __repr__(self):
+        """
+        Return a string representation of the Trackcenter object.
+
+        The string shows the class name and the `centerpoints` array, which
+        can be useful for debugging and logging.
+
+        Returns:
+            str: A string of the form "Trackcenter(centerpoints=<array>)".
+        """
         return f"Trackcenter(centerpoints={self.centerpoints})"
     
     def __add__(self, other):
@@ -151,7 +160,8 @@ class Trackcenter:
             mismatched shapes.
         """
         if not isinstance(trackcenters, list):
-            raise TypeError(f"Parameter 'trackcenters' must be of type list, but got {type(trackcenters).__name__}")
+            raise TypeError(f"""Parameter 'trackcenters' must be of type list, but got 
+                {type(trackcenters).__name__}""")
 
         if not trackcenters:
             raise ValueError("Cannot average an empty list of Trackcenters")
@@ -159,7 +169,8 @@ class Trackcenter:
         for trackcenter in trackcenters:
             if not isinstance(trackcenter, Trackcenter):
                 raise TypeError(
-                    f"All elements of list in parameter 'trackcenters' must be Trackcenter objects, but got {type(trackcenter).__name__}"
+                    f"""All elements of list in parameter 'trackcenters' must be Trackcenter 
+                    objects, but got {type(trackcenter).__name__}"""
                 )
 
         first_shape = trackcenters[0].centerpoints.shape
@@ -977,7 +988,11 @@ def get_new_position_along_trackcenter(
     """
     closest_center = find_closest_centerpoint(original_point, trackcenter, plane="xz")
     
-    distance_from_start_to_closest_center = distance_along_trackcenter(closest_center, trackcenter, max_neighbor_dist=max_neighbor_dist)
+    distance_from_start_to_closest_center = distance_along_trackcenter(
+        closest_center,
+        trackcenter,
+        max_neighbor_dist=max_neighbor_dist
+    )
 
     target_distance = distance_from_start_to_closest_center + new_distance_along_track
 
