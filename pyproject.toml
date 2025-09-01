@@ -4,12 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "trackshapeutils"
-version = "0.4.0b0"
-description = "A collection of experimental utilities for modifying existing MSTS/ORTS shapes."
+version = "0.5.0b0"
+description = "A collection of utilities for modifying existing MSTS/ORTS track shapes."
 readme = "README.md"
 authors = [{name = "Peter Grønbæk Andersen", email = "peter@grnbk.io"}]
 license = {text = "GNU GPL v3"}
-dependencies = []
+dependencies = [
+    "numpy",
+    "scipy",
+    "shapeio==0.5.0b0"
+]
 requires-python = ">=3.6"
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -19,3 +23,5 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/pgroenbaek/trackshape-utils"
+Issues = "https://github.com/pgroenbaek/trackshape-utils/issues"
+Source = "https://github.com/pgroenbaek/trackshape-utils"
