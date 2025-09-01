@@ -24,7 +24,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 __version__ = '0.5.0b0'
 __all__ = [
     'generate_empty_centerpoints', 'generate_straight_centerpoints', 'generate_curve_centerpoints',
-    'generate_trackcenters_from_global_tsection', 'generate_trackcenters_from_local_tsection', 'find_closest_centerpoint', 'find_closest_trackcenter',
+    'trackcenters_from_global_tsection', 'trackcenter_from_local_tsection',
+    'find_closest_centerpoint', 'find_closest_trackcenter',
     'signed_distance_between', 'distance_between', 'distance_along_curve', 'distance_along_trackcenter',
     'get_curve_centerpoint_from_angle', 'get_straight_centerpoint_from_length', 'get_new_position_from_angle',
     'get_new_position_from_length', 'get_new_position_from_trackcenter', 'get_new_position_along_trackcenter',
@@ -35,7 +36,8 @@ __author__ = 'Peter Grønbæk Andersen <peter@grnbk.io>'
 
 
 from .trackshapeutils import generate_empty_centerpoints, generate_straight_centerpoints, generate_curve_centerpoints
-from .trackshapeutils import generate_trackcenters_from_global_tsection, generate_trackcenters_from_local_tsection, find_closest_centerpoint, find_closest_trackcenter,
+from .trackshapeutils import trackcenters_from_global_tsection, trackcenter_from_local_tsection
+from .trackshapeutils import find_closest_centerpoint, find_closest_trackcenter
 from .trackshapeutils import signed_distance_between, distance_between, distance_along_curve, distance_along_trackcenter
 from .trackshapeutils import get_curve_centerpoint_from_angle, get_straight_centerpoint_from_length, get_new_position_from_angle
 from .trackshapeutils import get_new_position_from_length, get_new_position_from_trackcenter, get_new_position_along_trackcenter
