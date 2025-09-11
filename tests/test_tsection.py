@@ -111,6 +111,14 @@ def test_trackcenters_from_nonexistant_custom_global_tsection_raises(global_stor
         )
 
 
+def test_trackcenters_from_global_tsection_with_nonexistant_shapename_raises(global_storage):
+    with pytest.raises(ValueError):
+        tsu.trackcenters_from_global_tsection(
+            "doesnotexist.s",
+            num_points_per_meter=10
+        )
+
+
 def test_trackcenter_from_local_tsection(global_storage):
     local_tsection_path = global_storage["local_tsection_path"]
     trackcenter = tsu.trackcenter_from_local_tsection(
@@ -120,7 +128,25 @@ def test_trackcenter_from_local_tsection(global_storage):
     )
     assert trackcenter.centerpoints.shape == (257, 3)
     assert trackcenter.centerpoints.size == 771
-    print(trackcenter.centerpoints[0])
-    print(trackcenter.centerpoints[-1])
     assert np.array_equal(trackcenter.centerpoints[0], np.array([0, 0, 0]))
     np.testing.assert_allclose(trackcenter.centerpoints[-1], np.array([0.03248401, 0, 25.89449892]), atol=1e-6)
+
+
+def test_trackcenters_from_nonexistant_local_tsection_raises(global_storage):
+    doesnotexist_path = global_storage["doesnotexist_path"]
+    with pytest.raises(FileNotFoundError):
+        tsu.trackcenter_from_local_tsection(
+            50759,
+            tsection_file_path=doesnotexist_path,
+            num_points_per_meter=10
+        )
+
+
+def test_trackcenters_from_local_tsection_with_nonexistant_trackpathidx_raises(global_storage):
+    local_tsection_path = global_storage["local_tsection_path"]
+    with pytest.raises(ValueError):
+        tsu.trackcenter_from_local_tsection(
+            100000000,
+            tsection_file_path=local_tsection_path,
+            num_points_per_meter=10
+        )
