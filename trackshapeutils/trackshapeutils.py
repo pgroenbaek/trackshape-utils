@@ -286,6 +286,7 @@ def generate_curve_centerpoints(
 def trackcenters_from_global_tsection(
     shape_name: str,
     tsection_file_path: str = None,
+    include_global_tsection: bool = False,
     num_points_per_meter: int = 5,
     start_offset: shape.Point = shape.Point(0, 0, 0)
 ) -> List[Trackcenter]:
@@ -301,6 +302,10 @@ def trackcenters_from_global_tsection(
         tsection_file_path (str, optional): Path to a `tsection.dat` file. If not
             provided, the function defaults to using the global `tsection.dat` build 60
             included with the module. Defaults to None.
+        include_global_tsection (bool, optional): Whether to append the global `tsection.dat` build 60
+            included with the module to the contents of the `tsection_file_path` file. Necessary only if `tsection_file_path`
+            is a `tsection.dat` extension file that refers to sections in the standardised global `tsection.dat`.
+            Defaults to False.
         num_points_per_meter (int, optional): Density of generated points along each
             section. Higher values produce smoother curves at the cost of performance.
             Defaults to 5.
@@ -315,8 +320,6 @@ def trackcenters_from_global_tsection(
         ValueError: If the `tsection.dat` file is missing, if the specified shape
             is not found, or if a referenced TrackSection cannot be parsed.
     """
-    module_directory = pathlib.Path(__file__).parent
-    default_tsection_file_path = f"{module_directory}/tsection.dat"
     tsection_text = ""
 
     if tsection_file_path is not None:
@@ -327,8 +330,12 @@ def trackcenters_from_global_tsection(
         with open(tsection_file_path, "r", encoding=_detect_encoding(tsection_file_path)) as f:
             tsection_text += f.read()
 
-    with open(default_tsection_file_path, "r", encoding=_detect_encoding(default_tsection_file_path)) as f:
-        tsection_text += "\n" + f.read()
+    if tsection_file_path is None or include_global_tsection:
+        module_directory = pathlib.Path(__file__).parent
+        default_tsection_file_path = f"{module_directory}/tsection.dat"
+
+        with open(default_tsection_file_path, "r", encoding=_detect_encoding(default_tsection_file_path)) as f:
+            tsection_text += "\n" + f.read()
 
     trackshape_pattern = re.compile(r"TrackShape\s*\(\s*\d+\s*\n(.*?)\n\s*\)", re.DOTALL)
     sectionidx_pattern = re.compile(r"SectionIdx\s*\(\s*([^\)]*?)\s*\)")
@@ -448,12 +455,14 @@ def trackcenter_from_local_tsection(
         ValueError: If the `tsection.dat` file does not exist, if the specified TrackPath
             is not found, or if any referenced SectionCurve cannot be parsed.
     """
+    tsection_text = ""
+
     if not os.path.exists(tsection_file_path):
         raise FileNotFoundError(f"""Unable to generate centerpoints: Specified file '{tsection_file_path}' in parameter
         'tsection_file_path' does not exist.""")
 
     with open(tsection_file_path, "r", encoding=_detect_encoding(tsection_file_path)) as f:
-        tsection_text = f.read()
+        tsection_text += f.read()
 
     trackpath_pattern = re.compile(rf"TrackPath\s*\(\s*{trackpath_idx}\s+\d+(?:\s+\d+)*\s*\)", re.DOTALL)
     trackpath_match = trackpath_pattern.search(tsection_text)
@@ -920,9 +929,10 @@ def get_new_position_from_trackcenter(
     """
     Compute a new 3D position laterally offset from a Trackcenter centerline.
 
-    The function finds the closest point on the Trackcenter to the original point,
+    The function finds the closest point on the track center to the original point,
     computes the tangent of the centerline at that location, and applies a lateral
-    offset in the plane perpendicular to the tangent.
+    offset from the track center in the plane perpendicular to the tangent to compute
+    the new position.
 
     Args:
         new_signed_distance (float): Lateral distance to offset from the centerline.
@@ -969,9 +979,9 @@ def get_new_position_along_trackcenter(
     """
     Compute a new 3D position along a Trackcenter centerline, preserving lateral offset.
 
-    The function finds the closest point on the Trackcenter to the original point,
-    computes the distance along the track to the target location, and preserves the
-    lateral offset of the original point relative to the centerline.
+    The function finds the closest point on the track center to the original point,
+    computes the new position based on the distance along the track to the target
+    location, and preserves the lateral offset of the original point relative to the centerline.
 
     Args:
         new_distance_along_track (float): Distance to move along the Trackcenter
