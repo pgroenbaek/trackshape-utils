@@ -317,8 +317,8 @@ def trackcenters_from_global_tsection(
             centerline(s) of the specified track shape.
 
     Raises:
-        ValueError: If the `tsection.dat` file is missing, if the specified shape
-            is not found, or if a referenced TrackSection cannot be parsed.
+        FileNotFoundError: If the `tsection.dat` file is missing.
+        ValueError: If the specified shape is not found, or if any referenced TrackSection cannot be parsed.
     """
     tsection_text = ""
 
@@ -452,8 +452,8 @@ def trackcenter_from_local_tsection(
             the specified TrackPath.
 
     Raises:
-        ValueError: If the `tsection.dat` file does not exist, if the specified TrackPath
-            is not found, or if any referenced SectionCurve cannot be parsed.
+        FileNotFoundError: If the `tsection.dat` file does not exist.
+        ValueError: If the specified TrackPath is not found, or if any referenced SectionCurve cannot be parsed.
     """
     tsection_text = ""
 
