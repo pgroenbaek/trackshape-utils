@@ -31,44 +31,6 @@ from scipy.spatial import KDTree
 from shapeio import shape
 
 
-def _detect_encoding(filepath: str) -> str:
-    """
-    Detect the text encoding of a file by inspecting its initial bytes (BOM or heuristics).
-
-    Args:
-        filepath (str): Path to the file to check.
-
-    Returns:
-        str: The detected encoding string suitable for use in `open()`.
-
-    Raises:
-        FileNotFoundError: If the file does not exist.
-        PermissionError: If the file cannot be accessed.
-        OSError: For other OS-related errors while reading the file.
-    """
-    with open(filepath, 'rb') as f:
-        b = f.read(4)
-        bstartswith = b.startswith
-        if bstartswith((codecs.BOM_UTF32_BE, codecs.BOM_UTF32_LE)):
-            return 'utf-32'
-        if bstartswith((codecs.BOM_UTF16_BE, codecs.BOM_UTF16_LE)):
-            return 'utf-16'
-        if bstartswith(codecs.BOM_UTF8):
-            return 'utf-8-sig'
-
-        if len(b) >= 4:
-            if not b[0]:
-                return 'utf-16-be' if b[1] else 'utf-32-be'
-            if not b[1]:
-                return 'utf-16-le' if b[2] or b[3] else 'utf-32-le'
-        elif len(b) == 2:
-            if not b[0]:
-                return 'utf-16-be'
-            if not b[1]:
-                return 'utf-16-le'
-        return 'utf-8'
-
-
 class Trackcenter:
     """
     Represents the centerline points of a track.
@@ -1026,3 +988,42 @@ def get_new_position_along_trackcenter(
     new_position = new_position_on_track + lateral_offset
 
     return [shape.Point.from_numpy(new_position)]
+
+
+def _detect_encoding(filepath: str) -> str:
+    """
+    Detect the text encoding of a file by inspecting its initial bytes (BOM or heuristics).
+
+    Args:
+        filepath (str): Path to the file to check.
+
+    Returns:
+        str: The detected encoding string suitable for use in `open()`.
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+        PermissionError: If the file cannot be accessed.
+        OSError: For other OS-related errors while reading the file.
+    """
+    with open(filepath, 'rb') as f:
+        b = f.read(4)
+        bstartswith = b.startswith
+        if bstartswith((codecs.BOM_UTF32_BE, codecs.BOM_UTF32_LE)):
+            return 'utf-32'
+        if bstartswith((codecs.BOM_UTF16_BE, codecs.BOM_UTF16_LE)):
+            return 'utf-16'
+        if bstartswith(codecs.BOM_UTF8):
+            return 'utf-8-sig'
+
+        if len(b) >= 4:
+            if not b[0]:
+                return 'utf-16-be' if b[1] else 'utf-32-be'
+            if not b[1]:
+                return 'utf-16-le' if b[2] or b[3] else 'utf-32-le'
+        elif len(b) == 2:
+            if not b[0]:
+                return 'utf-16-be'
+            if not b[1]:
+                return 'utf-16-le'
+        return 'utf-8'
+
