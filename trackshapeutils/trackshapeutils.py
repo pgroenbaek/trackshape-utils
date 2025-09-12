@@ -187,10 +187,9 @@ def generate_straight_centerpoints(
 
     x_rotated = local_x * np.cos(angle_radians) - local_z * np.sin(angle_radians)
     z_rotated = local_x * np.sin(angle_radians) + local_z * np.cos(angle_radians)
-    y_rotated = local_y
 
     x_final = x_rotated + start_point.x
-    y_final = y_rotated + start_point.y
+    y_final = local_y + start_point.y
     z_final = z_rotated + start_point.z
 
     centerpoints = np.vstack((x_final, y_final, z_final)).T
