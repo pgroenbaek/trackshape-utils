@@ -179,14 +179,14 @@ def generate_straight_centerpoints(
     Returns:
         Trackcenter: A Trackcenter containing the generated straight centerline points.
     """
-    angle_rad = np.radians(start_angle)
+    angle_radians = np.radians(start_angle)
 
     local_z = np.linspace(0, length, num_points)
     local_x = np.zeros_like(local_z)
     local_y = np.zeros_like(local_z)
 
-    x_rotated = local_x * np.cos(angle_rad) - local_z * np.sin(angle_rad)
-    z_rotated = local_x * np.sin(angle_rad) + local_z * np.cos(angle_rad)
+    x_rotated = local_x * np.cos(angle_radians) - local_z * np.sin(angle_radians)
+    z_rotated = local_x * np.sin(angle_radians) + local_z * np.cos(angle_radians)
     y_rotated = local_y
 
     x_final = x_rotated + start_point.x
@@ -229,16 +229,16 @@ def generate_curve_centerpoints(
     local_z = curve_radius * np.sin(theta)
     local_y = np.zeros_like(local_x)
 
-    angle_rad = np.radians(start_angle) * direction
-    cos_a = np.cos(angle_rad)
-    sin_a = np.sin(angle_rad)
+    angle_radians = np.radians(start_angle) * direction
+    cos_a = np.cos(angle_radians)
+    sin_a = np.sin(angle_radians)
 
-    x_rot = cos_a * local_x - sin_a * local_z
-    z_rot = sin_a * local_x + cos_a * local_z
+    x_rotated = cos_a * local_x - sin_a * local_z
+    z_rotated = sin_a * local_x + cos_a * local_z
 
-    x_final = x_rot + start_point.x
+    x_final = x_rotated + start_point.x
     y_final = local_y + start_point.y
-    z_final = z_rot + start_point.z
+    z_final = z_rotated + start_point.z
 
     centerpoints = np.vstack((x_final, y_final, z_final)).T
     
@@ -279,7 +279,7 @@ def trackcenters_from_global_tsection(
             centerline(s) of the specified track shape.
 
     Raises:
-        FileNotFoundError: If the `tsection.dat` file is missing.
+        FileNotFoundError: If the file at `tsection_file_path` is missing.
         ValueError: If the specified shape is not found, or if any referenced TrackSection cannot be parsed.
     """
     tsection_text = ""
@@ -414,7 +414,7 @@ def trackcenter_from_local_tsection(
             the specified TrackPath.
 
     Raises:
-        FileNotFoundError: If the `tsection.dat` file does not exist.
+        FileNotFoundError: If the file at `tsection_file_path` is missing.
         ValueError: If the specified TrackPath is not found, or if any referenced SectionCurve cannot be parsed.
     """
     tsection_text = ""
