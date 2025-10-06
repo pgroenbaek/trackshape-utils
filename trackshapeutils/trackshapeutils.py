@@ -285,7 +285,7 @@ def trackcenters_from_global_tsection(
 
     if tsection_file_path is not None:
         if not os.path.exists(tsection_file_path):
-            raise FileNotFoundError(f"""Unable to generate centerpoints: Specified file '{tsection_file_path}'
+            raise FileNotFoundError(f"""Unable to create trackcenters: Specified file '{tsection_file_path}'
                 in parameter 'tsection_file_path' does not exist.""")
 
         with open(tsection_file_path, "r", encoding=_detect_encoding(tsection_file_path)) as f:
@@ -330,9 +330,9 @@ def trackcenters_from_global_tsection(
                     tracksection_match = tracksection_pattern.search(tsection_text)
 
                     if not tracksection_match:
-                        raise ValueError(f"""Unable to generate centerpoints: Could not find TrackSection
+                        raise ValueError(f"""Unable to create trackcenters: Could not find TrackSection
                             '{tracksection_idx}' defined by TrackShape '{shape_name}'. Instead create 
-                            the centerpoints manually using the methods 'generate_straight_centerpoints'
+                            the trackcenters manually using the methods 'generate_straight_centerpoints'
                             and 'generate_curve_centerpoints'.""")
                     
                     length = float(tracksection_match.group(3))
@@ -378,8 +378,8 @@ def trackcenters_from_global_tsection(
 
             return trackcenters
 
-    raise ValueError(f"""Unable to generate centerpoints: Unknown shape '{shape_name}'. Instead create 
-        the centerpoints manually using the functions 'generate_straight_centerpoints'
+    raise ValueError(f"""Unable to create trackcenters: Unknown shape '{shape_name}'. Instead create 
+        the trackcenters manually using the functions 'generate_straight_centerpoints'
         and 'generate_curve_centerpoints'.""")
 
 
@@ -419,7 +419,7 @@ def trackcenter_from_local_tsection(
     tsection_text = ""
 
     if not os.path.exists(tsection_file_path):
-        raise FileNotFoundError(f"""Unable to generate centerpoints: Specified file '{tsection_file_path}' in parameter
+        raise FileNotFoundError(f"""Unable to create trackcenter: Specified file '{tsection_file_path}' in parameter
         'tsection_file_path' does not exist.""")
 
     with open(tsection_file_path, "r", encoding=_detect_encoding(tsection_file_path)) as f:
@@ -429,8 +429,8 @@ def trackcenter_from_local_tsection(
     trackpath_match = trackpath_pattern.search(tsection_text)
 
     if not trackpath_match:
-        raise ValueError(f"""Unable to generate centerpoints: Unknown TrackPath '{trackpath_idx}'. Instead create 
-            the centerpoints manually using the functions 'generate_straight_centerpoints'
+        raise ValueError(f"""Unable to create trackcenter: Unknown TrackPath '{trackpath_idx}'. Instead create 
+            the trackcenter manually using the functions 'generate_straight_centerpoints'
             and 'generate_curve_centerpoints'.""")
 
     numbers = re.findall(r'\d+', trackpath_match.group())
@@ -448,8 +448,8 @@ def trackcenter_from_local_tsection(
         sectioncurve_match = re.search(sectioncurve_pattern, tsection_text)
 
         if not sectioncurve_match:
-            raise ValueError(f"""Unable to generate centerpoints: Could not find SectionCurve '{tracksection_idx}'
-                defined by TrackPath '{trackpath_idx}'. Instead create the centerpoints manually using the methods
+            raise ValueError(f"""Unable to create trackcenter: Could not find SectionCurve '{tracksection_idx}'
+                defined by TrackPath '{trackpath_idx}'. Instead create the trackcenter manually using the methods
                 'generate_straight_centerpoints' and 'generate_curve_centerpoints'.""")
 
         sectioncurve_value1 = float(sectioncurve_match.group(1))

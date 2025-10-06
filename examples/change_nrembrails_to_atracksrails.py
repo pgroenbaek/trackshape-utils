@@ -1,8 +1,14 @@
 import os
+import pytkutils
+import shapeio
+from shapeio.shape import Point, UVPoint, Vector
+from shapeedit import ShapeEditor
+from shapeedit.utils import grouping
 import trackshapeutils as tsu
 from collections import defaultdict
 
 if __name__ == "__main__":
+    tkutils_dll_path = "./path/to/TK.MSTS.Tokens.dll"
     shape_load_path = "./examples/data/"
     shape_processed_path = "./examples/data/processed/NREmbAtracksRails"
     ffeditc_path = "./ffeditc_unicode.exe"
@@ -30,7 +36,7 @@ if __name__ == "__main__":
     
     os.makedirs(shape_processed_path, exist_ok=True)
 
-    shape_names = tsu.find_directory_files(shape_load_path, match_files, ignore_files)
+    shape_names = shapeio.find_directory_files(shape_load_path, match_files, ignore_files)
 
     for idx, sfile_name in enumerate(shape_names):
         print(f"Shape {idx + 1} of {len(shape_names)}...")
@@ -47,27 +53,23 @@ if __name__ == "__main__":
         tsection_sfile_name = tsection_sfile_name.replace("NR_WallEmb_", "")
         tsection_sfile_name = tsection_sfile_name.replace("NR_Emb_", "")
 
-        sfile = tsu.load_shape(sfile_name, shape_load_path)
-        new_sfile = sfile.copy(new_filename=new_sfile_name, new_directory=shape_processed_path)
-        new_sfile.decompress(ffeditc_path)
+        shape_path = f"{shape_load_path}/{sfile_name}"
+        new_shape_path = f"{shape_processed_path}/{new_sfile_name}"
 
-        trackcenters = tsu.generate_trackcenters_from_global_tsection(shape_name=tsection_sfile_name, num_points_per_meter=12)
+        shapeio.copy(shape_path, new_shape_path)
 
-        lod_dlevel = 400
-        subobject_idx = 0
-        prim_states = new_sfile.get_prim_states_by_name("rail_side")
+        pytkutils.decompress(tkutils_dll_path, new_shape_path)
+        trackshape = shapeio.load(new_shape_path)
 
-        for prim_state in prim_states:
-            print(f"\tPrim State Idx: {prim_state.idx}")
-            vertices_in_prim_state = new_sfile.get_vertices_by_prim_state(lod_dlevel, prim_state)
-            vertices_in_subobject = new_sfile.get_vertices_in_subobject(lod_dlevel, subobject_idx)
-            indexed_trilists = new_sfile.get_indexed_trilists_in_subobject_by_prim_state(lod_dlevel, subobject_idx, prim_state)
+        trackshape_editor = ShapeEditor(trackshape)
+        sub_object = trackshape_editor.lod_control(0).distance_level(400).sub_object(0)
 
-            if len(indexed_trilists) == 0:
-                print(f"\tNothing to process")
-                continue
+        trackcenters = tsu.trackcenters_from_global_tsection(shape_name=tsection_sfile_name, num_points_per_meter=12)
 
-            railside_indexed_trilist = indexed_trilists[0]
+        for primitive in sub_object.primitives(prim_state_name="rail_side"):
+            print(f"\tPrim State Idx: {primitive.index}")
+            vertices_in_primitive = primitive.vertices()
+            vertices_in_subobject = sub_object.vertices()
             
             # First find the vertices to work on.
             # The naming right/left refers to which side of the track it is relative to the track center.
@@ -78,8 +80,8 @@ if __name__ == "__main__":
             railside_vertices_top = defaultdict(list)
             railside_vertices_bottom = defaultdict(list)
 
-            for vertex in vertices_in_prim_state:
-                if vertex.point.y == 0.325 and vertex.normal == tsu.Normal(0.0, 1.0, 0.0): # Railtop vertices
+            for vertex in vertices_in_primitive:
+                if vertex.point.y == 0.325 and vertex.normal == Vector(0.0, 1.0, 0.0): # Railtop vertices
                     closest_trackcenter = tsu.find_closest_trackcenter(vertex.point, trackcenters, plane="xz")
                     closest_centerpoint = tsu.find_closest_centerpoint(vertex.point, closest_trackcenter, plane="xz")
                     distance_from_center = tsu.signed_distance_between(vertex.point, closest_centerpoint, plane="xz")
@@ -95,13 +97,11 @@ if __name__ == "__main__":
                         with open('warnings.txt', 'a') as f:
                             f.write(f'Railtops: {sfile_name} (distance_from_center = {distance_from_center})\n')
 
-            for vertex in vertices_in_prim_state:
+            for vertex in vertices_in_primitive:
                 if vertex.point.y == 0.2: # Railside bottom vertices
-                    connected_vertex_idxs = new_sfile.get_connected_vertex_idxs(railside_indexed_trilist, vertex)
+                    connected_vertices = primitive.connected_vertices(vertex)
 
-                    for connected_vertex_idx in connected_vertex_idxs:
-                        connected_vertex = vertices_in_subobject[connected_vertex_idx]
-
+                    for connected_vertex in connected_vertices:
                         if connected_vertex.point.y == 0.325 and connected_vertex.point.z == vertex.point.z: # Connected railside top vertices directly over the bottom ones
                             closest_trackcenter = tsu.find_closest_trackcenter(vertex.point, trackcenters, plane="xz")
                             closest_centerpoint = tsu.find_closest_centerpoint(vertex.point, closest_trackcenter, plane="xz")
@@ -134,7 +134,7 @@ if __name__ == "__main__":
                                 with open('warnings.txt', 'a') as f:
                                     f.write(f'Railsides: {sfile_name} (distance_from_center = {distance_from_center})\n')
             
-            trackcenters = tsu.generate_trackcenters_from_global_tsection(shape_name=tsection_sfile_name, num_points_per_meter=2)
+            trackcenters = tsu.trackcenters_from_global_tsection(shape_name=tsection_sfile_name, num_points_per_meter=2)
             
             print(f"\tSorting railside vertices")
             distances = {}
@@ -165,10 +165,10 @@ if __name__ == "__main__":
             parallel_tracks = lambda v1, v2: trackcenter_idxs[v1._vertex_idx] == trackcenter_idxs[v2._vertex_idx]
 
             for side in railside_vertices_top:
-                railside_vertices_top[side] = tsu.group_vertices_by(railside_vertices_top[side], parallel_tracks)
+                railside_vertices_top[side] = grouping.group_items_by(railside_vertices_top[side], parallel_tracks)
             
             for side in railside_vertices_bottom:
-                railside_vertices_bottom[side] = tsu.group_vertices_by(railside_vertices_bottom[side], parallel_tracks)
+                railside_vertices_bottom[side] = grouping.group_items_by(railside_vertices_bottom[side], parallel_tracks)
 
             # Find the quads between the vertical edges of the rail sides.
             print(f"\tFinding railside quads")
@@ -188,7 +188,7 @@ if __name__ == "__main__":
                         quad = (bottom_close, top_close, top_far, bottom_far)
                         railside_quads[side][group_idx].append(quad)
 
-            trackcenters = tsu.generate_trackcenters_from_global_tsection(shape_name=tsection_sfile_name, num_points_per_meter=7)
+            trackcenters = tsu.trackcenters_from_global_tsection(shape_name=tsection_sfile_name, num_points_per_meter=7)
 
             # Creation of ATracks-like rail sides and rail tops.
             # New vertices are added, and at the end their values are changed according to the contents of 'update_vertex_data'.
@@ -255,10 +255,10 @@ if __name__ == "__main__":
 
                     # Insert new vertices and triangles from top to bottom of the new ATracks-like railside.
                     if idx == 0: # First quad of a railside, so also insert new vertices for the close side of the quad.
-                        railbase_inner = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_close.point, bottom_close.uv_point, bottom_close.normal)
-                        railbase_outer_top1 = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_close.point, bottom_close.uv_point, bottom_close.normal)
-                        railbase_outer_top2 = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_close.point, bottom_close.uv_point, bottom_close.normal)
-                        railbase_outer_bottom = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_close.point, bottom_close.uv_point, bottom_close.normal)
+                        railbase_inner = primitive.add_vertex(bottom_close.point, bottom_close.uv_point, bottom_close.normal)
+                        railbase_outer_top1 = primitive.add_vertex(bottom_close.point, bottom_close.uv_point, bottom_close.normal)
+                        railbase_outer_top2 = primitive.add_vertex(bottom_close.point, bottom_close.uv_point, bottom_close.normal)
+                        railbase_outer_bottom = primitive.add_vertex(bottom_close.point, bottom_close.uv_point, bottom_close.normal)
 
                         # Updated values for newly created vertices.
                         update_vertex_data.extend([
@@ -270,10 +270,10 @@ if __name__ == "__main__":
                         prev_vertices = (railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
                     
                     # Add new vertices for the far side of the quad.
-                    railbase_inner = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_far.point, bottom_far.uv_point, bottom_far.normal)
-                    railbase_outer_top1 = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_far.point, bottom_far.uv_point, bottom_far.normal)
-                    railbase_outer_top2 = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_far.point, bottom_far.uv_point, bottom_far.normal)
-                    railbase_outer_bottom = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_far.point, bottom_far.uv_point, bottom_far.normal)
+                    railbase_inner = primitive.add_vertex( bottom_far.point, bottom_far.uv_point, bottom_far.normal)
+                    railbase_outer_top1 = primitive.add_vertex(bottom_far.point, bottom_far.uv_point, bottom_far.normal)
+                    railbase_outer_top2 = primitive.add_vertex(bottom_far.point, bottom_far.uv_point, bottom_far.normal)
+                    railbase_outer_bottom = primitive.add_vertex(bottom_far.point, bottom_far.uv_point, bottom_far.normal)
 
                     # Updated values for the created vertices.
                     update_vertex_data.extend([
@@ -321,10 +321,10 @@ if __name__ == "__main__":
 
                     # Insert new vertices and triangles from top to bottom of the new ATracks-like railside.
                     if idx == 0: # First quad of the railside, so also insert new vertices for the close side of the quad.
-                        railbase_inner = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_close.point, bottom_close.uv_point, bottom_close.normal)
-                        railbase_outer_top1 = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_close.point, bottom_close.uv_point, bottom_close.normal)
-                        railbase_outer_top2 = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_close.point, bottom_close.uv_point, bottom_close.normal)
-                        railbase_outer_bottom = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_close.point, bottom_close.uv_point, bottom_close.normal)
+                        railbase_inner = primitive.add_vertex(bottom_close.point, bottom_close.uv_point, bottom_close.normal)
+                        railbase_outer_top1 = primitive.add_vertex(bottom_close.point, bottom_close.uv_point, bottom_close.normal)
+                        railbase_outer_top2 = primitive.add_vertex(bottom_close.point, bottom_close.uv_point, bottom_close.normal)
+                        railbase_outer_bottom = primitive.add_vertex(bottom_close.point, bottom_close.uv_point, bottom_close.normal)
 
                         # Updated values for newly created vertices.
                         update_vertex_data.extend([
@@ -336,10 +336,10 @@ if __name__ == "__main__":
                         prev_vertices = (railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
                     
                     # Add new vertices for the far side of the quad.
-                    railbase_inner = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_far.point, bottom_far.uv_point, bottom_far.normal)
-                    railbase_outer_top1 = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_far.point, bottom_far.uv_point, bottom_far.normal)
-                    railbase_outer_top2 = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_far.point, bottom_far.uv_point, bottom_far.normal)
-                    railbase_outer_bottom = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_far.point, bottom_far.uv_point, bottom_far.normal)
+                    railbase_inner = primitive.add_vertex(bottom_far.point, bottom_far.uv_point, bottom_far.normal)
+                    railbase_outer_top1 = primitive.add_vertex(bottom_far.point, bottom_far.uv_point, bottom_far.normal)
+                    railbase_outer_top2 = primitive.add_vertex(bottom_far.point, bottom_far.uv_point, bottom_far.normal)
+                    railbase_outer_bottom = primitive.add_vertex(bottom_far.point, bottom_far.uv_point, bottom_far.normal)
 
                     # Updated values for the created vertices.
                     update_vertex_data.extend([
@@ -387,10 +387,10 @@ if __name__ == "__main__":
                     
                     # Insert new vertices and triangles from top to bottom of the new ATracks-like railside.
                     if idx == 0: # First quad of the railside, so also insert new vertices for the close side of the quad.
-                        railbase_inner = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_close.point, bottom_close.uv_point, bottom_close.normal)
-                        railbase_outer_top1 = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_close.point, bottom_close.uv_point, bottom_close.normal)
-                        railbase_outer_top2 = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_close.point, bottom_close.uv_point, bottom_close.normal)
-                        railbase_outer_bottom = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_close.point, bottom_close.uv_point, bottom_close.normal)
+                        railbase_inner = primitive.add_vertex(bottom_close.point, bottom_close.uv_point, bottom_close.normal)
+                        railbase_outer_top1 = primitive.add_vertex(bottom_close.point, bottom_close.uv_point, bottom_close.normal)
+                        railbase_outer_top2 = primitive.add_vertex(bottom_close.point, bottom_close.uv_point, bottom_close.normal)
+                        railbase_outer_bottom = primitive.add_vertex(bottom_close.point, bottom_close.uv_point, bottom_close.normal)
 
                         # Updated values for newly created vertices.
                         update_vertex_data.extend([
@@ -402,10 +402,10 @@ if __name__ == "__main__":
                         prev_vertices = (railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
                     
                     # Add new vertices for the far side of the quad.
-                    railbase_inner = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_far.point, bottom_far.uv_point, bottom_far.normal)
-                    railbase_outer_top1 = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_far.point, bottom_far.uv_point, bottom_far.normal)
-                    railbase_outer_top2 = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_far.point, bottom_far.uv_point, bottom_far.normal)
-                    railbase_outer_bottom = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_far.point, bottom_far.uv_point, bottom_far.normal)
+                    railbase_inner = primitive.add_vertex(bottom_far.point, bottom_far.uv_point, bottom_far.normal)
+                    railbase_outer_top1 = primitive.add_vertex(bottom_far.point, bottom_far.uv_point, bottom_far.normal)
+                    railbase_outer_top2 = primitive.add_vertex(bottom_far.point, bottom_far.uv_point, bottom_far.normal)
+                    railbase_outer_bottom = primitive.add_vertex(bottom_far.point, bottom_far.uv_point, bottom_far.normal)
 
                     # Updated values for the created vertices.
                     update_vertex_data.extend([
@@ -453,10 +453,10 @@ if __name__ == "__main__":
 
                     # Insert new vertices and triangles from top to bottom of the new ATracks-like railside.
                     if idx == 0: # First quad of the railside, so also insert new vertices for the close side of the quad.
-                        railbase_inner = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_close.point, bottom_close.uv_point, bottom_close.normal)
-                        railbase_outer_top1 = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_close.point, bottom_close.uv_point, bottom_close.normal)
-                        railbase_outer_top2 = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_close.point, bottom_close.uv_point, bottom_close.normal)
-                        railbase_outer_bottom = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_close.point, bottom_close.uv_point, bottom_close.normal)
+                        railbase_inner = primitive.add_vertex(bottom_close.point, bottom_close.uv_point, bottom_close.normal)
+                        railbase_outer_top1 = primitive.add_vertex(bottom_close.point, bottom_close.uv_point, bottom_close.normal)
+                        railbase_outer_top2 = primitive.add_vertex(bottom_close.point, bottom_close.uv_point, bottom_close.normal)
+                        railbase_outer_bottom = primitive.add_vertex(bottom_close.point, bottom_close.uv_point, bottom_close.normal)
 
                         # Updated values for newly created vertices.
                         update_vertex_data.extend([
@@ -468,10 +468,10 @@ if __name__ == "__main__":
                         prev_vertices = (railbase_inner, railbase_outer_top1, railbase_outer_top2, railbase_outer_bottom)
                     
                     # Add new vertices for the far side of the quad.
-                    railbase_inner = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_far.point, bottom_far.uv_point, bottom_far.normal)
-                    railbase_outer_top1 = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_far.point, bottom_far.uv_point, bottom_far.normal)
-                    railbase_outer_top2 = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_far.point, bottom_far.uv_point, bottom_far.normal)
-                    railbase_outer_bottom = new_sfile.add_vertex_to_subobject(lod_dlevel, subobject_idx, railside_indexed_trilist, bottom_far.point, bottom_far.uv_point, bottom_far.normal)
+                    railbase_inner = primitive.add_vertex(bottom_far.point, bottom_far.uv_point, bottom_far.normal)
+                    railbase_outer_top1 = primitive.add_vertex(bottom_far.point, bottom_far.uv_point, bottom_far.normal)
+                    railbase_outer_top2 = primitive.add_vertex(bottom_far.point, bottom_far.uv_point, bottom_far.normal)
+                    railbase_outer_bottom = primitive.add_vertex(bottom_far.point, bottom_far.uv_point, bottom_far.normal)
 
                     # Updated values for the created vertices.
                     update_vertex_data.extend([
@@ -508,25 +508,26 @@ if __name__ == "__main__":
                 vertex.normal.vec_x = new_normal_vecx
                 vertex.normal.vec_y = new_normal_vecy
                 vertex.normal.vec_z = new_normal_vecz
-                new_sfile.update_vertex(vertex)
             
             print("")
 
             # Insert new triangles between the created vertices.
             for idx, (vertex1, vertex2, vertex3) in enumerate(new_triangles):
                 print(f"\tInserting triangle {idx + 1} of {len(new_triangles)}", end='\r')
-                new_sfile.insert_triangle_between(railside_indexed_trilist, vertex1, vertex2, vertex3)
+                primitive.insert_triangle(vertex1, vertex2, vertex3)
 
             print("")
 
-        new_sfile.save()
-        new_sfile.compress(ffeditc_path)
+        shapeio.dump(trackshape, new_shape_path)
+
+        pytkutils.compress(tkutils_dll_path, new_shape_path)
 
         # Process .sd file
         sdfile_name = sfile_name.replace(".s", ".sd")
         new_sdfile_name = new_sfile_name.replace(".s", ".sd")
 
-        sdfile = tsu.load_file(sdfile_name, shape_load_path)
-        new_sdfile = sdfile.copy(new_filename=new_sdfile_name, new_directory=shape_processed_path)
-        new_sdfile.replace_ignorecase(sfile_name, new_sfile_name)
-        new_sdfile.save()
+        sdfile_path = f"{shape_load_path}/{sdfile_name}"
+        new_sdfile_path = f"{shape_processed_path}/{new_sdfile_name}"
+
+        shapeio.copy(sdfile_path, new_sdfile_path)
+        shapeio.replace_ignorecase(sfile_name, new_sfile_name)
