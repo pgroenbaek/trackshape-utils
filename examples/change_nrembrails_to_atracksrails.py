@@ -1,17 +1,16 @@
 import os
 import pytkutils
 import shapeio
+import trackshapeutils as tsu
 from shapeio.shape import Point, UVPoint, Vector
 from shapeedit import ShapeEditor
 from shapeedit.utils import grouping
-import trackshapeutils as tsu
 from collections import defaultdict
 
 if __name__ == "__main__":
-    tkutils_dll_path = "./path/to/TK.MSTS.Tokens.dll"
+    tkutils_dll_path = "./TK.MSTS.Tokens.dll"
     shape_load_path = "./examples/data/"
     shape_processed_path = "./examples/data/processed/NREmbAtracksRails"
-    ffeditc_path = "./ffeditc_unicode.exe"
     match_files = [
         # For testing
         #"NR_Emb_a1t10mStrt.s",
@@ -519,7 +518,6 @@ if __name__ == "__main__":
             print("")
 
         shapeio.dump(trackshape, new_shape_path)
-
         pytkutils.compress(tkutils_dll_path, new_shape_path)
 
         # Process .sd file
@@ -530,4 +528,4 @@ if __name__ == "__main__":
         new_sdfile_path = f"{shape_processed_path}/{new_sdfile_name}"
 
         shapeio.copy(sdfile_path, new_sdfile_path)
-        shapeio.replace_ignorecase(sfile_name, new_sfile_name)
+        shapeio.replace_ignorecase(new_sdfile_path, sfile_name, new_sfile_name)

@@ -1,3 +1,6 @@
+### TK_Utils DLL ###
+TK.MSTS.Tokens.dll
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
