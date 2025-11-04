@@ -1,17 +1,16 @@
 import os
 import pytkutils
 import shapeio
+import trackshapeutils as tsu
 from shapeio.shape import Point, UVPoint, Vector
 from shapeedit import ShapeEditor
 from shapeedit.utils import grouping
-import trackshapeutils as tsu
 from collections import defaultdict
 
 if __name__ == "__main__":
-    tkutils_dll_path = "./path/to/TK.MSTS.Tokens.dll"
+    tkutils_dll_path = "./TK.MSTS.Tokens.dll"
     shape_load_path = "./examples/data/"
     shape_processed_path = "./examples/data/processed/NREmbAtracksRails"
-    ffeditc_path = "./ffeditc_unicode.exe"
     match_files = [
         # For testing
         #"NR_Emb_a1t10mStrt.s",
@@ -81,7 +80,8 @@ if __name__ == "__main__":
             railside_vertices_bottom = defaultdict(list)
 
             for vertex in vertices_in_primitive:
-                if vertex.point.y == 0.325 and vertex.normal == Vector(0.0, 1.0, 0.0): # Railtop vertices
+                is_horizontal = (vertex.normal.x, vertex.normal.y, vertex.normal.z) == (0.0, 1.0, 0.0)
+                if vertex.point.y == 0.325 and is_horizontal: # Railtop vertices
                     closest_trackcenter = tsu.find_closest_trackcenter(vertex.point, trackcenters, plane="xz")
                     closest_centerpoint = tsu.find_closest_centerpoint(vertex.point, closest_trackcenter, plane="xz")
                     distance_from_center = tsu.signed_distance_between(vertex.point, closest_centerpoint, plane="xz")
@@ -143,14 +143,14 @@ if __name__ == "__main__":
                 for v_top, v_bottom in zip(railside_vertices_top[side], railside_vertices_bottom[side]):
                     closest_trackcenter = tsu.find_closest_trackcenter(v_top.point, trackcenters, plane="xz")
                     distance = tsu.distance_along_trackcenter(v_top.point, closest_trackcenter, max_neighbor_dist=0.6)
-                    distances[v_top._vertex_idx] = distance
-                    distances[v_bottom._vertex_idx] = distance
+                    distances[v_top.index] = distance
+                    distances[v_bottom.index] = distance
 
             for side in railside_vertices_top:
-                railside_vertices_top[side].sort(key=lambda v: distances[v._vertex_idx])
+                railside_vertices_top[side].sort(key=lambda v: distances[v.index])
 
             for side in railside_vertices_bottom:
-                railside_vertices_bottom[side].sort(key=lambda v: distances[v._vertex_idx])
+                railside_vertices_bottom[side].sort(key=lambda v: distances[v.index])
             
             print(f"\tGrouping railside vertices")
             trackcenter_idxs = {}
@@ -159,10 +159,10 @@ if __name__ == "__main__":
                 for v_top, v_bottom in zip(railside_vertices_top[side], railside_vertices_bottom[side]):
                     closest_trackcenter = tsu.find_closest_trackcenter(v_top.point, trackcenters, plane="xz")
                     trackcenter_idx = trackcenters.index(closest_trackcenter)
-                    trackcenter_idxs[v_top._vertex_idx] = trackcenter_idx
-                    trackcenter_idxs[v_bottom._vertex_idx] = trackcenter_idx
+                    trackcenter_idxs[v_top.index] = trackcenter_idx
+                    trackcenter_idxs[v_bottom.index] = trackcenter_idx
 
-            parallel_tracks = lambda v1, v2: trackcenter_idxs[v1._vertex_idx] == trackcenter_idxs[v2._vertex_idx]
+            parallel_tracks = lambda v1, v2: trackcenter_idxs[v1.index] == trackcenter_idxs[v2.index]
 
             for side in railside_vertices_top:
                 railside_vertices_top[side] = grouping.group_items_by(railside_vertices_top[side], parallel_tracks)
@@ -193,7 +193,7 @@ if __name__ == "__main__":
             # Creation of ATracks-like rail sides and rail tops.
             # New vertices are added, and at the end their values are changed according to the contents of 'update_vertex_data'.
             # New triangles are added according to the contents of 'new_triangles'. The order of vertices in each 'new_triangles' list item determines direction of the face.
-            update_vertex_data = [] # Format: [(vertex, new_height, new_center_distance, new_u_value, new_v_value, new_normal_vecx, new_normal_vecy, new_normal_vecz), ...]
+            update_vertex_data = [] # Format: [(vertex, new_height, new_center_distance, new_u_value, new_v_value, new_normal_x, new_normal_y, new_normal_z), ...]
             new_triangles = [] # Format: [(vertex1, vertex2, vertex3), ...]
             prev_vertices = None
 
@@ -209,7 +209,7 @@ if __name__ == "__main__":
 
                 # Updated values for existing vertices.
                 update_vertex_data.extend([
-                    (vertex, vertex.point.y, distance_from_center, u_value, -0.77, vertex.normal.vec_x, vertex.normal.vec_y, vertex.normal.vec_z)
+                    (vertex, vertex.point.y, distance_from_center, u_value, -0.77, vertex.normal.x, vertex.normal.y, vertex.normal.z)
                 ])
 
             print("")
@@ -226,7 +226,7 @@ if __name__ == "__main__":
 
                 # Updated values for existing vertices.
                 update_vertex_data.extend([
-                    (vertex, vertex.point.y, distance_from_center, u_value, -0.875, vertex.normal.vec_x, vertex.normal.vec_y, vertex.normal.vec_z)
+                    (vertex, vertex.point.y, distance_from_center, u_value, -0.875, vertex.normal.x, vertex.normal.y, vertex.normal.z)
                 ])
 
             print("")
@@ -496,7 +496,7 @@ if __name__ == "__main__":
             print("")
 
             # Update the values of existing and created vertices.
-            for idx, (vertex, new_height, new_center_distance, new_u_value, new_v_value, new_normal_vecx, new_normal_vecy, new_normal_vecz) in enumerate(update_vertex_data):
+            for idx, (vertex, new_height, new_center_distance, new_u_value, new_v_value, new_normal_x, new_normal_y, new_normal_z) in enumerate(update_vertex_data):
                 print(f"\tUpdating vertex {idx + 1} of {len(update_vertex_data)}", end='\r')
                 closest_trackcenter = tsu.find_closest_trackcenter(vertex.point, trackcenters, plane="xz")
                 new_position = tsu.get_new_position_from_trackcenter(new_center_distance, vertex.point, closest_trackcenter)
@@ -505,9 +505,9 @@ if __name__ == "__main__":
                 vertex.point.z = new_position.z
                 vertex.uv_point.u = new_u_value
                 vertex.uv_point.v = new_v_value
-                vertex.normal.vec_x = new_normal_vecx
-                vertex.normal.vec_y = new_normal_vecy
-                vertex.normal.vec_z = new_normal_vecz
+                vertex.normal.x = new_normal_x
+                vertex.normal.y = new_normal_y
+                vertex.normal.z = new_normal_z
             
             print("")
 
@@ -519,7 +519,6 @@ if __name__ == "__main__":
             print("")
 
         shapeio.dump(trackshape, new_shape_path)
-
         pytkutils.compress(tkutils_dll_path, new_shape_path)
 
         # Process .sd file
@@ -530,4 +529,4 @@ if __name__ == "__main__":
         new_sdfile_path = f"{shape_processed_path}/{new_sdfile_name}"
 
         shapeio.copy(sdfile_path, new_sdfile_path)
-        shapeio.replace_ignorecase(sfile_name, new_sfile_name)
+        shapeio.replace_ignorecase(new_sdfile_path, sfile_name, new_sfile_name)
