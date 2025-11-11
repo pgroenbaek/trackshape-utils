@@ -4,11 +4,12 @@
 [![Python 3.6+](https://img.shields.io/badge/Python-3.6%2B-blue?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![License GNU GPL v3](https://img.shields.io/badge/License-%20%20GNU%20GPL%20v3%20-lightgrey?style=flat&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NDAgNTEyIj4KICA8IS0tIEZvbnQgQXdlc29tZSBGcmVlIDYuNy4yIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlL2ZyZWUgQ29weXJpZ2h0IDIwMjUgRm9udGljb25zLCBJbmMuIC0tPgogIDxwYXRoIGZpbGw9IndoaXRlIiBkPSJNMzg0IDMybDEyOCAwYzE3LjcgMCAzMiAxNC4zIDMyIDMycy0xNC4zIDMyLTMyIDMyTDM5OC40IDk2Yy01LjIgMjUuOC0yMi45IDQ3LjEtNDYuNCA1Ny4zTDM1MiA0NDhsMTYwIDBjMTcuNyAwIDMyIDE0LjMgMzIgMzJzLTE0LjMgMzItMzIgMzJsLTE5MiAwLTE5MiAwYy0xNy43IDAtMzItMTQuMy0zMi0zMnMxNC4zLTMyIDMyLTMybDE2MCAwIDAtMjk0LjdjLTIzLjUtMTAuMy00MS4yLTMxLjYtNDYuNC01Ny4zTDEyOCA5NmMtMTcuNyAwLTMyLTE0LjMtMzItMzJzMTQuMy0zMiAzMi0zMmwxMjggMGMxNC42LTE5LjQgMzcuOC0zMiA2NC0zMnM0OS40IDEyLjYgNjQgMzJ6bTU1LjYgMjg4bDE0NC45IDBMNTEyIDE5NS44IDQzOS42IDMyMHpNNTEyIDQxNmMtNjIuOSAwLTExNS4yLTM0LTEyNi03OC45Yy0yLjYtMTEgMS0yMi4zIDYuNy0zMi4xbDk1LjItMTYzLjJjNS04LjYgMTQuMi0xMy44IDI0LjEtMTMuOHMxOS4xIDUuMyAyNC4xIDEzLjhsOTUuMiAxNjMuMmM1LjcgOS44IDkuMyAyMS4xIDYuNyAzMi4xQzYyNy4yIDM4MiA1NzQuOSA0MTYgNTEyIDQxNnpNMTI2LjggMTk1LjhMNTQuNCAzMjBsMTQ0LjkgMEwxMjYuOCAxOTUuOHpNLjkgMzM3LjFjLTIuNi0xMSAxLTIyLjMgNi43LTMyLjFsOTUuMi0xNjMuMmM1LTguNiAxNC4yLTEzLjggMjQuMS0xMy44czE5LjEgNS4zIDI0LjEgMTMuOGw5NS4yIDE2My4yYzUuNyA5LjggOS4zIDIxLjEgNi43IDMyLjFDMjQyIDM4MiAxODkuNyA0MTYgMTI2LjggNDE2UzExLjcgMzgyIC45IDMzNy4xeiIvPgo8L3N2Zz4=&logoColor=%23ffffff)](https://github.com/pgroenbaek/trackshape-utils/blob/master/LICENSE)
 
-A collection of utilities for working with MSTS/ORTS track shapes.
+A collection of utilities for working with MSTS and ORTS track shapes.
 
 List of companion modules:
 - [shapeio](https://github.com/pgroenbaek/shapeio) - offers functions to convert shapes between structured text format and Python objects.
 - [shapeedit](https://github.com/pgroenbaek/shapeedit) - provides a wrapper for modifying the shape data structure safely.
+- [pyffeditc](https://github.com/pgroenbaek/pyffeditc) - handles compression and decompression of shape files through the `ffeditc_unicode.exe` utility found in MSTS installations.
 - [pytkutils](https://github.com/pgroenbaek/pytkutils) - handles compression and decompression of shape files through the `TK.MSTS.Tokens.dll` library by Okrasa Ghia.
 
 ## Installation
@@ -31,7 +32,7 @@ Replace `<version>` with the actual version number in the filename. For example:
 
 ```sh
 pip install path/to/trackshapeutils-0.5.0b0-py3-none-any.whl
-``` -->
+```-->
 
 ### Install from source
 
@@ -40,153 +41,260 @@ git clone https://github.com/pgroenbaek/trackshape-utils.git
 pip install --upgrade ./trackshape-utils
 ```
 
+## Capabilities
+
+This Python module provides additional utilities which, when used alongside [shapeedit](https://github.com/pgroenbaek/shapeedit), enable the creation of scripts to edit both straight and curved track shapes.
+
+![DB1s to V4hs1t_RKL](./examples/images/V4hs1t_RKL.png)
+
+![DB1s curve to V4hs1t_RKL](./examples/images/V4hs1t_RKL_Curve.png)
+
+
 ## Usage
 
-<!-- See [shapeio](https://github.com/pgroenbaek/shapeio) for loading shapes into Python. See [shapeedit](https://github.com/pgroenbaek/shapeedit) for functions to modify shapes while keeping them error-free and usable in MSTS/ORTS. -->
+The functionality in this module largely relies on the concept of trackcenters. These can be loaded from either a global `tsection.dat`, a local `tsection.dat` or be created manually to match whatever shape you are working on.
 
-TODO
+![Trackcenters](./examples/images/Trackcenters.png)
 
-<!-- ### Loading trackcenters
+Using trackcenters as a reference makes it easy to determine which part of the track a given vertex belongs to, which side of the track it is on, and how far from the start of the track the vertex is positioned.
+
+Finally, trackcenters allow for calculating new positions of vertices relative to the trackcenter.
+
+### Loading trackcenters
 
 #### From the included global tsection.dat
 
-#### From your own global tsection.dat
+Loading trackcenters is straightforward. You need to specify the shape name exactly as it appears in the global `tsection.dat`. This is not case-sensitive, but any prefixes or suffixes must be removed from shape names, e.g., `DB2f_a1t10mStrt.s` must be `a1t10mStrt.s`.
 
-#### From a local tsection.dat
+The function returns a list of trackcenters. For single-track shapes, such as `a1t10mStrt.s`, the list will contain only one item.
 
-
-### Manual creation of trackcenters
-
-
-
-### Combining trackcenters
-
-
-### Calculating distance to trackcenter
-
-
-### Calculating new positions
-
-#### Perpendicular to a trackcenter
-
-#### Along the length of a trackcenter
-
-
-
-
-
-### Working with trackcenters
-
-Trackcenters make it easy to work with track shapes using the same generalized scripting logic, no matter if the track shapes are curved, straight, or have multiple parallel tracks.
-
-The trackcenters can be loaded using the `generate_trackcenters_from_global_tsection` function, either from the global *tsection.dat* Build \#60 included with the Python module or from a file you provide. The function returns a list of trackcenters, each corresponding to a parallel track. For single-track sections, there will be only one item in the list.
-
-You can also use `generate_trackcenters_from_local_tsection` to load data from a local *tsection.dat* file if you want to, for example, modify dynamic track section shapes generated with DynaTrax.
-
-If needed, trackcenters can also be created manually using `generate_curve_centerpoints` and `generate_straight_centerpoints`. The functions that load from *tsection.dat* files use these internally.
-
-The example below shows how to use `find_closest_trackcenter`, `find_closest_centerpoint`, and `signed_distance_between` to calculate the distance from a vertex to the nearest trackcenter. This is essential for generalizing your scripting logic. 
-
-By using the distance from the center, you can easily determine which part of the track a vertex belongs to, regardless of whether the track section is curved, straight, or has multiple parallel tracks.
-
-To calculate new vertex positions relative to the trackcenter, you can use `get_new_position_from_trackcenter` to adjust the distance from the center, and `get_new_position_along_trackcenter` to adjust the position along the trackcenter.
-
+Additionally, the fidelity of the generated trackcenters can be controlled using the `num_points_per_meter` parameter. Smaller values make calculations faster but less accurate. This is a tradeoff that may require experimentation. Typically, 7-12 points per meter provides good results without being too slow.
 
 ```python
 import trackshapeutils as tsu
 
-shape_load_path = "./examples/data"
-shape_processed_path = "./examples/data/processed"
+trackcenters = tsu.trackcenters_from_global_tsection(
+    "a1t10mStrt.s",
+    num_points_per_meter=8
+)
+```
 
-sfile_name = 'DB1s_a2t500r20d.s'
-new_sfile_name = 'DB1s_a2t500r20d_modified.s'
+#### From your own global tsection.dat
 
-sfile = tsu.load_shape(sfile_name, shape_load_path)
-new_sfile = sfile.copy(new_filename=new_sfile_name, new_directory=shape_processed_path)
+If you want to use your own global `tsection.dat`, you can specify it using the `tsection_file_path` parameter.
 
-# Create trackcenter objects based on data in the global tsection.dat
-# Name must match the names defined within the global tsection.dat, so replace 'DB1s_' with nothing.
-tsection_sfile_name = sfile_name.replace('DB1s_', '')
-trackcenters = tsu.generate_trackcenters_from_global_tsection(shape_name=tsection_sfile_name, num_points_per_meter=7)
+```python
+import trackshapeutils as tsu
 
-# Get all vertices in lod_dlevel 500.
-lod_dlevel = 500
-subobject_idxs = new_sfile.get_subobject_idxs_in_lod_dlevel(lod_dlevel)
+trackcenters = tsu.trackcenters_from_global_tsection(
+    "a1t10mStrt.s",
+    tsection_file_path="/path/to/your/global/tsection.dat",
+    num_points_per_meter=8
+)
+```
 
-for subobject_idx in subobject_idxs:
-    vertices_in_subobject = new_sfile.get_vertices_in_subobject(lod_dlevel, subobject_idx)
+If you specify a _global tsection extension file_, for example from the `/OpenRails/tsection.dat` directory of a route, then set the `include_global_tsection` parameter to `True`. Otherwise, any tracksections from the standardised global `tsection.dat` cannot be found because this Python module currently does not resolve any `include (...)` statements.
 
-    for vertex in vertices_in_subobject:
-        # Calculate distance from the closest track center to the vertex point in the xz-plane.
-        closest_trackcenter = tsu.find_closest_trackcenter(vertex.point, trackcenters, plane="xz")
-        closest_centerpoint = tsu.find_closest_centerpoint(vertex.point, closest_trackcenter, plane="xz")
-        distance_from_center = tsu.signed_distance_between(vertex.point, closest_centerpoint, plane="xz")
+Doing this appends the standardised global `tsection.dat` build \#60 to your extension file, so that any track section references within it can be found.
 
-        # Calculate and set a new position based on distance to the closest track center (perpendicular to the closest track center).
-        new_distance_from_center = -1.4125
-        new_position_from_center = tsu.get_new_position_from_trackcenter(new_distance_from_center, vertex.point, closest_trackcenter)
-        vertex.point.x = new_position_from_center.x
-        vertex.point.y = new_position_from_center.y
-        vertex.point.z = new_position_from_center.z
-        new_sfile.update_vertex(vertex)
+```python
+import trackshapeutils as tsu
 
-        # Calculate and set a new position based on distance along closest track center from Point(0.0, 0.0, 0.0).
-        new_distance_along_track = 10
-        new_position_along_track = tsu.get_new_position_along_trackcenter(new_distance_along_track, vertex.point, closest_trackcenter)
-        vertex.point.x = new_position_along_track.x
-        vertex.point.y = new_position_along_track.y
-        vertex.point.z = new_position_along_track.z
-        new_sfile.update_vertex(vertex)
+trackcenters = tsu.trackcenters_from_global_tsection(
+    "a1t10mStrt.s",
+    tsection_file_path="/path/to/your/global/extension/tsection.dat",
+    include_global_tsection=True,
+    num_points_per_meter=8
+)
+```
 
-new_sfile.save()
+#### From a local tsection.dat
+
+For any track shapes that rely on dynamic track sections, for example those created using tools like DynaTrax, you need to load the trackcenter from the local `tsection.dat`.
+
+Here, it is not shape names but the TrackPath index that must be specified (**NOT** the TrackSection index). In other words, this refers to the number used as SectionIdx within world files.
+
+This function returns a single trackcenter rather than a list, as these are always single-track.
+
+```python
+import trackshapeutils as tsu
+
+trackcenter = tsu.trackcenter_from_local_tsection(
+    41023,
+    tsection_file_path="/path/to/your/local/tsection.dat",
+    num_points_per_meter=8
+)
+```
+
+#### Manual creation of trackcenters
+
+If needed, trackcenters can also be created manually.  
+
+These two functions normally do not need to be called directly, as they are invoked within `trackcenters_from_global_tsection` and `trackcenter_from_local_tsection`.
+
+Trackcenters can be combined using the `+` operator or the `Trackcenter.average()` class method. The `+` operator appends points from one trackcenter to another, while `Trackcenter.average()` computes the average of corresponding points to create a new trackcenter.
+
+```python
+import trackshapeutils as tsu
+
+# Generate a straight trackcenter
+straight_trackcenter = tsu.generate_straight_centerpoints(
+    length=10,
+    start_angle=0,
+    start_point=Point(0.0, 0.0, 0.0),
+    num_points=80
+)
+
+# Generate a curved trackcenter
+curved_trackcenter = tsu.generate_curve_centerpoints(
+    curve_radius=1500,
+    curve_angle=10,
+    start_angle=0,
+    start_point=Point(0.0, 0.0, 10.0),
+    num_points=80
+)
+
+# Combine trackcenters by appending points from the curved trackcenter
+combined_trackcenter = straight_trackcenter + curved_trackcenter
+
+# Note: The '+' operator appends points from the second trackcenter to the first,
+# preserving the order without modifying the original trackcenters.
+```
+
+If needed, trackcenters can also be averaged, for example to compute the centerline between two parallel tracks.
+
+```python
+import trackshapeutils as tsu
+from trackshapeutils import Trackcenter
+
+# Generate two parallel straight trackcenters, e.g., representing parallel tracks
+straight_trackcenter1 = tsu.generate_straight_centerpoints(
+    length=10,
+    start_angle=0,
+    start_point=Point(2.5, 0.0, 0.0),
+    num_points=80
+)
+straight_trackcenter2 = tsu.generate_straight_centerpoints(
+    length=10,
+    start_angle=0,
+    start_point=Point(-2.5, 0.0, 0.0),
+    num_points=80
+)
+
+# Create a new trackcenter by averaging corresponding points from the two trackcenters
+averaged_trackcenter = Trackcenter.average([straight_trackcenter1, straight_trackcenter2])
+
+# Note: The averaged_trackcenter contains points located at the midpoint between
+# corresponding points from straight_trackcenter1 and straight_trackcenter2.
+```
+
+### Calculating distances
+
+#### Distance to closest trackcenter
+
+
+
+```python
+import trackshapeutils as tsu
+from shapeio.shape import Point
+
+point_along_track = Point(1.0, 1.0, 1.0)
+
+trackcenters = tsu.trackcenters_from_global_tsection(
+    "a4t10mStrt.s",
+    num_points_per_meter=8
+)
+
+closest_trackcenter = tsu.find_closest_trackcenter(point_along_track, trackcenters, plane="xz")
+closest_centerpoint = tsu.find_closest_centerpoint(point_along_track, closest_trackcenter, plane="xz")
+distance_from_center = tsu.distance_between(point_along_track, closest_centerpoint, plane="xz")
+```
+
+Or, you can use `signed_distance_between` to be able to determine which side of the trackcenter the point is located at:
+
+```python
+signed_distance_from_center = tsu.signed_distance_between(point_along_track, closest_centerpoint, plane="xz")
+```
+
+#### Distance along the length of the track
+
+```python
+import trackshapeutils as tsu
+from shapeio.shape import Point
+
+point_along_track = Point(1.0, 1.0, 1.0)
+
+trackcenters = tsu.trackcenters_from_global_tsection(
+    "a4t10mStrt.s",
+    num_points_per_meter=8
+)
+
+closest_trackcenter = tsu.find_closest_trackcenter(point_along_track, trackcenters, plane="xz")
+closest_centerpoint = tsu.find_closest_centerpoint(point_along_track, closest_trackcenter, plane="xz")
+distance_from_start = tsu.distance_along_trackcenter(point_along_track, closest_centerpoint, start_point=Point(0.0, 0.0, 0.0))
+```
+
+### Calculating new vertex positions
+
+#### Perpendicular to a trackcenter
+
+Recalculates position of `point_along_track` to be one meter further away from the closest track center.
+
+```python
+import trackshapeutils as tsu
+from shapeio.shape import Point
+
+point_along_track = Point(1.0, 1.0, 1.0)
+
+trackcenters = tsu.trackcenters_from_global_tsection(
+    "a4t10mStrt.s",
+    num_points_per_meter=8
+)
+
+closest_trackcenter = tsu.find_closest_trackcenter(point_along_track, trackcenters, plane="xz")
+closest_centerpoint = tsu.find_closest_centerpoint(point_along_track, closest_trackcenter, plane="xz")
+signed_distance_from_center = tsu.signed_distance_between(point_along_track, closest_centerpoint, plane="xz")
+
+if signed_distance_from_center > 0:
+    new_distance = signed_distance_from_center + 1
+else:
+    new_distance = signed_distance_from_center - 1
+
+new_point = tsu.get_new_position_from_trackcenter(new_distance, point_along_track, closest_trackcenter)
+```
+
+#### Along the length of a trackcenter
+
+Move `point_along_track` 5 meters back along the track center from the original point. Keeping the XYZ offset between the original point and what was previously the closest point of the track center.
+
+```python
+import trackshapeutils as tsu
+from shapeio.shape import Point
+
+point_along_track = Point(7.0, 7.0, 1.0)
+
+trackcenters = tsu.trackcenters_from_global_tsection(
+    "a4t10mStrt.s",
+    num_points_per_meter=8
+)
+
+closest_trackcenter = tsu.find_closest_trackcenter(point_along_track, trackcenters, plane="xz")
+closest_centerpoint = tsu.find_closest_centerpoint(point_along_track, closest_trackcenter, plane="xz")
+
+new_point = tsu.get_new_position_along_trackcenter(-5, closest_centerpoint, closest_trackcenter)
 ```
 
 ## Example Scripts
 
-### Converting DB1s to DB1fb ([script](./examples/convert_db1s_to_db1fb.py))
+### Conversion of DB1z to V4hs_RKL slab track ([script](./examples/convert_db1z1t_to_v4hsrkl1t.py))
 
-The DBTracks track system includes many track variants, such as with different textures, various types of sleepers, and other differences like the presence or absence of overhead wires and the German LZB cable. For some variants, such as DB1fb, not all track sections are available.
+![DB1s to V4hs1t_RKL](./examples/images/V4hs1t_RKL.png)
 
-However, DB1fb sections can easily be created from DB1s sections by changing the textures and removing the LZB cable.
+### Modifying NR_Emb with XTracks rails to fit ATracks ([script](./examples/change_nrembrails_to_atracksrails.py))
 
-That is exactly what this simple script does for both curved and straight track. The script was created before the functionality to remove triangles was added, so the LZB cable is hidden by moving it below the track bed. -->
+![DB1s to V4hs1t_RKL](./examples/images/NR_Emb_AT.png)
 
-<!-- Image showing a shape before and after running the script: -->
-
-<!-- ![Before and after running the script](./examples/images/convert_db1s_to_db1fb.png) -->
-
-<!-- ### Creating ATracks railheads from NR_Emb railheads ([script](./examples/change_nrembrails_to_atracksrails.py))
-
-The old XTracks track system was created in the early 2000s and features completely square railheads. More modern track systems, such as ATracks, do not. The difference is very noticeable if you try to combine the two.
-
-Norbert Rieger's old NR_Emb shapes with integrated railheads have railhead geometry that matches that of XTracks, making those shapes visually incompatible with ATracks.
-
-This script adjusts the XTracks-style railheads in the NR_Emb shapes to match the geometry of ATracks. The script is fairly advanced and supports both straight and curved track sections, as well as multiple parallel tracks. Within the script, new geometry is quite literally being built and appended to the existing railheads. -->
-
-<!-- Image showing a shape before and after running the script: -->
-
-<!-- ![Before and after running the script](./examples/images/change_nrembrails_to_atracksrails.png) -->
-
-<!-- The edited NR_Emb shapes are available for download at [trainsim.com](https://www.trainsim.com/forums/filelib/search-fileid?fid=90029).
-
-### Copying overhead wire from one shape to another ([script](./examples/make_ohw_dblslip7_5d.py))
-
-This is another fairly advanced script that copies the overhead wire from one of Norbert Rieger's **DblSlip7\_5d** shapes into the animated **DblSlip7\_5d** shapes created by Laci1959.
-
-Shapes can use different internal coordinate systems. These coordinate systems are transformed into world space using the `matrix ( ... )` definitions found inside the shape files.
-
-The script handles remapping the points and normals to align with the internal coordinate system of Laci1959's shapes. Without this step, the copied geometry would appear in the wrong position when the edited shape is rendered.
-
-<!-- Image showing a shape before and after running the script: -->
-
-<!-- ![Before and after running the script](./examples/images/make_ohw_dblslip7_5d.png) -->
-
-<!-- The edited DblSlip7\_5d shapes are available for download at [the-train.de](https://the-train.de/downloads/entry/11283-dbtracks-doppelte-kreuzungsweiche-dkw-7-5/).
-
-### Additional examples
-
-There are further example scripts available in [this repository](https://github.com/pgroenbaek/openrails-route-dk24-objects/tree/master/Scripts/DBTracks). -->
-
+The edited NR_Emb shapes with ATracks rails are available for download at [trainsim.com](https://www.trainsim.com/forums/filelib/search-fileid?fid=90029).
 
 ## Running Tests
 
