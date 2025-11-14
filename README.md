@@ -14,7 +14,7 @@ List of companion modules:
 
 ## Installation
 
-<!-- ### Install from PyPI
+### Install from PyPI
 
 ```sh
 pip install --upgrade trackshapeutils
@@ -28,11 +28,7 @@ If you have downloaded a `.whl` file from the [Releases](https://github.com/pgro
 pip install path/to/trackshapeutils‑<version>‑py3‑none‑any.whl
 ```
 
-Replace `<version>` with the actual version number in the filename. For example:
-
-```sh
-pip install path/to/trackshapeutils-0.5.0b0-py3-none-any.whl
-```-->
+Replace `<version>` with the actual version number in the filename.
 
 ### Install from source
 
