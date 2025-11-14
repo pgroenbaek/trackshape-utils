@@ -72,29 +72,30 @@ if __name__ == "__main__":
                     # mb_trackbed
                     for primitive in sub_object.primitives(prim_state_name="mb_trackbed"):
                         for vertex in primitive.vertices():
-                            closest_centerpoint = tsu.find_closest_centerpoint(vertex.point, trackcenter, plane="xz")
+                            closest_trackcenter = tsu.find_closest_trackcenter(vertex.point, trackcenters, plane="xz")
+                            closest_centerpoint = tsu.find_closest_centerpoint(vertex.point, closest_trackcenter, plane="xz")
                             distance_from_center = tsu.signed_distance_between(vertex.point, closest_centerpoint, plane="xz")
 
                             # Innermost mb_trackbed points
                             if distance_from_center < -1.65 and distance_from_center > -1.75:
-                                new_position = tsu.get_new_position_from_trackcenter(-1.4125, vertex.point, trackcenter)
+                                new_position = tsu.get_new_position_from_trackcenter(-1.4125, vertex.point, closest_trackcenter)
                                 vertex.point.x = new_position.x # Set recalculated x
                                 vertex.point.y = 0.02 # Set height
                                 vertex.point.z = new_position.z # Set recalculated z
                             if distance_from_center > 1.65 and distance_from_center < 1.75:
-                                new_position = tsu.get_new_position_from_trackcenter(1.4125, vertex.point, trackcenter)
+                                new_position = tsu.get_new_position_from_trackcenter(1.4125, vertex.point, closest_trackcenter)
                                 vertex.point.x = new_position.x # Set recalculated x
                                 vertex.point.y = 0.02 # Set height
                                 vertex.point.z = new_position.z # Set recalculated z
                             
                             # Outermost mb_trackbed points
                             if distance_from_center < -2.55 and distance_from_center > -2.65:
-                                new_position = tsu.get_new_position_from_trackcenter(-2.4325, vertex.point, trackcenter)
+                                new_position = tsu.get_new_position_from_trackcenter(-2.4325, vertex.point, closest_trackcenter)
                                 vertex.point.x = new_position.x # Set recalculated x
                                 vertex.point.y = 0.01 # Set height
                                 vertex.point.z = new_position.z # Set recalculated z
                             if distance_from_center > 2.55 and distance_from_center < 2.65:
-                                new_position = tsu.get_new_position_from_trackcenter(2.4325, vertex.point, trackcenter)
+                                new_position = tsu.get_new_position_from_trackcenter(2.4325, vertex.point, closest_trackcenter)
                                 vertex.point.x = new_position.x # Set recalculated x
                                 vertex.point.y = 0.01 # Set height
                                 vertex.point.z = new_position.z # Set recalculated z
@@ -102,12 +103,13 @@ if __name__ == "__main__":
                     # mt_trackbed
                     for primitive in sub_object.primitives(prim_state_name="mt_trackbed"):
                         for vertex in primitive.vertices():
-                            closest_centerpoint = tsu.find_closest_centerpoint(vertex.point, trackcenter, plane="xz")
+                            closest_trackcenter = tsu.find_closest_trackcenter(vertex.point, trackcenters, plane="xz")
+                            closest_centerpoint = tsu.find_closest_centerpoint(vertex.point, closest_trackcenter, plane="xz")
                             distance_from_center = tsu.signed_distance_between(vertex.point, closest_centerpoint, plane="xz")
 
                             # Second to last outermost mt_trackbed points
                             if distance_from_center < -1.25 and distance_from_center > -1.35:
-                                new_position = tsu.get_new_position_from_trackcenter(-1.4025, vertex.point, trackcenter)
+                                new_position = tsu.get_new_position_from_trackcenter(-1.4025, vertex.point, closest_trackcenter)
                                 vertex.point.x = new_position.x # Set recalculated x
                                 vertex.point.y = 0.128 # Set height
                                 vertex.point.z = new_position.z # Set recalculated z
@@ -116,7 +118,7 @@ if __name__ == "__main__":
                                 elif vertex.uv_point.u == 0.0918:
                                     vertex.uv_point.u = 0.0693
                             if distance_from_center > 1.25 and distance_from_center < 1.35:
-                                new_position = tsu.get_new_position_from_trackcenter(1.4025, vertex.point, trackcenter)
+                                new_position = tsu.get_new_position_from_trackcenter(1.4025, vertex.point, closest_trackcenter)
                                 vertex.point.x = new_position.x # Set recalculated x
                                 vertex.point.y = 0.128 # Set height
                                 vertex.point.z = new_position.z # Set recalculated z
@@ -127,7 +129,7 @@ if __name__ == "__main__":
                             
                             # Outermost mt_trackbed points
                             if distance_from_center < -1.65 and distance_from_center > -1.75:
-                                new_position = tsu.get_new_position_from_trackcenter(-1.4125, vertex.point, trackcenter)
+                                new_position = tsu.get_new_position_from_trackcenter(-1.4125, vertex.point, closest_trackcenter)
                                 vertex.point.x = new_position.x # Set recalculated x
                                 vertex.point.y = 0.02 # Set height
                                 vertex.point.z = new_position.z # Set recalculated z
@@ -136,7 +138,7 @@ if __name__ == "__main__":
                                 elif vertex.uv_point.u == 0.0742:
                                     vertex.uv_point.u = 0.0342
                             if distance_from_center > 1.65 and distance_from_center < 1.75:
-                                new_position = tsu.get_new_position_from_trackcenter(1.4125, vertex.point, trackcenter)
+                                new_position = tsu.get_new_position_from_trackcenter(1.4125, vertex.point, closest_trackcenter)
                                 vertex.point.x = new_position.x # Set recalculated x
                                 vertex.point.y = 0.02 # Set height
                                 vertex.point.z = new_position.z # Set recalculated z
@@ -146,7 +148,7 @@ if __name__ == "__main__":
                                     vertex.uv_point.u = 0.7158
                 
         shapeio.dump(trackshape, new_shape_path)
-        pyffeditc.compress(ffeditc_path, new_shape_path)
+        #pyffeditc.compress(ffeditc_path, new_shape_path)
 
         # Process .sd file
         sdfile_name = sfile_name.replace(".s", ".sd")

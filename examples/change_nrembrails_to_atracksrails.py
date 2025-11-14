@@ -519,7 +519,7 @@ if __name__ == "__main__":
             print("")
 
         shapeio.dump(trackshape, new_shape_path)
-        pyffeditc.compress(ffeditc_path, new_shape_path)
+        #pyffeditc.compress(ffeditc_path, new_shape_path)
 
         # Process .sd file
         sdfile_name = sfile_name.replace(".s", ".sd")
