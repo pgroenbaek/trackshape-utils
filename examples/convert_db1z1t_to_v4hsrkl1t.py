@@ -36,19 +36,6 @@ if __name__ == "__main__":
         pyffeditc.decompress(ffeditc_path, new_shape_path)
         trackshape = shapeio.load(new_shape_path)
 
-        for idx, image in enumerate(trackshape.images):
-            image = re.sub(r"DB_Rails1.ace", "V4_Rails1.ace", image, flags=re.IGNORECASE)
-            image = re.sub(r"DB_Rails1w.ace", "V4_Rails1.ace", image, flags=re.IGNORECASE)
-            image = re.sub(r"DB_Track1.ace", "V4_RKLb.ace", image, flags=re.IGNORECASE)
-            image = re.sub(r"DB_Track1s.ace", "V4_RKLs.ace", image, flags=re.IGNORECASE)
-            image = re.sub(r"DB_Track1w.ace", "V4_RKLb.ace", image, flags=re.IGNORECASE)
-            image = re.sub(r"DB_Track1sw.ace", "V4_RKLs.ace", image, flags=re.IGNORECASE)
-            image = re.sub(r"DB_TrackSfs1.ace", "V4_RKLb.ace", image, flags=re.IGNORECASE)
-            image = re.sub(r"DB_TrackSfs1s.ace", "V4_RKLs.ace", image, flags=re.IGNORECASE)
-            image = re.sub(r"DB_TrackSfs1w.ace", "V4_RKLb.ace", image, flags=re.IGNORECASE)
-            image = re.sub(r"DB_TrackSfs1sw.ace", "V4_RKLs.ace", image, flags=re.IGNORECASE)
-            trackshape.images[idx] = image
-
         # RKL side
         # [Vector((-1.4025001525878906, 0.0, -0.12800000607967377))]
         # [Vector((-1.4125001430511475, 0.0, -0.019999999552965164))]
@@ -60,6 +47,17 @@ if __name__ == "__main__":
         # [Vector((-2.5999999046325684, 0.0, 0.019999999552965164))]
 
         trackshape_editor = ShapeEditor(trackshape)
+
+        trackshape_editor.replace_texture_image("DB_Rails1.ace", "V4_Rails1.ace")
+        trackshape_editor.replace_texture_image("DB_Rails1w.ace", "V4_Rails1.ace")
+        trackshape_editor.replace_texture_image("DB_Track1.ace", "V4_RKLb.ace")
+        trackshape_editor.replace_texture_image("DB_Track1s.ace", "V4_RKLs.ace")
+        trackshape_editor.replace_texture_image("DB_Track1w.ace", "V4_RKLb.ace")
+        trackshape_editor.replace_texture_image("DB_Track1sw.ace", "V4_RKLs.ace")
+        trackshape_editor.replace_texture_image("DB_TrackSfs1.ace", "V4_RKLb.ace")
+        trackshape_editor.replace_texture_image("DB_TrackSfs1s.ace", "V4_RKLs.ace")
+        trackshape_editor.replace_texture_image("DB_TrackSfs1w.ace", "V4_RKLb.ace")
+        trackshape_editor.replace_texture_image("DB_TrackSfs1sw.ace", "V4_RKLs.ace")
 
         for lod_control in trackshape_editor.lod_controls():
             for lod_dlevel in lod_control.distance_levels():
