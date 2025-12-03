@@ -21,7 +21,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-__version__ = '0.5.0b2'
+__version__ = '0.5.0b3'
 __all__ = [
     'generate_empty_centerpoints', 'generate_straight_centerpoints', 'generate_curve_centerpoints',
     'trackcenters_from_global_tsection', 'trackcenter_from_local_tsection',
