@@ -41,16 +41,16 @@ pip install --upgrade ./trackshape-utils
 
 This Python module provides additional utilities which, when used alongside [shapeedit](https://github.com/pgroenbaek/shapeedit), enable the creation of scripts to edit both straight and curved track shapes.
 
-![DB1s to V4hs1t_RKL](./examples/images/V4hs1t_RKL.png)
+![DB1s to V4hs1t_RKL](./images/V4hs1t_RKL.png)
 
-![DB1s curve to V4hs1t_RKL](./examples/images/V4hs1t_RKL_Curve.png)
+![DB1s curve to V4hs1t_RKL](./images/V4hs1t_RKL_Curve.png)
 
 
 ## Usage
 
 The functionality in this module largely relies on the concept of trackcenters. These can be loaded from either a global `tsection.dat`, a local `tsection.dat` or be created manually to match whatever shape you are working on.
 
-![Trackcenters](./examples/images/Trackcenters.png)
+![Trackcenters](./images/Trackcenters.png)
 
 Using trackcenters as a reference makes it easy to determine which part of the track a given vertex belongs to, which side of the track it is on, and how far from the start of the track the vertex is positioned.
 
@@ -282,13 +282,13 @@ new_point = tsu.get_new_position_along_trackcenter(-5, closest_centerpoint, clos
 
 ## Example Scripts
 
-### Conversion of DB1z to V4hs_RKL slab track ([script](./examples/convert_db1z1t_to_v4hsrkl1t.py))
+### Conversion of DB1z to V4hs_RKL slab track ([script](https://github.com/pgroenbaek/dbtracks-extras/blob/master/scripts/V4hs1t_RKL/convert_db1z1t_to_v4hs1trkl.py))
 
-![DB1s to V4hs1t_RKL](./examples/images/V4hs1t_RKL.png)
+![DB1s to V4hs1t_RKL](./images/V4hs1t_RKL.png)
 
-### Modifying NR_Emb with XTracks rails to fit ATracks ([script](./examples/change_nrembrails_to_atracksrails.py))
+### Modifying NR_Emb with XTracks rails to fit ATracks ([script](https://github.com/pgroenbaek/nremb-atracks/blob/master/scripts/NR_Emb_AT/change_nrembrails_to_atracksrails.py))
 
-![DB1s to V4hs1t_RKL](./examples/images/NR_Emb_AT.png)
+![DB1s to V4hs1t_RKL](./images/NR_Emb_AT.png)
 
 The edited NR_Emb shapes with ATracks rails are available for download at [trainsim.com](https://www.trainsim.com/forums/filelib/search-fileid?fid=90029).
 
