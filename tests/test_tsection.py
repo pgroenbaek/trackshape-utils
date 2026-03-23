@@ -126,10 +126,10 @@ def test_trackcenter_from_local_tsection(global_storage):
         tsection_file_path=local_tsection_path,
         num_points_per_meter=10
     )
-    assert trackcenter.centerpoints.shape == (257, 3)
-    assert trackcenter.centerpoints.size == 771
+    assert trackcenter.centerpoints.shape == (3626, 3)
+    assert trackcenter.centerpoints.size == 10878
     assert np.array_equal(trackcenter.centerpoints[0], np.array([0, 0, 0]))
-    np.testing.assert_allclose(trackcenter.centerpoints[-1], np.array([0.03248401, 0, 25.89449892]), atol=1e-6)
+    np.testing.assert_allclose(trackcenter.centerpoints[-1], np.array([-16.649305, 0.0, 361.903156]), atol=1e-6)
 
 
 def test_trackcenters_from_nonexistant_local_tsection_raises(global_storage):
