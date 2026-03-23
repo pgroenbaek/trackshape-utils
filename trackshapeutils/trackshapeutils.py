@@ -470,7 +470,7 @@ def trackcenter_from_local_tsection(
                 num_points=num_points
             )
         else:
-            angle = sectioncurve_value1
+            angle = math.degrees(sectioncurve_value1)
             radius = sectioncurve_value2
             curve_length = distance_along_curve(curve_angle=angle, curve_radius=radius)
             num_points = int(curve_length * num_points_per_meter)
