@@ -28,7 +28,7 @@ from typing import List, Optional
 from scipy.interpolate import splprep, splev
 from scipy.spatial import KDTree
 
-from shapeio import shape
+from simisa import shape
 
 
 class Trackcenter:
@@ -101,6 +101,7 @@ class Trackcenter:
         """
         if isinstance(other, Trackcenter):
             return np.array_equal(self.centerpoints, other.centerpoints)
+        
         return False
     
     @classmethod

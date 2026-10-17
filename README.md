@@ -89,21 +89,6 @@ trackcenters = tsu.trackcenters_from_global_tsection(
 )
 ```
 
-If you specify a _global tsection extension file_, for example from the `/OpenRails/tsection.dat` directory of a route, then set the `include_global_tsection` parameter to `True`. Otherwise, any tracksections from the standardised global `tsection.dat` cannot be found because this Python module currently does not resolve any `include (...)` statements.
-
-Doing this appends the standardised global `tsection.dat` build \#60 to your extension file, so that any track section references within it can be found.
-
-```python
-import trackshapeutils as tsu
-
-trackcenters = tsu.trackcenters_from_global_tsection(
-    "a1t10mStrt.s",
-    tsection_file_path="/path/to/your/global/extension/tsection.dat",
-    include_global_tsection=True,
-    num_points_per_meter=8
-)
-```
-
 #### From a local tsection.dat
 
 For any track shapes that rely on dynamic track sections, for example those created using tools like DynaTrax, you need to load the trackcenter from the local `tsection.dat`.
