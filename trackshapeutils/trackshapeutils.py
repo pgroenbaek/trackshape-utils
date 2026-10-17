@@ -28,7 +28,8 @@ from typing import List, Optional
 from scipy.interpolate import splprep, splev
 from scipy.spatial import KDTree
 
-from shapeio import shape
+import simisa
+from simisa import shape, tracksections
 
 
 class Trackcenter:
@@ -101,6 +102,7 @@ class Trackcenter:
         """
         if isinstance(other, Trackcenter):
             return np.array_equal(self.centerpoints, other.centerpoints)
+        
         return False
     
     @classmethod
@@ -247,7 +249,6 @@ def generate_curve_centerpoints(
 def trackcenters_from_global_tsection(
     shape_name: str,
     tsection_file_path: str = None,
-    include_global_tsection: bool = False,
     num_points_per_meter: int = 5,
     start_offset: shape.Point = shape.Point(0, 0, 0)
 ) -> List[Trackcenter]:
@@ -263,10 +264,6 @@ def trackcenters_from_global_tsection(
         tsection_file_path (str, optional): Path to a `tsection.dat` file. If not
             provided, the function defaults to using the global `tsection.dat` build 60
             included with the module. Defaults to None.
-        include_global_tsection (bool, optional): Whether to append the global `tsection.dat` build 60
-            included with the module to the contents of the `tsection_file_path` file. Necessary only if `tsection_file_path`
-            is a `tsection.dat` extension file that refers to sections in the standardised global `tsection.dat`.
-            Defaults to False.
         num_points_per_meter (int, optional): Density of generated points along each
             section. Higher values produce smoother curves at the cost of performance.
             Defaults to 5.
@@ -281,106 +278,103 @@ def trackcenters_from_global_tsection(
         FileNotFoundError: If the file at `tsection_file_path` is missing.
         ValueError: If the specified shape is not found, or if any referenced TrackSection cannot be parsed.
     """
-    tsection_text = ""
-
     if tsection_file_path is not None:
         if not os.path.exists(tsection_file_path):
             raise FileNotFoundError(f"""Unable to create trackcenters: Specified file '{tsection_file_path}'
                 in parameter 'tsection_file_path' does not exist.""")
+        
+        filetype = simisa.read_filetype(tsection_file_path)
+        
+        if filetype == 'T': # local tsection's not supported here.
+            raise ValueError(f"""Unable to create trackcenters: Unrecognized filetype '{filetype}'
+                in '{tsection_file_path}'. Is it a global tsection.dat?""")
 
-        with open(tsection_file_path, "r", encoding=_detect_encoding(tsection_file_path)) as f:
-            tsection_text += f.read()
+        tsection = tracksections.load(tsection_file_path)
 
-    if tsection_file_path is None or include_global_tsection:
+    else:
         module_directory = pathlib.Path(__file__).parent
         default_tsection_file_path = f"{module_directory}/tsection.dat"
 
-        with open(default_tsection_file_path, "r", encoding=_detect_encoding(default_tsection_file_path)) as f:
-            tsection_text += "\n" + f.read()
+        tsection = tracksections.load(default_tsection_file_path)
 
-    trackshape_pattern = re.compile(r"TrackShape\s*\(\s*\d+\s*\n(.*?)\n\s*\)", re.DOTALL)
-    sectionidx_pattern = re.compile(r"SectionIdx\s*\(\s*([^\)]*?)\s*\)")
+    matched_trackshape = None
 
-    trackshape_matches = trackshape_pattern.findall(tsection_text)
+    for shape_id, trackshape in tsection.trackshapes.track_shapes.items():
+        if trackshape.file_name.lower() == shape_name.lower():
+            matched_trackshape = trackshape
+            break
 
-    for trackshape_match in trackshape_matches:
-        if re.search(rf'FileName\s*\(\s*{re.escape(shape_name)}\s*\)', trackshape_match, re.IGNORECASE):
-            trackcenters = []
+    if matched_trackshape is None:
+        raise ValueError(f"""Unable to create trackcenters: Unknown shape '{shape_name}'. Instead create 
+            the trackcenters manually using the functions 'generate_straight_centerpoints'
+            and 'generate_curve_centerpoints'.""")
 
-            sectionidx_matches = sectionidx_pattern.findall(trackshape_match)
-            section_idxs = [s.strip() for s in sectionidx_matches]
+    if matched_trackshape.section_idxs is None:
+        return generate_empty_centerpoints()
 
-            for section_idx in section_idxs:
-                trackcenter = generate_empty_centerpoints()
+    trackcenters = []
 
-                values = section_idx.split()
-                num_idxs = int(values[0])
-                start_x, start_y, start_z = map(float, values[1:4])
-                start_angle = float(values[4])
-                tracksection_idxs = list(map(int, values[5:5 + num_idxs]))
+    for section_idx in matched_trackshape.section_idxs:
+        trackcenter = generate_empty_centerpoints()
 
-                for idx, tracksection_idx in enumerate(tracksection_idxs):
-                    tracksection_pattern = tracksection_pattern = re.compile(
-                        rf"TrackSection\s*\(\s*({tracksection_idx})\s*\n"
-                        r"\s*SectionSize\s*\(\s*([\d.]+)\s+([\d.]+)\s*\)\s*\n"
-                        r"(\s*SectionCurve\s*\(\s*([\d.-]+)\s+([\d.-]+)\s*\)\s*\n)?"
-                        r"\s*\)",
-                        re.MULTILINE | re.DOTALL
-                    )
-                    tracksection_match = tracksection_pattern.search(tsection_text)
+        start_x = section_idx.x
+        start_y = section_idx.y
+        start_z = section_idx.z
+        start_angle = section_idx.a
+        tracksection_idxs = section_idx.track_sections
 
-                    if not tracksection_match:
-                        raise ValueError(f"""Unable to create trackcenters: Could not find TrackSection
-                            '{tracksection_idx}' defined by TrackShape '{shape_name}'. Instead create 
-                            the trackcenters manually using the methods 'generate_straight_centerpoints'
-                            and 'generate_curve_centerpoints'.""")
-                    
-                    length = float(tracksection_match.group(3))
-                    radius = float(tracksection_match.group(5)) if tracksection_match.group(5) else None
-                    angle = float(tracksection_match.group(6)) if tracksection_match.group(6) else None
+        for idx, tracksection_idx in enumerate(tracksection_idxs):
+            matched_tracksection = tsection.tracksections.get_section(tracksection_idx)
 
-                    if idx == 0:
-                        x = start_x + start_offset.x
-                        y = start_y + start_offset.y
-                        z = start_z + start_offset.z
-                        current_path_point = shape.Point(x, y, z)
-                        current_path_angle = start_angle
-                    
-                    if radius is not None and angle is not None:
-                        curve_length = distance_along_curve(curve_angle=angle, curve_radius=radius)
-                        num_points = int(curve_length * num_points_per_meter)
-                        num_points = max(num_points, 10)
-                        section_trackcenter = generate_curve_centerpoints(
-                            curve_radius=radius,
-                            curve_angle=angle,
-                            start_angle=current_path_angle,
-                            start_point=current_path_point,
-                            num_points=num_points
-                        )
-                        current_path_angle += angle
-                    else:
-                        num_points = int(length * num_points_per_meter)
-                        num_points = max(num_points, 10)
-                        section_trackcenter = generate_straight_centerpoints(
-                            length=length,
-                            start_angle=current_path_angle,
-                            start_point=current_path_point,
-                            num_points=num_points
-                        )
-                    
-                    section_endpoint = shape.Point.from_numpy(section_trackcenter.centerpoints[-1])
-                    current_path_point.x = section_endpoint.x
-                    current_path_point.z = section_endpoint.z
+            if not matched_tracksection:
+                raise ValueError(f"""Unable to create trackcenters: Could not find TrackSection
+                    '{tracksection_idx}' defined by TrackShape '{shape_name}'. Instead create 
+                    the trackcenters manually using the methods 'generate_straight_centerpoints'
+                    and 'generate_curve_centerpoints'.""")
+            
+            length = matched_tracksection.section_size.length if matched_tracksection.section_size else None
+            radius = matched_tracksection.section_curve.radius if matched_tracksection.section_curve else None
+            angle = matched_tracksection.section_curve.angle if matched_tracksection.section_curve else None
 
-                    trackcenter += section_trackcenter
-                
-                trackcenters.append(trackcenter)
+            if idx == 0:
+                x = start_x + start_offset.x
+                y = start_y + start_offset.y
+                z = start_z + start_offset.z
+                current_path_point = shape.Point(x, y, z)
+                current_path_angle = start_angle
+            
+            if radius is not None and angle is not None:
+                curve_length = distance_along_curve(curve_angle=angle, curve_radius=radius)
+                num_points = int(curve_length * num_points_per_meter)
+                num_points = max(num_points, 10)
+                section_trackcenter = generate_curve_centerpoints(
+                    curve_radius=radius,
+                    curve_angle=angle,
+                    start_angle=current_path_angle,
+                    start_point=current_path_point,
+                    num_points=num_points
+                )
+                current_path_angle += angle
+            
+            else:
+                num_points = int(length * num_points_per_meter)
+                num_points = max(num_points, 10)
+                section_trackcenter = generate_straight_centerpoints(
+                    length=length,
+                    start_angle=current_path_angle,
+                    start_point=current_path_point,
+                    num_points=num_points
+                )
+            
+            section_endpoint = shape.Point.from_numpy(section_trackcenter.centerpoints[-1])
+            current_path_point.x = section_endpoint.x
+            current_path_point.z = section_endpoint.z
 
-            return trackcenters
+            trackcenter += section_trackcenter
+        
+        trackcenters.append(trackcenter)
 
-    raise ValueError(f"""Unable to create trackcenters: Unknown shape '{shape_name}'. Instead create 
-        the trackcenters manually using the functions 'generate_straight_centerpoints'
-        and 'generate_curve_centerpoints'.""")
+    return trackcenters
 
 
 def trackcenter_from_local_tsection(
@@ -416,62 +410,52 @@ def trackcenter_from_local_tsection(
         FileNotFoundError: If the file at `tsection_file_path` is missing.
         ValueError: If the specified TrackPath is not found, or if any referenced SectionCurve cannot be parsed.
     """
-    tsection_text = ""
-
     if not os.path.exists(tsection_file_path):
-        raise FileNotFoundError(f"""Unable to create trackcenter: Specified file '{tsection_file_path}' in parameter
-        'tsection_file_path' does not exist.""")
+        raise FileNotFoundError(f"""Unable to create trackcenters: Specified file '{tsection_file_path}'
+            in parameter 'tsection_file_path' does not exist.""")
 
-    with open(tsection_file_path, "r", encoding=_detect_encoding(tsection_file_path)) as f:
-        tsection_text += f.read()
+    filetype = simisa.read_filetype(tsection_file_path)
 
-    trackpath_pattern = re.compile(rf"TrackPath\s*\(\s*{trackpath_idx}\s+\d+(?:\s+\d+)*\s*\)", re.DOTALL)
-    trackpath_match = trackpath_pattern.search(tsection_text)
+    if filetype == "F": # global tsection's not supported here.
+        raise ValueError(f"""Unable to create trackcenters: Unrecognized filetype '{filetype}'
+            in '{tsection_file_path}'. Is it a local tsection.dat?""")
 
-    if not trackpath_match:
-        raise ValueError(f"""Unable to create trackcenter: Unknown TrackPath '{trackpath_idx}'. Instead create 
-            the trackcenter manually using the functions 'generate_straight_centerpoints'
+    tsection = tracksections.load(tsection_file_path)
+    
+    matched_trackpath = None
+
+    for path_id, trackpath in tsection.sectionidx.track_paths.items():
+        if trackpath.section_index == trackpath_idx:
+            matched_trackpath = trackpath
+            break
+
+    if matched_trackpath is None:
+        raise ValueError(f"""Unable to create trackcenters: Unknown TrackPath '{trackpath_idx}'. Instead create 
+            the trackcenters manually using the functions 'generate_straight_centerpoints'
             and 'generate_curve_centerpoints'.""")
 
-    numbers = re.findall(r'\d+', trackpath_match.group())
-    tracksection_idxs = [int(n) for n in numbers[2:]]
+    tracksection_idxs = matched_trackpath.track_sections
 
     trackcenter = generate_empty_centerpoints()
 
     for idx, tracksection_idx in enumerate(tracksection_idxs):
-        sectioncurve_pattern = re.compile(
-            r'SectionCurve\s*\(\s*\d+\s*\)\s+'
-            rf'{tracksection_idx}\s+'
-            r'([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+'
-            r'([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)'
-        )
-        sectioncurve_match = re.search(sectioncurve_pattern, tsection_text)
+        matched_tracksection = tsection.tracksections.get_section(tracksection_idx)
 
-        if not sectioncurve_match:
-            raise ValueError(f"""Unable to create trackcenter: Could not find SectionCurve '{tracksection_idx}'
-                defined by TrackPath '{trackpath_idx}'. Instead create the trackcenter manually using the methods
-                'generate_straight_centerpoints' and 'generate_curve_centerpoints'.""")
-
-        sectioncurve_value1 = float(sectioncurve_match.group(1))
-        sectioncurve_value2 = float(sectioncurve_match.group(2))
+        if not matched_tracksection:
+            raise ValueError(f"""Unable to create trackcenters: Could not find TrackSection
+                '{tracksection_idx}' defined by TrackPath '{trackpath_idx}'. Instead create 
+                the trackcenters manually using the methods 'generate_straight_centerpoints'
+                and 'generate_curve_centerpoints'.""")
+        
+        length = matched_tracksection.section_size.length if matched_tracksection.section_size else None
+        radius = matched_tracksection.section_curve.radius if matched_tracksection.section_curve else None
+        angle = matched_tracksection.section_curve.angle if matched_tracksection.section_curve else None
 
         if idx == 0:
             current_path_point = shape.Point(start_offset.x, start_offset.y, start_offset.z)
             current_path_angle = start_angle
         
-        if sectioncurve_value2 == 0:
-            length = sectioncurve_value1
-            num_points = int(length * num_points_per_meter)
-            num_points = max(num_points, 10)
-            section_trackcenter = generate_straight_centerpoints(
-                length=length,
-                start_angle=current_path_angle,
-                start_point=current_path_point,
-                num_points=num_points
-            )
-        else:
-            angle = math.degrees(sectioncurve_value1)
-            radius = sectioncurve_value2
+        if radius is not None and angle is not None:
             curve_length = distance_along_curve(curve_angle=angle, curve_radius=radius)
             num_points = int(curve_length * num_points_per_meter)
             num_points = max(num_points, 10)
@@ -483,6 +467,16 @@ def trackcenter_from_local_tsection(
                 num_points=num_points
             )
             current_path_angle += angle
+        
+        else:
+            num_points = int(length * num_points_per_meter)
+            num_points = max(num_points, 10)
+            section_trackcenter = generate_straight_centerpoints(
+                length=length,
+                start_angle=current_path_angle,
+                start_point=current_path_point,
+                num_points=num_points
+            )
 
         section_endpoint = shape.Point.from_numpy(section_trackcenter.centerpoints[-1])
         current_path_point.x = section_endpoint.x
@@ -987,42 +981,3 @@ def get_new_position_along_trackcenter(
     new_position = new_position_on_track + lateral_offset
 
     return [shape.Point.from_numpy(new_position)]
-
-
-def _detect_encoding(filepath: str) -> str:
-    """
-    Detect the text encoding of a file by inspecting its initial bytes (BOM or heuristics).
-
-    Args:
-        filepath (str): Path to the file to check.
-
-    Returns:
-        str: The detected encoding string suitable for use in `open()`.
-
-    Raises:
-        FileNotFoundError: If the file does not exist.
-        PermissionError: If the file cannot be accessed.
-        OSError: For other OS-related errors while reading the file.
-    """
-    with open(filepath, 'rb') as f:
-        b = f.read(4)
-        bstartswith = b.startswith
-        if bstartswith((codecs.BOM_UTF32_BE, codecs.BOM_UTF32_LE)):
-            return 'utf-32'
-        if bstartswith((codecs.BOM_UTF16_BE, codecs.BOM_UTF16_LE)):
-            return 'utf-16'
-        if bstartswith(codecs.BOM_UTF8):
-            return 'utf-8-sig'
-
-        if len(b) >= 4:
-            if not b[0]:
-                return 'utf-16-be' if b[1] else 'utf-32-be'
-            if not b[1]:
-                return 'utf-16-le' if b[2] or b[3] else 'utf-32-le'
-        elif len(b) == 2:
-            if not b[0]:
-                return 'utf-16-be'
-            if not b[1]:
-                return 'utf-16-le'
-        return 'utf-8'
-

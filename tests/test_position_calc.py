@@ -23,7 +23,7 @@ import pytest
 
 import trackshapeutils as tsu
 from trackshapeutils import Trackcenter
-from shapeio.shape import Point
+from simisa.shape import Point
 
 
 def test_get_curve_centerpoint_from_angle_quarter_circle_left():

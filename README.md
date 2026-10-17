@@ -7,10 +7,8 @@
 A collection of utilities for working with MSTS and ORTS track shapes.
 
 List of companion modules:
-- [shapeio](https://github.com/pgroenbaek/shapeio) - offers functions to convert shapes between structured text format and Python objects.
+- [simisa](https://github.com/pgroenbaek/simisa) - provides capability to read and write shapefiles used with MSTS and Open Rails.
 - [shapeedit](https://github.com/pgroenbaek/shapeedit) - provides a wrapper for modifying the shape data structure safely.
-- [pyffeditc](https://github.com/pgroenbaek/pyffeditc) - handles compression and decompression of shape files through the `ffeditc_unicode.exe` utility found in MSTS installations.
-- [pytkutils](https://github.com/pgroenbaek/pytkutils) - handles compression and decompression of shape files through the `TK.MSTS.Tokens.dll` library by Okrasa Ghia.
 
 ## Installation
 
@@ -85,21 +83,6 @@ import trackshapeutils as tsu
 trackcenters = tsu.trackcenters_from_global_tsection(
     "a1t10mStrt.s",
     tsection_file_path="/path/to/your/global/tsection.dat",
-    num_points_per_meter=8
-)
-```
-
-If you specify a _global tsection extension file_, for example from the `/OpenRails/tsection.dat` directory of a route, then set the `include_global_tsection` parameter to `True`. Otherwise, any tracksections from the standardised global `tsection.dat` cannot be found because this Python module currently does not resolve any `include (...)` statements.
-
-Doing this appends the standardised global `tsection.dat` build \#60 to your extension file, so that any track section references within it can be found.
-
-```python
-import trackshapeutils as tsu
-
-trackcenters = tsu.trackcenters_from_global_tsection(
-    "a1t10mStrt.s",
-    tsection_file_path="/path/to/your/global/extension/tsection.dat",
-    include_global_tsection=True,
     num_points_per_meter=8
 )
 ```
