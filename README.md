@@ -10,9 +10,6 @@ List of companion modules:
 - [simisa](https://github.com/pgroenbaek/simisa) - provides capability to read and write shapefiles used with MSTS and Open Rails.
 - [shapeedit](https://github.com/pgroenbaek/shapeedit) - provides a wrapper for modifying the shape data structure safely.
 
-See also:
-- [simisatool](https://github.com/pgroenbaek/simisatool) - A cross-platform CLI to compress/decompress `.s`, `.w` and `.t` files.
-
 ## Installation
 
 ### Install from PyPI
