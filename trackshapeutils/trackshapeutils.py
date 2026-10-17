@@ -249,7 +249,6 @@ def generate_curve_centerpoints(
 def trackcenters_from_global_tsection(
     shape_name: str,
     tsection_file_path: str = None,
-    include_global_tsection: bool = False,
     num_points_per_meter: int = 5,
     start_offset: shape.Point = shape.Point(0, 0, 0)
 ) -> List[Trackcenter]:
@@ -265,10 +264,6 @@ def trackcenters_from_global_tsection(
         tsection_file_path (str, optional): Path to a `tsection.dat` file. If not
             provided, the function defaults to using the global `tsection.dat` build 60
             included with the module. Defaults to None.
-        include_global_tsection (bool, optional): Whether to append the global `tsection.dat` build 60
-            included with the module to the contents of the `tsection_file_path` file. Necessary only if `tsection_file_path`
-            is a `tsection.dat` extension file that refers to sections in the standardised global `tsection.dat`.
-            Defaults to False.
         num_points_per_meter (int, optional): Density of generated points along each
             section. Higher values produce smoother curves at the cost of performance.
             Defaults to 5.
