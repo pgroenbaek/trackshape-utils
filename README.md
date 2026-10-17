@@ -7,10 +7,11 @@
 A collection of utilities for working with MSTS and ORTS track shapes.
 
 List of companion modules:
-- [shapeio](https://github.com/pgroenbaek/shapeio) - offers functions to convert shapes between structured text format and Python objects.
+- [simisa](https://github.com/pgroenbaek/simisa) - provides capability to read and write shapefiles used with MSTS and Open Rails.
 - [shapeedit](https://github.com/pgroenbaek/shapeedit) - provides a wrapper for modifying the shape data structure safely.
-- [pyffeditc](https://github.com/pgroenbaek/pyffeditc) - handles compression and decompression of shape files through the `ffeditc_unicode.exe` utility found in MSTS installations.
-- [pytkutils](https://github.com/pgroenbaek/pytkutils) - handles compression and decompression of shape files through the `TK.MSTS.Tokens.dll` library by Okrasa Ghia.
+
+See also:
+- [simisatool](https://github.com/pgroenbaek/simisatool) - A cross-platform CLI to compress/decompress `.s`, `.w` and `.t` files.
 
 ## Installation
 
