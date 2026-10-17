@@ -22,7 +22,7 @@ import pytest
 
 import trackshapeutils as tsu
 from trackshapeutils import Trackcenter
-from shapeio.shape import Point
+from simisa.shape import Point
 
 
 def test_trackcenters_equal():
